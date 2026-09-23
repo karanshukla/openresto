@@ -22,6 +22,7 @@ describe("BookingStatusTabs", () => {
     expect(screen.getByText("Active")).toBeTruthy();
     expect(screen.getByText("Past")).toBeTruthy();
     expect(screen.getByText("Cancelled")).toBeTruthy();
+    expect(screen.getByText("No-shows")).toBeTruthy();
   });
 
   it("reports the tab that was pressed", () => {

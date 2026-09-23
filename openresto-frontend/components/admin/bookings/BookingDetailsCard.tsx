@@ -19,6 +19,7 @@ interface BookingDetailsCardProps {
     tableName: string | null;
     specialRequests?: string;
     isCancelled?: boolean;
+    previousNoShows?: number | null;
   };
   borderColor: string;
   mutedColor: string;
@@ -106,6 +107,15 @@ export function BookingDetailsCard({
           },
         ]
       : []),
+    ...(booking.previousNoShows
+      ? [
+          {
+            key: "noShows",
+            label: t("admin.bookings.detail.fields.noShows"),
+            value: t("admin.bookings.previousNoShows", { count: booking.previousNoShows }),
+          },
+        ]
+      : []),
     {
       key: "requests",
       label: t("admin.bookings.detail.fields.requests"),
@@ -132,6 +142,7 @@ export function BookingDetailsCard({
               style={[
                 styles.rowValue,
                 key === "status" && { color: theme.colors.error, fontWeight: "700" },
+                key === "noShows" && { color: theme.colors.error },
               ]}
             >
               {value}

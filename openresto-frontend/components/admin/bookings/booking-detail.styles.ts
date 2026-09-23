@@ -40,6 +40,10 @@ export const bookingDetailStyles = StyleSheet.create({
   fieldRow: { flexDirection: "row", gap: theme.spacing.md },
   fieldHalf: { flex: 1 },
 
+  statusBadge: { marginLeft: "auto" },
+  statusBtns: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },
+  statusUndo: { alignSelf: "flex-start" },
+
   extendBtns: { flexDirection: "row", gap: theme.spacing.sm },
   extendBtn: { flex: 1 },
 

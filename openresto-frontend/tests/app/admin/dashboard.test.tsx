@@ -72,6 +72,7 @@ const mockStats: AdminDashboardStats = {
   todayCount: 5,
   activeHoldsCount: 3,
   pausedCount: 1,
+  noShowCount: 0,
   scheduleConflictsCount: 0,
   scheduleConflictLocationIds: [],
   totalCovers: 100,
@@ -115,6 +116,16 @@ describe("AdminDashboardScreen", () => {
     // ("1 venue", not "1 venues") — see admin.dashboard.metrics.restaurantStatus.subPaused_one.
     expect(screen.getByText("1 venue is currently paused")).toBeTruthy();
     expect(screen.getByText("100")).toBeTruthy();
+  });
+
+  it("names today's no-shows under today's bookings once there are any", async () => {
+    (getAdminDashboardStats as jest.Mock).mockResolvedValue({ ...mockStats, noShowCount: 2 });
+    const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
+
+    await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
+
+    expect(screen.getByText("2 no-shows today")).toBeTruthy();
+    expect(screen.queryByText("Total covers for today")).toBeNull();
   });
 
   it("renders empty state when there are no recent bookings", async () => {

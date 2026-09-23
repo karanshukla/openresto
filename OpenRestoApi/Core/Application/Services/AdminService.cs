@@ -83,6 +83,7 @@ public class AdminService(
 
         int todayBookingsCount = 0;
         int pausedRestaurantsCount = 0;
+        int todayNoShowsCount = 0;
         int scheduleConflictsCount = 0;
         List<int> scheduleConflictLocationIds = [];
         List<BookingDetailDto> todayBookingsList = [];
@@ -91,6 +92,7 @@ public class AdminService(
             (DateTime start, DateTime end) = TimeZoneHelper.GetUtcRangeForLocalDay(nowUtc, r.Timezone);
             List<Booking> rTodayBookings = await _bookingRepository.GetForRestaurantInUtcRangeAsync(r.Id, start, end);
             todayBookingsCount += rTodayBookings.Count;
+            todayNoShowsCount += rTodayBookings.Count(b => b.Status == BookingStatus.NoShow);
             todayBookingsList.AddRange(rTodayBookings.Select(ToDetailDto));
 
             List<Booking> upcoming = await _bookingRepository.GetFutureForRestaurantAsync(r.Id, nowUtc);
@@ -118,6 +120,7 @@ public class AdminService(
             TotalSeats = totalSeats,
             ActiveHoldsCount = _holdService.GetActiveHoldsCount(),
             PausedRestaurantsCount = pausedRestaurantsCount,
+            TodayNoShowsCount = todayNoShowsCount,
             ScheduleConflictsCount = scheduleConflictsCount,
             ScheduleConflictLocationIds = scheduleConflictLocationIds,
             OccupancyData = occupancyData,
@@ -179,13 +182,114 @@ public class AdminService(
             Query = query,
         });
 
-        return bookings.Select(ToDetailDto).ToList();
+        return await WithNoShowHistoryAsync(bookings);
     }
 
     public virtual async Task<BookingDetailDto?> GetBookingAsync(int id)
     {
         Booking? b = await _bookingRepository.GetByIdAsync(id);
-        return b == null ? null : ToDetailDto(b);
+        return b == null ? null : (await WithNoShowHistoryAsync([b]))[0];
+    }
+
+    /// <summary>
+    /// Moves a booking along the floor (arrived, seated, finished, no-show), or takes back the
+    /// last move while <see cref="Booking.StatusUndoWindow"/> is open. Finishing and no-showing
+    /// shorten the sitting to now, which is what frees the table for availability and the waitlist.
+    /// </summary>
+    /// <seealso>AdminServiceTests.SetBookingStatusAsync_RefusesANoShow_BeforeTheSittingStarts</seealso>
+    /// <seealso>AdminServiceTests.SetBookingStatusAsync_Undo_RestoresTheOriginalEndTime</seealso>
+    /// <seealso>AdminServiceTests.SetBookingStatusAsync_Refuses_ACancelledBooking</seealso>
+    public virtual async Task<BookingDetailDto?> SetBookingStatusAsync(int id, string status)
+    {
+        Booking? booking = await _bookingRepository.GetByIdAsync(id);
+        if (booking == null)
+        {
+            return null;
+        }
+
+        BookingStatus target = ParseBookingStatus(status);
+        BookingStatus from = booking.Status;
+        DateTime? endBefore = booking.EndTime;
+        DateTime nowUtc = DateTime.UtcNow;
+
+        if (booking.IsCancelled)
+        {
+            throw new BusinessRuleException("A cancelled booking takes no status changes.") { Code = ErrorCodes.BookingStatusCancelled };
+        }
+
+        if (target == from)
+        {
+            return (await WithNoShowHistoryAsync([booking]))[0];
+        }
+
+        if (booking.UndoStatus(nowUtc) == target)
+        {
+            booking.UndoStatusChange();
+        }
+        else if (booking.NextStatuses(nowUtc).Contains(target))
+        {
+            booking.Advance(target, nowUtc, booking.Restaurant?.DefaultBookingDurationMinutes ?? BookingDuration.FallbackMinutes);
+        }
+        else if (target == BookingStatus.NoShow && from == BookingStatus.Booked)
+        {
+            throw new BusinessRuleException("A booking can only be marked as a no-show once its sitting has started.") { Code = ErrorCodes.BookingNoShowBeforeStart };
+        }
+        else
+        {
+            throw new BusinessRuleException($"A booking that is {from} cannot be marked {target}.")
+            {
+                Code = ErrorCodes.BookingStatusTransitionInvalid,
+                Args = new Dictionary<string, object> { ["from"] = from.ToString(), ["to"] = target.ToString() },
+            };
+        }
+
+        await _bookingRepository.UpdateAsync(booking);
+
+        _audit.RecordChange("status", from.ToString(), booking.Status.ToString());
+        _audit.RecordChange("endTime", endBefore, booking.EndTime);
+        DescribeBooking(AuditActions.BookingStatus, booking,
+            $"Marked booking {booking.BookingRef} as {booking.Status}");
+        return (await WithNoShowHistoryAsync([booking]))[0];
+    }
+
+    private static BookingStatus ParseBookingStatus(string value)
+    {
+        if (!Enum.TryParse(value, ignoreCase: true, out BookingStatus parsed)
+            || !Enum.IsDefined(parsed)
+            || char.IsDigit(value.Trim().FirstOrDefault()))
+        {
+            throw new ValidationException(
+                $"Status must be one of: {string.Join(", ", Enum.GetNames<BookingStatus>())}.")
+            {
+                Code = ErrorCodes.BookingStatusInvalid,
+                Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", Enum.GetNames<BookingStatus>()) },
+            };
+        }
+
+        return parsed;
+    }
+
+    /// <summary>
+    /// Maps bookings with each guest's no-show count from every other booking under their email,
+    /// counted in one query. Derived rather than stored, so the GDPR purge that removes a
+    /// guest's bookings removes their history with it.
+    /// </summary>
+    /// <seealso>AdminServiceTests.GetBookingAsync_CountsTheGuestsOtherNoShows_CaseInsensitively</seealso>
+    private async Task<List<BookingDetailDto>> WithNoShowHistoryAsync(List<Booking> bookings)
+    {
+        Dictionary<string, int> noShows = await _bookingRepository.CountNoShowsByEmailAsync(
+            bookings.Where(b => !string.IsNullOrWhiteSpace(b.CustomerEmail)).Select(b => b.CustomerEmail!));
+
+        return bookings.Select(b =>
+        {
+            BookingDetailDto dto = ToDetailDto(b);
+            if (!string.IsNullOrWhiteSpace(b.CustomerEmail))
+            {
+                noShows.TryGetValue(b.CustomerEmail.Trim().ToLowerInvariant(), out int count);
+                dto.PreviousNoShows = b.Status == BookingStatus.NoShow ? count - 1 : count;
+            }
+            return dto;
+        }).ToList();
     }
 
     public virtual async Task<BookingDetailDto> CreateBookingAsync(AdminCreateBookingRequest req)
@@ -200,7 +304,7 @@ public class AdminService(
 
         DateTime newStart = TimeZoneHelper.ConvertLocalToUtc(req.Date, table.Section.Restaurant!.Timezone);
 
-        int durationMinutes = table.Section!.Restaurant!.DefaultBookingDurationMinutes;
+        int durationMinutes = BookingDuration.For(table.Section.Restaurant, req.Seats);
         DateTime newEnd = newStart.AddMinutes(durationMinutes);
 
         bool conflict = await _bookingRepository.HasConflictAsync(req.TableId, newStart, newEnd, durationMinutes);
@@ -359,7 +463,9 @@ public class AdminService(
             restaurant = newRestaurant;
         }
 
-        int durationMinutes = restaurant?.DefaultBookingDurationMinutes ?? 60;
+        int durationMinutes = restaurant is null
+            ? BookingDuration.FallbackMinutes
+            : BookingDuration.For(restaurant, req.Seats ?? booking.Seats);
 
         if (req.TableId.HasValue && req.TableId.Value != booking.TableId)
         {
@@ -836,6 +942,9 @@ public class AdminService(
             BookingRef = b.BookingRef,
             IsCancelled = b.IsCancelled,
             CancelledAt = cancelledAtUtc,
+            Status = b.Status.ToString(),
+            NextStatuses = b.NextStatuses(DateTime.UtcNow).Select(s => s.ToString()).ToList(),
+            UndoStatus = b.UndoStatus(DateTime.UtcNow)?.ToString(),
         };
         return BookingGuestVisibility.Apply(dto, _currentUser);
     }

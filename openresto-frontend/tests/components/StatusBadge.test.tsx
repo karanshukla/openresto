@@ -51,6 +51,28 @@ describe("getStatus", () => {
   });
 });
 
+describe("recorded status", () => {
+  it("overrides the time-derived guess once staff record one", () => {
+    const upcoming = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    expect(getStatus(upcoming, t, "Arrived")).toEqual({ label: "Arrived", variant: "arrived" });
+    expect(getStatus(upcoming, t, "NoShow")).toEqual({ label: "No-show", variant: "noShow" });
+  });
+
+  it("falls back to the time-derived guess while the booking is still Booked", () => {
+    const upcoming = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    expect(getStatus(upcoming, t, "Booked")).toEqual({ label: "Upcoming", variant: "upcoming" });
+  });
+
+  it("ranks a finished sitting with the historical ones", () => {
+    const now = Date.now();
+    const b = (date: string, status: "Finished" | "Booked") =>
+      ({ id: 1, date, status, isCancelled: false }) as never;
+    expect(statusRankFor(b(new Date(now - 30 * 60000).toISOString(), "Finished"))).toBe(
+      statusRankFor(b(new Date(now - 200 * 60000).toISOString(), "Booked"))
+    );
+  });
+});
+
 describe("label/value split — variant stays untranslated so rank/style lookups don't break", () => {
   it("resolves a localized label whose text differs from the internal variant identifier", () => {
     const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();

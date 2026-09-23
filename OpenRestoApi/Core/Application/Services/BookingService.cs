@@ -67,9 +67,10 @@ public class BookingService(
 
         int tableId = bookingDto.TableId!.Value;
         int sectionId = bookingDto.SectionId!.Value;
+        int durationMinutes = BookingDuration.For(restaurant, bookingDto.Seats);
 
         bool alreadyBooked = await _bookingRepository.IsUnitBookedOnDateAsync(
-            tableId, tableGroupId: null, bookingDate, restaurant.DefaultBookingDurationMinutes);
+            tableId, tableGroupId: null, bookingDate, durationMinutes);
         if (alreadyBooked)
         {
             throw new ConflictException("This table is already booked for that time.") { Code = ErrorCodes.BookingTableConflict };
@@ -77,7 +78,7 @@ public class BookingService(
 
         bool heldByOther = _holdService.IsTableHeld(
             tableId, bookingDate, excludeHoldId: bookingDto.HoldId,
-            durationMinutes: restaurant.DefaultBookingDurationMinutes);
+            durationMinutes: durationMinutes);
         if (heldByOther)
         {
             throw new ConflictException("This table is currently being held by another user. Please try again shortly.") { Code = ErrorCodes.BookingTableHeld };
@@ -89,7 +90,7 @@ public class BookingService(
         Booking booking = _mapper.ToEntity(bookingDto);
         booking.Date = bookingDate;
         booking.BookingRef = BookingRefFactory.GenerateFor(restaurant);
-        booking.EndTime = bookingDate.AddMinutes(restaurant.DefaultBookingDurationMinutes);
+        booking.EndTime = bookingDate.AddMinutes(durationMinutes);
         booking.Table = table!;
         booking.Section = (await _sectionRepository.GetByIdAsync(sectionId))!;
         booking.Restaurant = restaurant;
@@ -210,7 +211,7 @@ public class BookingService(
             candidates,
             bookingDate,
             currentHoldId: bookingDto.HoldId,
-            restaurant.DefaultBookingDurationMinutes)
+            BookingDuration.For(restaurant, bookingDto.Seats))
             ?? throw new ConflictException("All suitable tables are currently being held by other users. Please try again shortly.") { Code = ErrorCodes.BookingAllTablesHeld };
 
         if (assigned.IsGroup)
@@ -249,7 +250,7 @@ public class BookingService(
             tableId: held.IsGroup ? null : held.TableId,
             tableGroupId: held.TableGroupId,
             bookingDate,
-            restaurant.DefaultBookingDurationMinutes);
+            BookingDuration.For(restaurant, bookingDto.Seats));
         if (booked)
         {
             return false;
@@ -296,7 +297,7 @@ public class BookingService(
         // part of the public POST body, so trusting it would let a caller omit members and skip the
         // hold check for the ones they left out.
         var memberIds = group.Members.Select(m => m.TableId).ToList();
-        int durationMinutes = restaurant.DefaultBookingDurationMinutes;
+        int durationMinutes = BookingDuration.For(restaurant, bookingDto.Seats);
 
         bool groupConflict = await _bookingRepository.IsUnitBookedOnDateAsync(
             tableId: null, tableGroupId: group.Id, bookingDate, durationMinutes);

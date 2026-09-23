@@ -47,6 +47,10 @@ public static class ErrorCodes
     public const string BookingLookupEmailRequired = "booking.lookup_email_required";
     public const string BookingLookupNotFound = "booking.lookup_not_found";
     public const string BookingCancelEmailRequired = "booking.cancel_email_required";
+    public const string BookingStatusInvalid = "booking.status_invalid";
+    public const string BookingStatusCancelled = "booking.status_cancelled";
+    public const string BookingStatusTransitionInvalid = "booking.status_transition_invalid";
+    public const string BookingNoShowBeforeStart = "booking.no_show_before_start";
 
     public const string TableSeatsExceeded = "table.seats_exceeded";
     public const string TableOversizeCap = "table.oversize_cap";
@@ -87,6 +91,9 @@ public static class ErrorCodes
     public const string RestaurantOpenHoursDuplicateDay = "restaurant.open_hours_duplicate_day";
     public const string RestaurantOpenHoursTimeInvalid = "restaurant.open_hours_time_invalid";
     public const string RestaurantSectionIdsMismatch = "restaurant.section_ids_mismatch";
+    public const string RestaurantTurnTimeDuplicateSeats = "restaurant.turn_time_duplicate_seats";
+    public const string RestaurantTurnTimeMinutesInvalid = "restaurant.turn_time_minutes_invalid";
+    public const string RestaurantTurnTimeSeatsOutOfRange = "restaurant.turn_time_seats_out_of_range";
 
     // ── Waitlist ─────────────────────────────────────────────────────────────
     public const string WaitlistNotFound = "waitlist.not_found";

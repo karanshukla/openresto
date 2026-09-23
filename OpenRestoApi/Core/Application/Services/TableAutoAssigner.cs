@@ -1,4 +1,5 @@
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -34,7 +35,7 @@ public sealed class TableAutoAssigner(
             return Array.Empty<TableCandidate>();
         }
 
-        int durationMinutes = restaurant.DefaultBookingDurationMinutes;
+        int durationMinutes = BookingDuration.For(restaurant, seats);
         var free = new List<TableCandidate>();
         free.AddRange(await FreeTablesAsync(restaurant, seats, bookingDateUtc, durationMinutes));
         free.AddRange(await FreeGroupsAsync(restaurant, seats, bookingDateUtc, durationMinutes));

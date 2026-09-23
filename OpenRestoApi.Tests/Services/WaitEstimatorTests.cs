@@ -74,6 +74,18 @@ public class WaitEstimatorTests
     }
 
     [Fact]
+    public void Estimate_HoldsEachTableForThePartysOwnTurnTime()
+    {
+        Restaurant floor = Floor();
+        floor.TurnTimesJson = """[{"minSeats":1,"minutes":60},{"minSeats":3,"minutes":120}]""";
+
+        IReadOnlyList<DateTime?> seats = Estimate(floor, [4, 4, 2, 2]);
+
+        Assert.Equal(Now.AddMinutes(120), seats[1]);
+        Assert.Equal(Now.AddMinutes(60), seats[3]);
+    }
+
+    [Fact]
     public void Estimate_IsNull_ForAPartyNothingCanSeat()
     {
         Assert.Null(Estimate(Floor(), [5])[0]);

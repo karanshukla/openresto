@@ -346,12 +346,16 @@
       "lookup_not_found": "No se ha encontrado ninguna reserva con esa referencia y ese correo electrónico.",
       "move_conflict": "Este cambio entraría en conflicto con una reserva existente.",
       "no_customer_email": "El correo electrónico del cliente no está disponible.",
+      "no_show_before_start": "Una reserva solo se puede marcar como no presentada una vez que ha empezado su turno.",
       "no_tables_available": "No hay mesas disponibles para la hora y el número de comensales solicitados.",
       "party_size_out_of_range": "El número de comensales debe estar entre {{min}} y {{max}}.",
       "past_date": "No se puede crear una reserva en el pasado.",
       "paused": "Las reservas están pausadas hasta las {{until}}. Elige una hora posterior.",
       "paused_indefinitely": "Las reservas de este restaurante están pausadas en este momento. Vuelve a intentarlo más tarde.",
       "section_mismatch": "La sala no pertenece a este restaurante.",
+      "status_cancelled": "Una reserva cancelada no admite cambios de estado.",
+      "status_invalid": "El estado debe ser uno de estos valores: {{allowed}}.",
+      "status_transition_invalid": "Una reserva en estado {{from}} no se puede marcar como {{to}}.",
       "table_conflict": "Esta mesa ya tiene una reserva que se solapa con la hora solicitada.",
       "table_held": "Otro usuario tiene retenida esta mesa. Elige otra mesa o vuelve a intentarlo en unos instantes.",
       "table_id_required_for_section_change": "Indica tableId al reasignar a otra sala.",
@@ -418,6 +422,9 @@
       "oversize_cap_invalid": "MaxTableOversizeSeats debe ser cero o mayor, o null para desactivarlo.",
       "section_ids_mismatch": "sectionIds debe incluir exactamente las salas actuales del restaurante, sin duplicados.",
       "slot_interval_invalid": "BookingSlotIntervalMinutes debe ser uno de estos valores: {{allowed}}.",
+      "turn_time_duplicate_seats": "Hay más de una duración de mesa para grupos de {{seats}}.",
+      "turn_time_minutes_invalid": "Los minutos de una duración de mesa deben ser uno de estos valores: {{allowed}}.",
+      "turn_time_seats_out_of_range": "El tamaño de grupo de una duración de mesa debe estar entre {{min}} y {{max}}.",
       "walk_in_days_invalid": "WalkInDays debe ser una lista de números de día ISO del 1 (lunes) al 7 (domingo), separados por comas."
     },
     "social_link": {
@@ -680,6 +687,7 @@
         "bookingExtend": "Reserva ampliada",
         "bookingPurge": "Reserva purgada",
         "bookingEmail": "Correo de reserva reenviado",
+        "bookingStatus": "Cambió el estado de una reserva",
         "restaurantCreate": "Local creado",
         "restaurantUpdate": "Local modificado",
         "restaurantArchive": "Local archivado",
@@ -743,11 +751,15 @@
       "screenTitle": {
         "live": "Reservas activas",
         "past": "Reservas pasadas",
-        "cancelled": "Reservas canceladas"
+        "cancelled": "Reservas canceladas",
+        "noShow": "Reservas no presentadas"
       },
+      "previousNoShows_one": "{{count}} ausencia anterior",
+      "previousNoShows_other": "{{count}} ausencias anteriores",
       "tabs": {
         "active": "Activas",
         "past": "Pasadas",
+        "noShow": "No presentados",
         "cancelled": "Canceladas",
         "showLabel": "Mostrar reservas {{tab}}"
       },
@@ -832,7 +844,10 @@
         "arrived": "Llegaron",
         "upcoming": "Próxima",
         "scheduled": "Programada",
-        "cancelled": "Cancelada"
+        "cancelled": "Cancelada",
+        "booked": "Reservada",
+        "finished": "Terminada",
+        "noShow": "No se presentó"
       },
       "rowSummary": "{{name}}, {{when}}, {{seats}}",
       "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
@@ -878,6 +893,7 @@
           "ref": "Ref.",
           "party": "Comensales",
           "name": "Nombre",
+          "noShows": "Ausencias",
           "requests": "Solicitudes"
         },
         "noRequests": "Ninguna",
@@ -885,6 +901,11 @@
         "extendSection": "Ampliar reserva",
         "extendByMinutes": "+{{mins}} min",
         "extendByMinutesLabel": "Ampliar la reserva {{mins}} minutos",
+        "statusActions": {
+          "title": "Estado",
+          "markAs": "Marcar como {{status}}",
+          "undo": "Deshacer, volver a {{status}}"
+        },
         "emailGuest": "Enviar correo al cliente",
         "emailTo": "Para: {{email}}",
         "moveNotice": "El turno cambió. Se ha redactado un aviso a continuación y aún no se ha enviado: editálo o envíalo tal cual.",
@@ -962,7 +983,9 @@
       "metrics": {
         "todayBookings": {
           "label": "Reservas de hoy",
-          "sub": "Total de comensales para hoy"
+          "sub": "Total de comensales para hoy",
+          "noShows_one": "{{count}} no presentado hoy",
+          "noShows_other": "{{count}} no presentados hoy"
         },
         "activeHolds": {
           "label": "Retenciones activas",
@@ -1839,6 +1862,7 @@
         "blockedInvalidMenuUrl": "La URL del menú debe ser un enlace http(s) válido.",
         "blockedPhoneTooLong": "El teléfono no puede superar los {{max}} caracteres.",
         "blockedInvalidEmail": "El correo de contacto debe ser una dirección válida.",
+        "blockedDuplicateTurnTimes": "Dos duraciones de mesa empiezan en el mismo tamaño de grupo.",
         "saveUnreachable": "No se pudo contactar con el servidor.",
         "untitledLocation": "Local sin título",
         "menuPdfUploaded": "PDF subido",
@@ -1874,6 +1898,17 @@
         "timezoneHint": "Si este valor difiere de la zona horaria del dispositivo del cliente, aparecerá una nota en la página de reserva.",
         "durationLabel": "Duración de reserva predeterminada",
         "durationHint": "Cuánto tiempo ocupa una mesa cada nueva reserva de forma predeterminada.",
+        "turnTimesLabel": "Duración de mesa según el tamaño del grupo",
+        "turnTimesHint": "Da más tiempo a los grupos grandes. Un grupo más pequeño que todas las reglas recibe la duración predeterminada, y las reservas existentes conservan su duración.",
+        "turnTimesAdd": "Añadir una regla",
+        "turnTimesSeatsLabel": "Tamaño del grupo desde",
+        "turnTimesMinutesLabel": "Duración en la mesa",
+        "turnTimesFrom_one": "Desde {{count}} persona",
+        "turnTimesFrom_other": "Desde {{count}} personas",
+        "turnTimesRange": "Grupos de {{min}} a {{max}}",
+        "turnTimesRangeOne": "Grupos de {{seats}}",
+        "turnTimesRangeOpen": "Grupos de {{seats}} o más",
+        "turnTimesRemove": "Quitar la duración desde {{seats}}",
         "slotIntervalLabel": "Intervalo de horarios de reserva",
         "slotIntervalHint": "La separación entre los horarios de inicio seleccionables, independiente de la duración de la reserva.",
         "oversizeLabel": "Exceso máximo de mesa",

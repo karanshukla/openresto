@@ -53,9 +53,10 @@ public interface IHoldPolicyService
     /// <summary>
     /// Validates the hold request. Returns <see cref="HoldPolicyStatus.Eligible"/> with the
     /// resolved restaurant + UTC booking date only when every policy check passes AND no
-    /// confirmed booking overlaps the table. Never throws for expected policy violations.
+    /// confirmed booking overlaps the table for a party of <paramref name="seats"/>'s sitting.
+    /// Never throws for expected policy violations.
     /// </summary>
-    Task<HoldPolicyResult> ValidateAsync(int restaurantId, int tableId, DateTime requestedDate);
+    Task<HoldPolicyResult> ValidateAsync(int restaurantId, int tableId, DateTime requestedDate, int seats);
 
     /// <summary>
     /// Validates an "Any section" / auto-assign hold request. Runs the same restaurant-level

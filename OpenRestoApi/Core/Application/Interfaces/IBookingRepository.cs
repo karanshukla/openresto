@@ -142,4 +142,10 @@ public interface IBookingRepository
     /// against the location's current opening hours and walk-in policy.
     /// </summary>
     Task<List<Booking>> GetFutureForRestaurantAsync(int restaurantId, DateTime nowUtc);
+
+    /// <summary>
+    /// No-show bookings per customer email across every location, keyed by the lower-cased email.
+    /// Emails with none are absent.
+    /// </summary>
+    Task<Dictionary<string, int>> CountNoShowsByEmailAsync(IEnumerable<string> emails);
 }

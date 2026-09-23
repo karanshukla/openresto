@@ -5,6 +5,8 @@ namespace OpenRestoApi.Core.Application.Interfaces;
 /// is empty. For a combinable-table group hold (#272), <see cref="TableGroupId"/> is set and
 /// <see cref="MemberTableIds"/> lists every member table the hold reserves — those tables are all
 /// treated as busy (see <see cref="IHoldService.IsTableHeld"/>). One hold id releases the whole group.
+/// <see cref="DurationMinutes"/> is the sitting the hold blocks for, which differs between party
+/// sizes once a location has turn times.
 /// </summary>
 public record HoldEntry(
     string HoldId,
@@ -14,7 +16,8 @@ public record HoldEntry(
     DateTime Date,
     DateTime ExpiresAt,
     int? TableGroupId = null,
-    IReadOnlyList<int>? MemberTableIds = null
+    IReadOnlyList<int>? MemberTableIds = null,
+    int DurationMinutes = 60
 )
 {
     /// <summary>True when this hold reserves a combinable-table group rather than one table.</summary>
@@ -85,11 +88,13 @@ public interface IHoldService
 
     void ReleaseHold(string holdId);
     /// <summary>
-    /// True when an active hold overlaps the window [<paramref name="bookingDate"/>,
+    /// True when an active hold, over its own sitting, overlaps the window [<paramref name="bookingDate"/>,
     /// <paramref name="bookingDate"/> + <paramref name="durationMinutes"/>) on this table —
     /// <b>including</b> a group hold that reserves this table as one of its members (#272). Pass
     /// <paramref name="excludeHoldId"/> to skip the caller's own hold.
     /// </summary>
+    /// <seealso>HoldServiceTests.IsTableHeld_MeasuresAnExistingHold_ByItsOwnSitting</seealso>
+    /// <seealso>HoldServiceTests.IsTableHeld_False_OnceTheHoldsOwnSittingHasEnded</seealso>
     bool IsTableHeld(int tableId, DateTime bookingDate, string? excludeHoldId = null, int durationMinutes = 60);
     HoldEntry? GetHold(string holdId);
     int GetActiveHoldsCount();

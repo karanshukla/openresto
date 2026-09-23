@@ -317,7 +317,9 @@ export default function AdminBookingsScreen() {
                 ? t("admin.bookings.screenTitle.past")
                 : statusFilter === "cancelled"
                   ? t("admin.bookings.screenTitle.cancelled")
-                  : t("admin.bookings.screenTitle.live"),
+                  : statusFilter === "noshow"
+                    ? t("admin.bookings.screenTitle.noShow")
+                    : t("admin.bookings.screenTitle.live"),
           }}
         />
       )}

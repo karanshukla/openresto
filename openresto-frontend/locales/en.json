@@ -346,12 +346,16 @@
       "lookup_not_found": "No booking found matching that reference and email.",
       "move_conflict": "This update would cause a conflict with an existing booking.",
       "no_customer_email": "Customer email is not available.",
+      "no_show_before_start": "A booking can only be marked as a no-show once its sitting has started.",
       "no_tables_available": "No tables are available for the requested time and party size.",
       "party_size_out_of_range": "Party size must be between {{min}} and {{max}}.",
       "past_date": "Cannot create a booking in the past.",
       "paused": "Bookings are paused until {{until}}. Please choose a later time.",
       "paused_indefinitely": "Bookings for this restaurant are currently paused. Please try again later.",
       "section_mismatch": "Section does not belong to this restaurant.",
+      "status_cancelled": "A cancelled booking takes no status changes.",
+      "status_invalid": "Status must be one of: {{allowed}}.",
+      "status_transition_invalid": "A booking that is {{from}} cannot be marked {{to}}.",
       "table_conflict": "This table already has a booking that overlaps with the requested time.",
       "table_held": "This table is already held by another user. Please select a different table or try again shortly.",
       "table_id_required_for_section_change": "Provide tableId when reassigning to a different section.",
@@ -418,6 +422,9 @@
       "oversize_cap_invalid": "MaxTableOversizeSeats must be zero or greater, or null to disable.",
       "section_ids_mismatch": "sectionIds must include exactly the restaurant's current sections, with no duplicates.",
       "slot_interval_invalid": "BookingSlotIntervalMinutes must be one of: {{allowed}}.",
+      "turn_time_duplicate_seats": "There is more than one turn time for parties of {{seats}}.",
+      "turn_time_minutes_invalid": "Turn time minutes must be one of: {{allowed}}.",
+      "turn_time_seats_out_of_range": "Turn time party sizes must be between {{min}} and {{max}}.",
       "walk_in_days_invalid": "WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday)."
     },
     "social_link": {
@@ -680,6 +687,7 @@
         "bookingExtend": "Extended booking",
         "bookingPurge": "Purged booking",
         "bookingEmail": "Re-sent booking email",
+        "bookingStatus": "Changed a booking's status",
         "restaurantCreate": "Created location",
         "restaurantUpdate": "Updated location",
         "restaurantArchive": "Archived location",
@@ -743,11 +751,15 @@
       "screenTitle": {
         "live": "Live Bookings",
         "past": "Past Bookings",
-        "cancelled": "Cancelled Bookings"
+        "cancelled": "Cancelled Bookings",
+        "noShow": "No-show Bookings"
       },
+      "previousNoShows_one": "{{count}} previous no-show",
+      "previousNoShows_other": "{{count}} previous no-shows",
       "tabs": {
         "active": "Active",
         "past": "Past",
+        "noShow": "No-shows",
         "cancelled": "Cancelled",
         "showLabel": "Show {{tab}} bookings"
       },
@@ -832,7 +844,10 @@
         "arrived": "Arrived",
         "upcoming": "Upcoming",
         "scheduled": "Scheduled",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "booked": "Booked",
+        "finished": "Finished",
+        "noShow": "No-show"
       },
       "rowSummary": "{{name}}, {{when}}, {{seats}}",
       "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
@@ -878,6 +893,7 @@
           "ref": "Ref",
           "party": "Party",
           "name": "Name",
+          "noShows": "No-shows",
           "requests": "Requests"
         },
         "noRequests": "None",
@@ -885,6 +901,11 @@
         "extendSection": "Extend booking",
         "extendByMinutes": "+{{mins}} min",
         "extendByMinutesLabel": "Extend booking by {{mins}} minutes",
+        "statusActions": {
+          "title": "Status",
+          "markAs": "Mark as {{status}}",
+          "undo": "Undo, back to {{status}}"
+        },
         "emailGuest": "Email guest",
         "emailTo": "To: {{email}}",
         "moveNotice": "The sitting moved. A notice is written below and has not been sent: edit it, or send it as it stands.",
@@ -962,7 +983,9 @@
       "metrics": {
         "todayBookings": {
           "label": "Today's Bookings",
-          "sub": "Total covers for today"
+          "sub": "Total covers for today",
+          "noShows_one": "{{count}} no-show today",
+          "noShows_other": "{{count}} no-shows today"
         },
         "activeHolds": {
           "label": "Active Holds",
@@ -1839,6 +1862,7 @@
         "blockedInvalidMenuUrl": "Menu URL must be a valid http(s) link.",
         "blockedPhoneTooLong": "Phone number cannot exceed {{max}} characters.",
         "blockedInvalidEmail": "Contact email must be a valid email address.",
+        "blockedDuplicateTurnTimes": "Two turn times start at the same party size.",
         "saveUnreachable": "Couldn't reach the server.",
         "untitledLocation": "Untitled location",
         "menuPdfUploaded": "PDF uploaded",
@@ -1874,6 +1898,17 @@
         "timezoneHint": "If this value differs from the customer's device timezone, a note will appear on the booking page.",
         "durationLabel": "Default booking duration",
         "durationHint": "How long each new booking occupies a table by default.",
+        "turnTimesLabel": "Turn times by party size",
+        "turnTimesHint": "Give larger parties a longer sitting. A party smaller than every rule gets the default duration, and existing bookings keep their length.",
+        "turnTimesAdd": "Add a rule",
+        "turnTimesSeatsLabel": "Party size from",
+        "turnTimesMinutesLabel": "Sitting length",
+        "turnTimesFrom_one": "From {{count}} guest",
+        "turnTimesFrom_other": "From {{count}} guests",
+        "turnTimesRange": "Parties of {{min}}–{{max}}",
+        "turnTimesRangeOne": "Parties of {{seats}}",
+        "turnTimesRangeOpen": "Parties of {{seats}} or more",
+        "turnTimesRemove": "Remove the turn time from {{seats}}",
         "slotIntervalLabel": "Booking start-time interval",
         "slotIntervalHint": "How far apart selectable start times are, independent of booking duration.",
         "oversizeLabel": "Max table oversize",

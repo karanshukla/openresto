@@ -24,9 +24,6 @@ public class RestaurantManagementService(
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
     private readonly ICurrentUserService _currentUser = currentUser ?? NullCurrentUserService.Instance;
 
-    private static readonly HashSet<int> _allowedBookingDurationsMinutes =
-        [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480];
-
     // Allowed start-time interval values — kept small and sane so the availability
     // slot-generation loop can't be sent into a degenerate (e.g. 0 or negative) spin.
     private static readonly HashSet<int> _allowedBookingSlotIntervalsMinutes = [15, 30, 60];
@@ -99,6 +96,8 @@ public class RestaurantManagementService(
         {
             OpeningHoursHelper.ApplyOpenHours(entity, dto.OpenHours);
         }
+
+        TurnTimesHelper.Apply(entity, dto.TurnTimes);
 
         await _restaurantRepository.AddAsync(entity);
 
@@ -187,17 +186,22 @@ public class RestaurantManagementService(
 
         if (req.DefaultBookingDurationMinutes.HasValue)
         {
-            if (!_allowedBookingDurationsMinutes.Contains(req.DefaultBookingDurationMinutes.Value))
+            if (!BookingDuration.AllowedMinutes.Contains(req.DefaultBookingDurationMinutes.Value))
             {
                 throw new ValidationException(
-                    $"DefaultBookingDurationMinutes must be one of: {string.Join(", ", _allowedBookingDurationsMinutes.Order())}.")
+                    $"DefaultBookingDurationMinutes must be one of: {string.Join(", ", BookingDuration.AllowedMinutes.Order())}.")
                 {
                     Code = ErrorCodes.RestaurantDurationInvalid,
-                    Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", _allowedBookingDurationsMinutes.Order()) }
+                    Args = new Dictionary<string, object> { ["allowed"] = string.Join(", ", BookingDuration.AllowedMinutes.Order()) }
                 };
             }
 
             r.DefaultBookingDurationMinutes = req.DefaultBookingDurationMinutes.Value;
+        }
+
+        if (req.TurnTimes != null)
+        {
+            TurnTimesHelper.Apply(r, req.TurnTimes);
         }
 
         if (req.BookingSlotIntervalMinutes.HasValue)
@@ -265,6 +269,7 @@ public class RestaurantManagementService(
             WalkInOnly = r.WalkInOnly,
             WalkInDays = r.WalkInDays ?? "",
             DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
+            TurnTimes = TurnTimesHelper.Parse(r.TurnTimesJson),
             BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
             MaxTableOversizeSeats = r.MaxTableOversizeSeats,
             BookingRefFormat = r.BookingRefFormat.ToString(),
@@ -287,6 +292,7 @@ public class RestaurantManagementService(
         string Timezone,
         string? Tags,
         int DefaultBookingDurationMinutes,
+        string? TurnTimesJson,
         int BookingSlotIntervalMinutes,
         int? MaxTableOversizeSeats,
         BookingRefFormat BookingRefFormat,
@@ -296,7 +302,7 @@ public class RestaurantManagementService(
         public static RestaurantFields From(Restaurant r) => new(
             r.Name, r.Address, r.Description, r.MenuUrl, r.PhoneNumber, r.EmailAddress, r.OpenTime,
             r.CloseTime, r.OpenHoursJson, r.OpenDays, r.Timezone, r.Tags,
-            r.DefaultBookingDurationMinutes, r.BookingSlotIntervalMinutes, r.MaxTableOversizeSeats,
+            r.DefaultBookingDurationMinutes, r.TurnTimesJson, r.BookingSlotIntervalMinutes, r.MaxTableOversizeSeats,
             r.BookingRefFormat, r.WalkInOnly, r.WalkInDays);
     }
 
@@ -316,6 +322,7 @@ public class RestaurantManagementService(
         _audit.RecordChange("tags", before.Tags, after.Tags);
         _audit.RecordChange("defaultBookingDurationMinutes",
             before.DefaultBookingDurationMinutes, after.DefaultBookingDurationMinutes);
+        _audit.RecordChange("turnTimes", before.TurnTimesJson, after.TurnTimesJson);
         _audit.RecordChange("bookingSlotIntervalMinutes",
             before.BookingSlotIntervalMinutes, after.BookingSlotIntervalMinutes);
         _audit.RecordChange("maxTableOversizeSeats",
@@ -868,6 +875,7 @@ public class RestaurantManagementService(
         WalkInOnly = r.WalkInOnly,
         WalkInDays = r.WalkInDays ?? "",
         DefaultBookingDurationMinutes = r.DefaultBookingDurationMinutes,
+        TurnTimes = TurnTimesHelper.Parse(r.TurnTimesJson),
         BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
         MaxTableOversizeSeats = r.MaxTableOversizeSeats,
         BookingRefFormat = r.BookingRefFormat.ToString(),

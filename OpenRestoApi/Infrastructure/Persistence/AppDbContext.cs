@@ -93,6 +93,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             bb.HasOne(b => b.Section).WithMany().HasForeignKey(b => b.SectionId).OnDelete(DeleteBehavior.SetNull);
             bb.HasOne(b => b.Restaurant).WithMany().HasForeignKey(b => b.RestaurantId);
             bb.HasOne(b => b.TableGroup).WithMany().HasForeignKey(b => b.TableGroupId).OnDelete(DeleteBehavior.SetNull);
+            bb.Property(b => b.Status).HasConversion<string>().HasMaxLength(BookingStatusExtensions.MaxLength);
+            bb.Property(b => b.PreviousStatus).HasConversion<string>().HasMaxLength(BookingStatusExtensions.MaxLength);
         });
 
         modelBuilder.Entity<TableGroup>(gb =>

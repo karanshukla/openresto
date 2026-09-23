@@ -165,6 +165,11 @@ export function BookingsWideTable({
                 {b.bookingRef}
               </ThemedText>
             )}
+            {!!b.previousNoShows && (
+              <ThemedText style={[styles.tdNotes, { color: theme.colors.error }]} numberOfLines={1}>
+                {t("admin.bookings.previousNoShows", { count: b.previousNoShows })}
+              </ThemedText>
+            )}
           </View>
 
           <View style={styles.colParty}>
@@ -191,7 +196,7 @@ export function BookingsWideTable({
                 </ThemedText>
               </View>
             ) : (
-              <StatusBadge date={b.date} isDark={isDark} />
+              <StatusBadge date={b.date} status={b.status} isDark={isDark} />
             )}
           </View>
 

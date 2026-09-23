@@ -15,8 +15,9 @@ const LIST_COLUMNS = [
 ];
 
 /**
- * `BookingDto` carries `isCancelled`, not a `status` string, so the table view derives one; the
- * `--json` output stays the raw DTO.
+ * Cancelled is its own flag rather than a floor status, so the table view folds it into the
+ * status column, and a row from a server without floor statuses reads "active". The `--json`
+ * output stays the raw DTO.
  */
 function withDerivedStatus(result: unknown): unknown {
   if (!Array.isArray(result)) {
@@ -24,7 +25,7 @@ function withDerivedStatus(result: unknown): unknown {
   }
   return (result as Record<string, unknown>[]).map((row) => ({
     ...row,
-    status: row.isCancelled ? "cancelled" : "active",
+    status: row.isCancelled ? "cancelled" : (row.status ?? "active"),
   }));
 }
 
@@ -38,7 +39,7 @@ export function registerBookingsCommands(program: Command): void {
     .option("--date <date>", "Filter by date (ISO 8601)")
     .option(
       "--status <status>",
-      "active | cancelled | all | past | upcoming (default: active)",
+      "active | cancelled | noshow | all | past | upcoming (default: active)",
     )
     .option("--email <email>", "Filter by customer email")
     .option("--ref <bookingRef>", "Filter by booking reference")

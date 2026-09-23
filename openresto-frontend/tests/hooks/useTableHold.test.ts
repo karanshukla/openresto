@@ -94,6 +94,22 @@ describe("useTableHold", () => {
     expect(result.current.hold?.holdId).toBe("hold-1");
   });
 
+  it("sends the party size with an explicit table, so the hold blocks for its turn time", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: { holdId: "hold-1", expiresAt: new Date(Date.now() + 120_000).toISOString() },
+    });
+
+    renderHook(() => useTableHold({ ...defaultParams, tableId: 100, seats: 5 }));
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(mockCreateHold).toHaveBeenCalledWith(
+      expect.objectContaining({ tableId: 100, sectionId: 10, seats: 5 })
+    );
+  });
+
   it("sets unavailable status when createHold fails", async () => {
     mockCreateHold.mockResolvedValueOnce({
       ok: false,

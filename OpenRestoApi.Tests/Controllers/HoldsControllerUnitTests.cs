@@ -62,7 +62,7 @@ public class HoldsControllerUnitTests
     [Fact]
     public async Task PlaceHold_ReturnsNotFound_WhenPolicyReturnsNotFound()
     {
-        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>()))
+        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.NotFound());
 
         var result = await _controller.PlaceHold(ExplicitRequest(DateTime.UtcNow.AddDays(1)));
@@ -75,7 +75,7 @@ public class HoldsControllerUnitTests
     [Fact]
     public async Task PlaceHold_ReturnsBadRequest_WhenPolicyRejects()
     {
-        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>()))
+        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Rejected("no."));
 
         var result = await _controller.PlaceHold(ExplicitRequest(DateTime.UtcNow.AddDays(1)));
@@ -88,7 +88,7 @@ public class HoldsControllerUnitTests
     [Fact]
     public async Task PlaceHold_ReturnsConflict_WhenPolicyReportsExistingBooking()
     {
-        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>()))
+        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Booked("taken."));
 
         var result = await _controller.PlaceHold(ExplicitRequest(DateTime.UtcNow.AddDays(1)));
@@ -103,11 +103,32 @@ public class HoldsControllerUnitTests
     }
 
     [Fact]
+    public async Task PlaceHold_BlocksTheTableForThePartysTurnTime()
+    {
+        var restaurant = new Restaurant
+        {
+            Id = 1, DefaultBookingDurationMinutes = 60,
+            TurnTimesJson = """[{"minSeats":1,"minutes":60},{"minSeats":5,"minutes":120}]""",
+        };
+        var date = DateTime.UtcNow.AddDays(1);
+        _mockPolicy.Setup(p => p.ValidateAsync(1, 1, date, 5))
+            .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, date));
+        _mockHoldService.Setup(s => s.PlaceHold(1, 1, 1, date, null, 120))
+            .Returns(new HoldResult("h1", date));
+
+        PlaceHoldRequest request = ExplicitRequest(date);
+        request.Seats = 5;
+        var result = await _controller.PlaceHold(request);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
     public async Task PlaceHold_ReturnsConflict_WhenEligibleButAlreadyHeld()
     {
         var restaurant = new Restaurant { Id = 1, DefaultBookingDurationMinutes = 60 };
         var date = DateTime.UtcNow.AddDays(1);
-        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>()))
+        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, date));
         _mockHoldService.Setup(s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()))
             .Returns((HoldResult?)null);
@@ -125,7 +146,7 @@ public class HoldsControllerUnitTests
         var normalizedDate = DateTime.UtcNow.Date.AddDays(2).AddHours(12);
         var rawDate = DateTime.SpecifyKind(normalizedDate, DateTimeKind.Unspecified);
 
-        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), rawDate))
+        _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), rawDate, It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, normalizedDate));
         _mockHoldService.Setup(s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), normalizedDate, It.IsAny<string?>(), 75))
             .Returns(new HoldResult("hold-1", DateTime.UtcNow.AddMinutes(5)));

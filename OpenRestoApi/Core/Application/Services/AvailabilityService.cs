@@ -39,6 +39,7 @@ public sealed class AvailabilityService(
         var reservations = new UnitReservations(restaurant, activeBookings);
         List<Table> eligibleTables = EligibleTables(restaurant, seats);
         List<TableGroup> eligibleGroups = EligibleGroups(restaurant, seats);
+        int durationMinutes = BookingDuration.For(restaurant, seats);
 
         var slots = new List<TimeSlotDto>();
         for (DateTime current = localStart; current < localEnd; current = current.AddMinutes(SlotInterval(restaurant)))
@@ -53,13 +54,12 @@ public sealed class AvailabilityService(
                 continue;
             }
 
-            DateTime slotEndUtc = slotUtc.AddMinutes(restaurant.DefaultBookingDurationMinutes);
             List<int> availableTableIds = eligibleTables
-                .Where(t => IsTableFree(t.Id, restaurant, reservations, slotUtc, slotEndUtc))
+                .Where(t => IsTableFree(t.Id, reservations, slotUtc, durationMinutes))
                 .Select(t => t.Id)
                 .ToList();
             List<int> availableGroupIds = eligibleGroups
-                .Where(g => IsGroupFree(g, restaurant, reservations, slotUtc, slotEndUtc))
+                .Where(g => IsGroupFree(g, reservations, slotUtc, durationMinutes))
                 .Select(g => g.Id)
                 .ToList();
 
@@ -125,13 +125,14 @@ public sealed class AvailabilityService(
             .Where(g => restaurant.CanSeat(g.CombinedSeats, seats))
             .ToList();
 
-    private bool IsTableFree(int tableId, Restaurant restaurant, UnitReservations reservations, DateTime slotUtc, DateTime slotEndUtc)
-        => !reservations.IsTableReserved(tableId, slotUtc, slotEndUtc)
-            && !_holdService.IsTableHeld(tableId, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes);
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_RefusesALargePartyAGapThatOnlyFitsTheSmallerTurnTime</seealso>
+    private bool IsTableFree(int tableId, UnitReservations reservations, DateTime slotUtc, int durationMinutes)
+        => !reservations.IsTableReserved(tableId, slotUtc, slotUtc.AddMinutes(durationMinutes))
+            && !_holdService.IsTableHeld(tableId, slotUtc, durationMinutes: durationMinutes);
 
-    private bool IsGroupFree(TableGroup group, Restaurant restaurant, UnitReservations reservations, DateTime slotUtc, DateTime slotEndUtc)
-        => !reservations.IsGroupReserved(group, slotUtc, slotEndUtc)
-            && group.Members.All(m => !_holdService.IsTableHeld(m.TableId, slotUtc, durationMinutes: restaurant.DefaultBookingDurationMinutes));
+    private bool IsGroupFree(TableGroup group, UnitReservations reservations, DateTime slotUtc, int durationMinutes)
+        => !reservations.IsGroupReserved(group, slotUtc, slotUtc.AddMinutes(durationMinutes))
+            && group.Members.All(m => !_holdService.IsTableHeld(m.TableId, slotUtc, durationMinutes: durationMinutes));
 
     /// <summary>
     /// Indexes the day's bookings so each slot can be answered without rescanning them. A

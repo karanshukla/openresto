@@ -35,6 +35,11 @@ export function BookingStatusTabs({
           { key: "active", label: t("admin.bookings.tabs.active"), color: primaryColor },
           { key: "past", label: t("admin.bookings.tabs.past"), color: "#7c3aed" },
           {
+            key: "noshow",
+            label: t("admin.bookings.tabs.noShow"),
+            color: theme.status.cancelled.text,
+          },
+          {
             key: "cancelled",
             label: t("admin.bookings.tabs.cancelled"),
             color: theme.status.cancelled.text,

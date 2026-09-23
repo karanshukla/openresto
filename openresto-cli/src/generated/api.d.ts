@@ -254,6 +254,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/Admin/bookings/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetBookingStatusRequest"];
+                    "text/json": components["schemas"]["SetBookingStatusRequest"];
+                    "application/*+json": components["schemas"]["SetBookingStatusRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Admin/bookings/{id}/cancel": {
         parameters: {
             query?: never;
@@ -4387,8 +4428,9 @@ export interface components {
             tableGroupId?: null | number | string;
             /**
              * Format: int32
-             * @description Party size. Required for auto-assign and group holds (so the server can validate capacity);
-             *     ignored for explicit-table holds (the capacity check happens at booking time).
+             * @description Party size. Required for auto-assign and group holds (so the server can validate capacity).
+             *     Optional for explicit-table holds, whose capacity is checked at booking time, but it sets
+             *     how long the hold blocks the table: without it the hold uses the default duration.
              */
             seats?: number | string;
             /**
@@ -4447,6 +4489,8 @@ export interface components {
             walkInDays?: string;
             /** Format: int32 */
             defaultBookingDurationMinutes?: number | string;
+            /** @description Sitting lengths by party size, smallest party first. Empty when every party gets the default. */
+            turnTimes?: components["schemas"]["TurnTimeDto"][];
             /**
              * Format: int32
              * @description Step (minutes) between selectable booking start times (default 30).
@@ -4482,6 +4526,10 @@ export interface components {
             subject?: string;
             body?: string;
         };
+        SetBookingStatusRequest: {
+            /** @description Booked, Arrived, Seated, Finished or NoShow, case-insensitive. */
+            status?: string;
+        };
         SetupPvqRequest: {
             question?: string;
             answer?: string;
@@ -4508,6 +4556,13 @@ export interface components {
             /** Format: int32 */
             combinedSeats?: number | string;
             members?: components["schemas"]["TableDto"][];
+        };
+        /** @description A party of int TurnTimeDto.MinSeats or more holds its table for int TurnTimeDto.Minutes, up to the next rule. */
+        TurnTimeDto: {
+            /** Format: int32 */
+            minSeats?: number | string;
+            /** Format: int32 */
+            minutes?: number | string;
         };
         UpdateHighlightRequest: {
             title?: string;
@@ -4553,6 +4608,11 @@ export interface components {
             tags?: null | string;
             /** Format: int32 */
             defaultBookingDurationMinutes?: null | number | string;
+            /**
+             * @description Sitting lengths by party size. Null leaves the stored rules untouched; an empty list
+             *     clears them so every party gets the default duration.
+             */
+            turnTimes?: null | components["schemas"]["TurnTimeDto"][];
             /**
              * Format: int32
              * @description Step, in minutes, between selectable booking start times. Null leaves the stored

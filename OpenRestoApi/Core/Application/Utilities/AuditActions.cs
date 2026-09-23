@@ -17,6 +17,7 @@ public static class AuditActions
     public const string BookingExtend = "booking.extend";
     public const string BookingPurge = "booking.purge";
     public const string BookingEmail = "booking.email";
+    public const string BookingStatus = "booking.status";
 
     // ── Locations ────────────────────────────────────────────────────────────
     public const string RestaurantCreate = "restaurant.create";

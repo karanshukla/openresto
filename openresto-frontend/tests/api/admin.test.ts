@@ -5,6 +5,7 @@ import {
   getAdminBooking,
   adminCreateBooking,
   adminExtendBooking,
+  adminSetBookingStatus,
   adminDeleteBooking,
   adminPurgeBooking,
   adminCreateRestaurant,
@@ -99,6 +100,7 @@ describe("getAdminDashboardStats", () => {
       todayCount: 5,
       activeHoldsCount: 0,
       pausedCount: 0,
+      noShowCount: 0,
       scheduleConflictsCount: 0,
       scheduleConflictLocationIds: [],
       totalCovers: 100,
@@ -115,9 +117,19 @@ describe("getAdminDashboardStats", () => {
           restaurantName: "R1",
           bookingRef: "",
           isCancelled: undefined,
+          status: undefined,
         },
       ],
     });
+  });
+
+  it("passes today's no-show count through", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ todayBookings: 3, totalSeats: 8, todayNoShowsCount: 2 }),
+    });
+
+    expect((await getAdminDashboardStats())?.noShowCount).toBe(2);
   });
 
   it("passes occupancyDates through when present in overview", async () => {
@@ -417,6 +429,34 @@ describe("adminExtendBooking", () => {
   it("returns null on failure", async () => {
     mockFetch.mockResolvedValueOnce({ ok: false });
     expect(await adminExtendBooking(5, 30)).toBeNull();
+  });
+});
+
+describe("adminSetBookingStatus", () => {
+  it("posts the status and returns the updated booking", async () => {
+    const updated = { id: 5, status: "Seated" };
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => updated });
+
+    const result = await adminSetBookingStatus(5, "Seated");
+
+    expect(result).toEqual(updated);
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/admin/bookings/5/status");
+    expect(opts.method).toBe("POST");
+    expect(JSON.parse(opts.body)).toEqual({ status: "Seated" });
+  });
+
+  it("throws with the server's reason when the move is refused", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({
+        message: "A booking can only be marked as a no-show once its sitting has started.",
+      }),
+    });
+
+    await expect(adminSetBookingStatus(5, "NoShow")).rejects.toThrow(
+      "A booking can only be marked as a no-show once its sitting has started."
+    );
   });
 });
 

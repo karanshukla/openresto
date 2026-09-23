@@ -1,3 +1,4 @@
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
@@ -5,7 +6,7 @@ namespace OpenRestoApi.Core.Application.Services;
 /// <summary>
 /// Predicts when each party in a waitlist gets a table by replaying the queue against the floor.
 /// A table is free from the end of whatever sitting occupies it now; each party, in queue order,
-/// takes the fitting unit that frees up first, and holds it for one default sitting. A later
+/// takes the fitting unit that frees up first, and holds it for its own sitting length. A later
 /// party can therefore be quoted a shorter wait than an earlier one when a small table turns
 /// before a large one, which is how a host actually seats the door.
 /// </summary>
@@ -25,6 +26,7 @@ public static class WaitEstimator
     /// <seealso>WaitEstimatorTests.Estimate_IsNull_ForAPartyNothingCanSeat</seealso>
     /// <seealso>WaitEstimatorTests.Estimate_UsesAGroup_OnlyOnceAllItsMembersAreFree</seealso>
     /// <seealso>WaitEstimatorTests.Estimate_RespectsTheOversizeCap</seealso>
+    /// <seealso>WaitEstimatorTests.Estimate_HoldsEachTableForThePartysOwnTurnTime</seealso>
     public static IReadOnlyList<DateTime?> EstimateSeatingTimes(
         Restaurant restaurant,
         IReadOnlyList<int> partySizes,
@@ -33,7 +35,6 @@ public static class WaitEstimator
     {
         List<Unit> units = UnitsOf(restaurant);
         var freeAt = new Dictionary<int, DateTime>(tableFreeAtUtc);
-        TimeSpan sitting = TimeSpan.FromMinutes(restaurant.DefaultBookingDurationMinutes);
 
         var estimates = new List<DateTime?>(partySizes.Count);
         foreach (int seats in partySizes)
@@ -56,7 +57,7 @@ public static class WaitEstimator
 
             foreach (int tableId in chosen.Unit.TableIds)
             {
-                freeAt[tableId] = chosen.Start + sitting;
+                freeAt[tableId] = chosen.Start.AddMinutes(BookingDuration.For(restaurant, seats));
             }
             estimates.Add(chosen.Start);
         }

@@ -20,6 +20,7 @@ jest.mock("@/api/admin", () => ({
   sendBookingEmail: jest.fn(),
   adminRestoreBooking: jest.fn(),
   adminUpdateBookingFull: jest.fn(),
+  adminSetBookingStatus: jest.fn(),
 }));
 
 jest.mock("@/api/restaurants", () => ({
@@ -524,6 +525,47 @@ describe("BookingDetailPopup", () => {
     await waitFor(() => {
       expect(screen.getByTestId("alert-message")).toBeTruthy();
     });
+  });
+
+  it("marks the status and shows the booking the server sent back", async () => {
+    (adminApi.getAdminBooking as jest.Mock).mockResolvedValue({
+      ...mockBooking,
+      status: "Booked",
+      nextStatuses: ["Arrived", "Seated"],
+    });
+    (adminApi.adminSetBookingStatus as jest.Mock).mockResolvedValue({
+      ...mockBooking,
+      status: "Seated",
+      nextStatuses: ["Finished"],
+      undoStatus: "Booked",
+    });
+    render(<BookingDetailPopup {...baseProps} />);
+    await waitFor(() => expect(screen.getByLabelText("Mark as Seated")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText("Mark as Seated"));
+    });
+    expect(adminApi.adminSetBookingStatus).toHaveBeenCalledWith(1, "Seated");
+    expect(screen.getByLabelText("Mark as Finished")).toBeTruthy();
+    expect(screen.getByText("Undo, back to Booked")).toBeTruthy();
+    expect(baseProps.onMutated).toHaveBeenCalled();
+  });
+
+  it("shows the server's reason when a status change is refused", async () => {
+    (adminApi.getAdminBooking as jest.Mock).mockResolvedValue({
+      ...mockBooking,
+      nextStatuses: ["Arrived"],
+    });
+    (adminApi.adminSetBookingStatus as jest.Mock).mockRejectedValue(
+      new Error("A cancelled booking takes no status changes.")
+    );
+    render(<BookingDetailPopup {...baseProps} />);
+    await waitFor(() => expect(screen.getByLabelText("Mark as Arrived")).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText("Mark as Arrived"));
+    });
+    expect(screen.getByTestId("alert-message").props.children).toBe(
+      "A cancelled booking takes no status changes."
+    );
   });
 
   it("calls adminExtendBooking when extend button is pressed", async () => {

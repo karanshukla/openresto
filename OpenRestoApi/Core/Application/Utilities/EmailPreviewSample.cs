@@ -74,7 +74,7 @@ public static class EmailPreviewSample
             Table = table,
             TableId = table?.Id,
             Date = startUtc,
-            EndTime = startUtc.AddMinutes(restaurant.DefaultBookingDurationMinutes),
+            EndTime = startUtc.AddMinutes(BookingDuration.For(restaurant, Seats)),
         };
     }
 

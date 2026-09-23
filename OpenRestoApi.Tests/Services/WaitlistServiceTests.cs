@@ -396,6 +396,16 @@ public class WaitlistServiceTests
     }
 
     [Fact]
+    public async Task SeatAsync_RecordsTheBookingAsSeated()
+    {
+        WaitlistEntry entry = Seed(2);
+
+        await CreateService().SeatAsync(entry.Id, new SeatWaitlistEntryRequest());
+
+        _bookings.Verify(b => b.AddAsync(It.Is<Booking>(bk => bk.Status == BookingStatus.Seated)));
+    }
+
+    [Fact]
     public async Task SeatAsync_UsesTheChosenTable_WhenItIsFree()
     {
         WaitlistEntry entry = Seed(2);

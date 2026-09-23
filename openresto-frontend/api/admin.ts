@@ -8,6 +8,8 @@ export interface AdminOverviewDto {
   totalSeats: number;
   activeHoldsCount?: number;
   pausedRestaurantsCount?: number;
+  /** Bookings marked as no-shows today, each location's day in its own timezone. */
+  todayNoShowsCount?: number;
   scheduleConflictsCount?: number;
   scheduleConflictLocationIds?: number[];
   occupancyData?: number[];
@@ -26,12 +28,14 @@ export interface BookingSummaryDto {
   restaurantName: string;
   bookingRef: string;
   isCancelled?: boolean;
+  status?: BookingStatus;
 }
 
 export interface AdminDashboardStats {
   todayCount: number;
   activeHoldsCount: number;
   pausedCount: number;
+  noShowCount: number;
   scheduleConflictsCount: number;
   scheduleConflictLocationIds: number[];
   totalCovers: number;
@@ -51,6 +55,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
       todayCount: overview.todayBookings,
       activeHoldsCount: overview.activeHoldsCount ?? 0,
       pausedCount: overview.pausedRestaurantsCount ?? 0,
+      noShowCount: overview.todayNoShowsCount ?? 0,
       scheduleConflictsCount: overview.scheduleConflictsCount ?? 0,
       scheduleConflictLocationIds: overview.scheduleConflictLocationIds ?? [],
       totalCovers: overview.totalSeats,
@@ -68,6 +73,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
           restaurantName: b.restaurantName,
           bookingRef: b.bookingRef ?? "",
           isCancelled: b.isCancelled,
+          status: b.status,
         }))
         .filter((b) => {
           const end = b.endTime
@@ -111,7 +117,17 @@ export interface BookingDetailDto {
   bookingRef?: string;
   isCancelled?: boolean;
   cancelledAt?: string;
+  /** What has happened at the sitting. Independent of `isCancelled`. */
+  status?: BookingStatus;
+  /** The statuses staff can move the booking to now, as the server decides them. */
+  nextStatuses?: BookingStatus[];
+  /** The status the last change can still be undone to, while the undo window is open. */
+  undoStatus?: BookingStatus | null;
+  /** Other bookings under the guest's email marked as no-shows; null where not counted. */
+  previousNoShows?: number | null;
 }
+
+export type BookingStatus = "Booked" | "Arrived" | "Seated" | "Finished" | "NoShow";
 
 export interface AdminCreateBookingRequest {
   restaurantId: number;
@@ -139,7 +155,7 @@ export async function getAdminOverview(): Promise<AdminOverviewDto | null> {
   }
 }
 
-export type BookingStatusFilter = "active" | "past" | "cancelled" | "all";
+export type BookingStatusFilter = "active" | "past" | "cancelled" | "noshow" | "all";
 
 export async function getAdminBookings(
   restaurantId?: number,
@@ -212,6 +228,22 @@ export async function adminExtendBooking(
     console.error("adminExtendBooking error:", err);
     return null;
   }
+}
+
+/**
+ * Moves a booking along the floor, or back to `undoStatus` to take the last move back. Throws
+ * with the server's reason when the move is refused, the same way cancelling does.
+ */
+export async function adminSetBookingStatus(
+  id: number,
+  status: BookingStatus
+): Promise<BookingDetailDto> {
+  const res = await post(`/admin/bookings/${id}/status`, { status });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(apiErrorMessage(body, "Failed to update the booking's status."));
+  }
+  return await res.json();
 }
 
 export async function adminDeleteBooking(id: number): Promise<true> {

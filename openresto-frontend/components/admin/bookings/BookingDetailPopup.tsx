@@ -10,8 +10,10 @@ import {
   sendBookingEmail,
   adminRestoreBooking,
   adminUpdateBookingFull,
+  adminSetBookingStatus,
   BookingDetailDto,
   AdminUpdateBookingRequest,
+  type BookingStatus,
 } from "@/api/admin";
 import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { useEffect, useRef, useState } from "react";
@@ -24,6 +26,7 @@ import { bookingDetailStyles as styles } from "./booking-detail.styles";
 import { BookingDetailsCard } from "./BookingDetailsCard";
 import { EditBookingForm } from "./EditBookingForm";
 import { ExtendBookingActions } from "./ExtendBookingActions";
+import { BookingStatusActions } from "./BookingStatusActions";
 import { EmailGuestForm } from "./EmailGuestForm";
 import { composeBookingMoveNotice } from "@/utils/bookingMoveNotice";
 import { BookingActionButtons } from "./BookingActionButtons";
@@ -55,6 +58,7 @@ export function BookingDetailPopup({
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [extending, setExtending] = useState(false);
+  const [settingStatus, setSettingStatus] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -120,6 +124,7 @@ export function BookingDetailPopup({
     setDeleting(false);
     setUncancelling(false);
     setExtending(false);
+    setSettingStatus(false);
     setErrorMessage(null);
     if (bookingId === null) {
       setBooking(null);
@@ -222,6 +227,20 @@ export function BookingDetailPopup({
       onMutated?.();
     }
     setExtending(false);
+  };
+
+  const handleSetStatus = async (status: BookingStatus) => {
+    if (!booking) return;
+    setSettingStatus(true);
+    try {
+      setBooking(await adminSetBookingStatus(booking.id, status));
+      onMutated?.();
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : t("admin.bookings.detail.failedToUpdate")
+      );
+    }
+    setSettingStatus(false);
   };
 
   const handleUncancel = async () => {
@@ -508,6 +527,14 @@ export function BookingDetailPopup({
                       />
                     ) : !booking.isCancelled ? (
                       <View style={{ gap: 16 }}>
+                        <BookingStatusActions
+                          booking={booking}
+                          busy={settingStatus}
+                          onSetStatus={handleSetStatus}
+                          borderColor={borderColor}
+                          mutedColor={mutedColor}
+                          isDark={isDark}
+                        />
                         <View ref={extendSectionRef} testID="extend-section">
                           <ExtendBookingActions
                             borderColor={borderColor}

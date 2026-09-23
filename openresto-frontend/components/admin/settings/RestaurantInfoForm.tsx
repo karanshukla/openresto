@@ -15,6 +15,7 @@ import {
   BookingRefFormat,
   DayHoursDto,
   RestaurantDto,
+  TurnTimeDto,
   deleteMenuFile,
   updateRestaurant,
   uploadMenuFile,
@@ -22,11 +23,13 @@ import {
 import { getHoursForDay, hasCustomHours, parseOpenDays } from "@/utils/openingHours";
 import { isValidEmail, isValidUrl, WEB_SCHEMES } from "@/utils/validation";
 import { parseWalkInDays } from "@/utils/walkIn";
+import { hasDuplicateTurnTimes } from "@/utils/turnTimes";
 import { theme } from "@/theme/theme";
 import { isOvernight } from "./sectionHelpers";
 import { OpeningHoursSection } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
 import { LocationTagsSection } from "./LocationTagsSection";
+import { TurnTimesField } from "./TurnTimesField";
 import { styles as sharedStyles } from "./settings.styles";
 import Select, { type SelectOption } from "@/components/common/Select";
 import { styles } from "./RestaurantInfoForm.styles";
@@ -260,6 +263,7 @@ export function RestaurantInfoForm({
   const [defaultBookingDurationMinutes, setDefaultBookingDurationMinutes] = useState(
     restaurant.defaultBookingDurationMinutes ?? 60
   );
+  const [turnTimes, setTurnTimes] = useState<TurnTimeDto[]>(restaurant.turnTimes ?? []);
   const [bookingSlotIntervalMinutes, setBookingSlotIntervalMinutes] = useState(
     restaurant.bookingSlotIntervalMinutes ?? 30
   );
@@ -385,6 +389,7 @@ export function RestaurantInfoForm({
     walkInDays: walkInDays.join(","),
     timezone,
     defaultBookingDurationMinutes,
+    turnTimes,
     bookingSlotIntervalMinutes,
     maxTableOversizeSeats,
     bookingRefFormat,
@@ -406,6 +411,7 @@ export function RestaurantInfoForm({
     walkInDays: parseWalkInDays(restaurant.walkInDays).join(","),
     timezone: restaurant.timezone ?? "UTC",
     defaultBookingDurationMinutes: restaurant.defaultBookingDurationMinutes ?? 60,
+    turnTimes: restaurant.turnTimes ?? [],
     bookingSlotIntervalMinutes: restaurant.bookingSlotIntervalMinutes ?? 30,
     maxTableOversizeSeats: restaurant.maxTableOversizeSeats ?? null,
     bookingRefFormat: restaurant.bookingRefFormat ?? "AlphaNumeric",
@@ -433,6 +439,9 @@ export function RestaurantInfoForm({
     if (emailAddress.trim() && !isValidEmail(emailAddress.trim())) {
       return t("admin.settings.restaurantInfo.blockedInvalidEmail");
     }
+    if (hasDuplicateTurnTimes(turnTimes)) {
+      return t("admin.settings.restaurantInfo.blockedDuplicateTurnTimes");
+    }
     return null;
   })();
 
@@ -458,6 +467,7 @@ export function RestaurantInfoForm({
         walkInDays: result.walkInDays,
         timezone: result.timezone,
         defaultBookingDurationMinutes: result.defaultBookingDurationMinutes,
+        turnTimes: result.turnTimes,
         bookingSlotIntervalMinutes: result.bookingSlotIntervalMinutes,
         maxTableOversizeSeats: result.maxTableOversizeSeats,
         bookingRefFormat: result.bookingRefFormat,
@@ -480,6 +490,7 @@ export function RestaurantInfoForm({
       setWalkInDays(previous.walkInDays ? previous.walkInDays.split(",").map(Number) : []);
       setTimezone(previous.timezone);
       setDefaultBookingDurationMinutes(previous.defaultBookingDurationMinutes);
+      setTurnTimes(previous.turnTimes);
       setBookingSlotIntervalMinutes(previous.bookingSlotIntervalMinutes);
       setMaxTableOversizeSeats(previous.maxTableOversizeSeats);
       setBookingRefFormat(previous.bookingRefFormat);
@@ -812,6 +823,13 @@ export function RestaurantInfoForm({
                 </ThemedText>
               </View>
             </View>
+            <TurnTimesField
+              rules={turnTimes}
+              onChange={setTurnTimes}
+              defaultMinutes={defaultBookingDurationMinutes}
+              durationOptions={DURATION_OPTIONS}
+              mutedColor={mutedColor}
+            />
           </View>
         </AnimatedAccordion>
       </View>

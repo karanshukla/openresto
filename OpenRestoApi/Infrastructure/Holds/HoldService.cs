@@ -46,7 +46,8 @@ internal class HoldService(ISystemClock clock) : IHoldService
 
             string holdId = Guid.NewGuid().ToString("N");
             DateTime expiresAt = _clock.UtcNow.Add(HoldDuration);
-            var entry = new HoldEntry(holdId, tableId, sectionId, restaurantId, bookingDate, expiresAt);
+            var entry = new HoldEntry(holdId, tableId, sectionId, restaurantId, bookingDate, expiresAt,
+                DurationMinutes: durationMinutes);
 
             _holds[holdId] = entry;
 
@@ -97,7 +98,8 @@ internal class HoldService(ISystemClock clock) : IHoldService
                 bookingDate,
                 expiresAt,
                 TableGroupId: tableGroupId,
-                MemberTableIds: memberTableIds);
+                MemberTableIds: memberTableIds,
+                DurationMinutes: durationMinutes);
 
             _holds[holdId] = entry;
 
@@ -156,7 +158,8 @@ internal class HoldService(ISystemClock clock) : IHoldService
                         bookingDate,
                         groupExpiresAt,
                         TableGroupId: candidate.TableGroupId,
-                        MemberTableIds: candidate.Members);
+                        MemberTableIds: candidate.Members,
+                        DurationMinutes: durationMinutes);
 
                     _holds[groupHoldId] = groupEntry;
 
@@ -184,7 +187,8 @@ internal class HoldService(ISystemClock clock) : IHoldService
 
                 string singleHoldId = Guid.NewGuid().ToString("N");
                 DateTime singleExpiresAt = _clock.UtcNow.Add(HoldDuration);
-                var entry = new HoldEntry(singleHoldId, candidate.TableId, candidate.SectionId, restaurantId, bookingDate, singleExpiresAt);
+                var entry = new HoldEntry(singleHoldId, candidate.TableId, candidate.SectionId, restaurantId, bookingDate, singleExpiresAt,
+                    DurationMinutes: durationMinutes);
 
                 _holds[singleHoldId] = entry;
 
@@ -223,7 +227,7 @@ internal class HoldService(ISystemClock clock) : IHoldService
             }
 
             DateTime entryStart = entry.Date.ToUniversalTime();
-            DateTime entryEnd = entryStart.AddMinutes(durationMinutes);
+            DateTime entryEnd = entryStart.AddMinutes(entry.DurationMinutes);
 
             // Overlap check: (StartA < EndB) and (EndA > StartB)
             if (entryStart < end && entryEnd > start)

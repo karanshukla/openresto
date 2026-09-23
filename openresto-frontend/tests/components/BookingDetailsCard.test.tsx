@@ -51,6 +51,16 @@ describe("BookingDetailsCard", () => {
     expect(screen.getByText("CANCELLED")).toBeTruthy();
   });
 
+  it("shows the guest's previous no-shows", () => {
+    render(<BookingDetailsCard {...props} booking={{ ...mockBooking, previousNoShows: 1 }} />);
+    expect(screen.getByText("1 previous no-show")).toBeTruthy();
+  });
+
+  it("leaves the no-show row out for a guest with none", () => {
+    render(<BookingDetailsCard {...props} booking={{ ...mockBooking, previousNoShows: 0 }} />);
+    expect(screen.queryByText("No-shows")).toBeNull();
+  });
+
   it("shows None when there are no special requests", () => {
     render(
       <BookingDetailsCard {...props} booking={{ ...mockBooking, specialRequests: undefined }} />
