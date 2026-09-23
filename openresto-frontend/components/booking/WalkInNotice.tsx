@@ -1,10 +1,12 @@
 import { View } from "react-native";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { hexToRgb } from "@/utils/colors";
 import { styles } from "./WalkInNotice.styles";
 import { Icon } from "@/components/common/Icon";
+import Button from "@/components/common/Button";
 
 /**
  * Friendly banner shown wherever the booking flow is disabled because a
@@ -14,13 +16,17 @@ import { Icon } from "@/components/common/Icon";
 export default function WalkInNotice({
   scope,
   daysLabel,
+  waitlistRestaurantId,
 }: {
   scope: "location" | "day";
   /** e.g. "Saturdays and Sundays" — names the walk-in days for a more specific message. */
   daysLabel?: string;
+  /** Offers the walk-in waitlist for this location. Omit for a day other than today. */
+  waitlistRestaurantId?: number;
 }) {
   const { colors, primaryColor } = useAppTheme();
   const { t } = useTranslation();
+  const router = useRouter();
 
   const { r, g, b } = hexToRgb(primaryColor);
   const accentSoft = `rgba(${r},${g},${b},0.10)`;
@@ -46,6 +52,19 @@ export default function WalkInNotice({
       <View style={styles.textWrap}>
         <ThemedText style={[styles.title, { color: colors.text }]}>{title}</ThemedText>
         <ThemedText style={[styles.body, { color: colors.muted }]}>{body}</ThemedText>
+        {waitlistRestaurantId !== undefined && (
+          <View style={styles.action}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon="hourglass-outline"
+              testID="walk-in-join-waitlist"
+              onPress={() => router.push(`/join-waitlist/${waitlistRestaurantId}`)}
+            >
+              {t("booking.waitlist.joinCta")}
+            </Button>
+          </View>
+        )}
       </View>
     </View>
   );

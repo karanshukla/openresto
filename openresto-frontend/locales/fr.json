@@ -178,6 +178,41 @@
       "appleA11y": "Ajouter cette réservation à Apple Wallet",
       "googleA11y": "Enregistrer cette réservation dans Google Wallet",
       "failed": "Impossible de préparer la carte. Vérifiez votre connexion et réessayez."
+    },
+    "waitlist": {
+      "joinCta": "Rejoindre la liste d'attente",
+      "routeTitle": "Rejoindre la liste d'attente",
+      "intro": "Laissez votre nom, nous vous préviendrons quand votre table sera prête.",
+      "partySizeLabel": "Nombre de convives",
+      "emailHint": "Facultatif. Nous vous écrirons quand votre table sera prête.",
+      "submit": "Rejoindre la liste d'attente",
+      "partiesWaiting_one": "1 groupe en attente",
+      "partiesWaiting_other": "{{count}} groupes en attente",
+      "waitNow": "Une table est libre",
+      "waitMinutes": "Environ {{minutes}} min d'attente",
+      "waitUnknown": "Aucune table ne peut accueillir un groupe de cette taille",
+      "notAccepting": "La liste d'attente n'est pas ouverte pour le moment. Elle fonctionne quand l'établissement accueille sans réservation et est ouvert.",
+      "loadFailed": "Impossible de charger la liste d'attente. Veuillez réessayer."
+    },
+    "waitlistStatus": {
+      "routeTitle": "Votre place dans la file",
+      "ticket": "Ticket n° {{number}}",
+      "partySize_one": "1 convive",
+      "partySize_other": "{{count}} convives",
+      "waitingTitle": "Vous êtes sur la liste",
+      "partiesAhead_one": "1 groupe avant vous",
+      "partiesAhead_other": "{{count}} groupes avant vous",
+      "next": "Vous êtes les prochains",
+      "readyTitle": "Votre table est prête",
+      "readyBody": "Merci de vous présenter à l'accueil.",
+      "seatedTitle": "Bon appétit",
+      "leftTitle": "Vous avez quitté la liste d'attente",
+      "expiredTitle": "Cette inscription a expiré",
+      "keepOpen": "Gardez cette page ouverte. Elle se met à jour toute seule.",
+      "leave": "Quitter la liste d'attente",
+      "leaveFailed": "Impossible de quitter la liste d'attente. Veuillez réessayer.",
+      "notFound": "Nous n'avons pas trouvé cette inscription.",
+      "loadFailed": "Impossible d'actualiser votre place dans la file."
     }
   },
   "common": {
@@ -424,6 +459,16 @@
       "not_found": "Utilisateur {{id}} introuvable.",
       "password_too_short": "Le mot de passe doit comporter au moins {{min}} caractères.",
       "role_invalid": "Le rôle doit être l'une des valeurs suivantes : {{allowed}}."
+    },
+    "waitlist": {
+      "not_found": "Inscription introuvable.",
+      "not_walk_in_now": "Cet établissement n'a pas de liste d'attente aujourd'hui.",
+      "closed_now": "Cet établissement est fermé en ce moment.",
+      "name_required": "Un nom est requis pour rejoindre la liste d'attente.",
+      "email_invalid": "Cette adresse e-mail ne semble pas valide.",
+      "party_too_large": "Aucune table ne peut accueillir un groupe de {{seats}}.",
+      "not_active": "Ce groupe a déjà quitté la liste d'attente.",
+      "no_table_free": "Aucune table libre ne peut accueillir ce groupe pour le moment."
     }
   },
   "lookup": {
@@ -598,7 +643,8 @@
         "signIns": "Connexions",
         "brand": "Marque",
         "email": "E-mail",
-        "media": "Médias"
+        "media": "Médias",
+        "waitlist": "Liste d'attente"
       },
       "error": {
         "title": "Une erreur est survenue",
@@ -677,7 +723,11 @@
         "socialLinkDelete": "Lien social retiré",
         "notificationDelete": "Notification supprimée",
         "pushSubscribe": "Notifications push activées",
-        "pushUnsubscribe": "Notifications push désactivées"
+        "pushUnsubscribe": "Notifications push désactivées",
+        "waitlistAdd": "A ajouté un groupe à la liste d'attente",
+        "waitlistNotify": "A appelé un groupe en attente",
+        "waitlistSeat": "A installé un groupe en attente",
+        "waitlistRemove": "A retiré un groupe de la liste d'attente"
       }
     },
     "bookings": {
@@ -1960,7 +2010,8 @@
           "users": "Utilisateurs",
           "apiKeys": "Clés API",
           "nativeApp": "Application native",
-          "account": "Compte"
+          "account": "Compte",
+          "waitlist": "Liste d'attente"
         },
         "unreadLabel_one": "{{label}}, {{count}} non lue",
         "unreadLabel_other": "{{label}}, {{count}} non lues"
@@ -1976,6 +2027,32 @@
         "darkMode": "Mode sombre"
       },
       "logOut": "Se déconnecter"
+    },
+    "waitlist": {
+      "title": "Liste d'attente",
+      "locationLabel": "Établissement",
+      "noLocations": "Ajoutez un établissement pour lancer une liste d'attente.",
+      "accepting": "Les clients peuvent s'inscrire depuis le site en ce moment.",
+      "notAccepting": "Les clients ne peuvent s'inscrire depuis le site que lorsque l'établissement accueille sans réservation et est ouvert. Vous pouvez toujours ajouter des groupes ici.",
+      "empty": "Personne n'attend.",
+      "addTitle": "Ajouter un groupe",
+      "nameLabel": "Nom",
+      "emailLabel": "E-mail (facultatif)",
+      "seatsLabel": "Nombre de convives",
+      "add": "Ajouter",
+      "call": "Appeler",
+      "callAgain": "Rappeler",
+      "seat": "Installer",
+      "remove": "Retirer",
+      "guests_one": "1 convive",
+      "guests_other": "{{count}} convives",
+      "waitNow": "Table libre",
+      "waitMinutes": "~{{minutes}} min",
+      "waitUnknown": "Aucune table adaptée",
+      "joined": "Inscrit {{time}}",
+      "called": "Appelé {{time}}",
+      "hiddenGuest": "Coordonnées masquées",
+      "loadFailed": "Impossible de charger la liste d'attente."
     }
   }
 }

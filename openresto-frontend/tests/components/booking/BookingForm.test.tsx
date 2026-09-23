@@ -8,6 +8,9 @@ import BookingForm from "@/components/booking/BookingForm";
 import { BookingDockProvider, useBookingDock } from "@/components/booking/BookingDockContext";
 import { getNowInTimezone } from "@/utils/date";
 
+// WalkInNotice links to the waitlist; the real router can't load under Jest.
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));

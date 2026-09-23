@@ -51,6 +51,13 @@ function getNavSections(t: TFunction): { heading: string; items: NavItem[] }[] {
           match: (p: string) => p === "/admin/bookings" || p.startsWith("/admin/bookings/"),
         },
         {
+          id: "waitlist",
+          label: t("admin.sidebar.nav.items.waitlist"),
+          icon: "hourglass-outline" as const,
+          href: "/admin/waitlist" as const,
+          match: (p: string) => p === "/admin/waitlist",
+        },
+        {
           id: "locations",
           label: t("admin.sidebar.nav.items.locations"),
           icon: "storefront-outline" as const,

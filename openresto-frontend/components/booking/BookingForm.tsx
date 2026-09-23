@@ -13,6 +13,7 @@ import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } fro
 import { isValidEmail } from "@/utils/validation";
 import { confirm } from "@/utils/confirm";
 import { getHoursForDate } from "@/utils/openingHours";
+import { getRestaurantDate } from "@/utils/restaurantTime";
 import { isWalkInOnlyOnDay, isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
 import WalkInNotice from "./WalkInNotice";
 import LargePartyNotice from "./LargePartyNotice";
@@ -429,7 +430,11 @@ export default function BookingForm({
       {t("booking.form.closedDayNotice")}
     </ThemedText>
   ) : isWalkInDay ? (
-    <WalkInNotice scope="day" daysLabel={walkInDaysLabel(restaurant) ?? undefined} />
+    <WalkInNotice
+      scope="day"
+      daysLabel={walkInDaysLabel(restaurant) ?? undefined}
+      waitlistRestaurantId={date === getRestaurantDate(timezone) ? restaurant.id : undefined}
+    />
   ) : (
     <PopularTimesPicker
       slots={availabilitySlots}

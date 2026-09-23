@@ -15,7 +15,7 @@ namespace OpenRestoApi.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminApiKey", b =>
                 {
@@ -798,6 +798,69 @@ namespace OpenRestoApi.Migrations
                     b.ToTable("TableGroupMemberships");
                 });
 
+            modelBuilder.Entity("OpenRestoApi.Core.Domain.WaitlistEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("BookingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Locale")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("NotifiedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Ref")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Seats")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId");
+
+                    b.HasIndex("Ref")
+                        .IsUnique();
+
+                    b.HasIndex("RestaurantId", "Status");
+
+                    b.ToTable("WaitlistEntries");
+                });
+
             modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminApiKey", b =>
                 {
                     b.HasOne("OpenRestoApi.Core.Domain.AdminCredential", "User")
@@ -930,6 +993,24 @@ namespace OpenRestoApi.Migrations
                     b.Navigation("Group");
 
                     b.Navigation("Table");
+                });
+
+            modelBuilder.Entity("OpenRestoApi.Core.Domain.WaitlistEntry", b =>
+                {
+                    b.HasOne("OpenRestoApi.Core.Domain.Booking", "Booking")
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("OpenRestoApi.Core.Domain.Restaurant", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Restaurant");
                 });
 
             modelBuilder.Entity("OpenRestoApi.Core.Domain.Restaurant", b =>

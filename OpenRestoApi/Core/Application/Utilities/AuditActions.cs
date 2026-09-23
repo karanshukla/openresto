@@ -41,6 +41,12 @@ public static class AuditActions
     public const string TableGroupUpdate = "table_group.update";
     public const string TableGroupDelete = "table_group.delete";
 
+    // ── Waitlist ─────────────────────────────────────────────────────────────
+    public const string WaitlistAdd = "waitlist.add";
+    public const string WaitlistNotify = "waitlist.notify";
+    public const string WaitlistSeat = "waitlist.seat";
+    public const string WaitlistRemove = "waitlist.remove";
+
     // ── Accounts ─────────────────────────────────────────────────────────────
     public const string UserCreate = "user.create";
     public const string UserRoleChange = "user.role_change";
@@ -111,4 +117,5 @@ public static class AuditTargets
     public const string Highlight = "Highlight";
     public const string SocialLink = "SocialLink";
     public const string Notification = "Notification";
+    public const string WaitlistEntry = "WaitlistEntry";
 }

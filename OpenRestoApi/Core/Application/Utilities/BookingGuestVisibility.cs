@@ -69,4 +69,23 @@ public static class BookingGuestVisibility
         }
         return dtos;
     }
+
+    public static WaitlistEntryDto Apply(WaitlistEntryDto dto, ICurrentUserService currentUser)
+    {
+        if (IsRedactedFor(currentUser))
+        {
+            dto.Name = null;
+            dto.Email = null;
+        }
+        return dto;
+    }
+
+    public static List<WaitlistEntryDto> Apply(List<WaitlistEntryDto> dtos, ICurrentUserService currentUser)
+    {
+        foreach (WaitlistEntryDto dto in dtos)
+        {
+            Apply(dto, currentUser);
+        }
+        return dtos;
+    }
 }

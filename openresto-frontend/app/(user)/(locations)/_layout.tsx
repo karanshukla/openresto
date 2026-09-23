@@ -31,6 +31,10 @@ export default function LocationsTabLayout() {
         name="locations/[id]"
         options={{ title: t("restaurant.locationsScreen.routeTitle") }}
       />
+      <Stack.Screen
+        name="join-waitlist/[restaurantId]"
+        options={{ title: t("booking.waitlist.routeTitle") }}
+      />
       {/* The three shims only render a <Redirect>, so they must draw no header on the way
           through — a bar titled after the route, with a back arrow, flashes for the frame
           they are mounted otherwise. `book` is also what a cold tab press can land on
