@@ -547,7 +547,7 @@ function BookingItem({
               </ThemedText>
             </View>
           ) : (
-            <StatusBadge date={booking.date} status={booking.status} isDark={isDark} />
+            <StatusBadge booking={booking} isDark={isDark} />
           )}
         </View>
         {booking.customerName && (

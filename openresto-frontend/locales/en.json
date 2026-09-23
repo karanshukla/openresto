@@ -839,11 +839,12 @@
         "notSorted": "not sorted"
       },
       "status": {
-        "completed": "Completed",
         "seated": "Seated",
+        "due": "Due",
         "arrived": "Arrived",
         "upcoming": "Upcoming",
         "scheduled": "Scheduled",
+        "unmarked": "Unmarked",
         "cancelled": "Cancelled",
         "booked": "Booked",
         "finished": "Finished",

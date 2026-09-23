@@ -57,7 +57,7 @@ export function BookingStatusActions({
           {t("admin.bookings.detail.statusActions.title")}
         </ThemedText>
         <View style={styles.statusBadge}>
-          <StatusBadge date={booking.date} status={booking.status} isDark={isDark} />
+          <StatusBadge booking={booking} isDark={isDark} />
         </View>
       </View>
       {next.length > 0 && (

@@ -8,7 +8,17 @@ import { BookingDetailDto, type BookingStatus } from "@/api/admin";
 import { isPast } from "@/utils/bookingStatus";
 
 export type BadgeVariant =
-  "arrived" | "seated" | "upcoming" | "scheduled" | "completed" | "finished" | "noShow";
+  "arrived" | "seated" | "due" | "upcoming" | "scheduled" | "unmarked" | "finished" | "noShow";
+
+/** The fields a badge reads. `endTime` is the booking's own end, which turn times make vary. */
+export interface BadgeBooking {
+  date: string;
+  endTime?: string;
+  status?: BookingStatus;
+}
+
+/** Sitting length assumed when a booking carries no end, matching `BookingDuration.FallbackMinutes`. */
+const FALLBACK_SITTING_MINUTES = 60;
 
 // Re-exported for the admin modules that already import isPast from here.
 // isPast itself lives in utils/bookingStatus so the customer-facing lookup
@@ -20,13 +30,15 @@ export { isPast };
  * rendered on its own — `getStatus` below resolves it to a localized `label` through `t`.
  * Keeping `variant` untranslated is what lets `statusRankFor` sort correctly regardless
  * of UI language.
- * A status staff recorded wins over the clock; a booking still `Booked` falls back to the guess
- * from its start time.
+ *
+ * Arrived, Seated, Finished and No-show only ever come from a status staff recorded. A booking
+ * still `Booked` says only what the clock knows: Due while its sitting is under way and nobody
+ * has checked the party in, Unmarked once its own end has passed.
  * @see [StatusBadge.test.tsx](../../../tests/components/StatusBadge.test.tsx)
- * — pins that the label localizes while the variant/rank stay locale-independent, and that a
- * recorded status overrides the time-derived one.
+ * — pins that the label localizes while the variant/rank stay locale-independent, that a
+ * recorded status overrides the clock, and that Due runs to the booking's own end.
  */
-export function statusVariantFor(date: string, status?: BookingStatus): BadgeVariant {
+export function statusVariantFor({ date, endTime, status }: BadgeBooking): BadgeVariant {
   switch (status) {
     case "Arrived":
       return "arrived";
@@ -37,33 +49,33 @@ export function statusVariantFor(date: string, status?: BookingStatus): BadgeVar
     case "NoShow":
       return "noShow";
   }
-  const d = new Date(date);
-  const now = new Date();
-  const diffMins = (d.getTime() - now.getTime()) / 60000;
-  if (diffMins < -90) return "completed";
-  if (diffMins < -15) return "seated";
-  if (diffMins < 5) return "arrived";
-  if (diffMins < 60) return "upcoming";
+  const now = Date.now();
+  const start = new Date(date).getTime();
+  const end = endTime ? new Date(endTime).getTime() : start + FALLBACK_SITTING_MINUTES * 60 * 1000;
+  if (now >= end) return "unmarked";
+  if (now >= start) return "due";
+  if (start - now < 60 * 60 * 1000) return "upcoming";
   return "scheduled";
 }
 
 export function getStatus(
-  date: string,
-  t: TFunction,
-  status?: BookingStatus
+  booking: BadgeBooking,
+  t: TFunction
 ): { label: string; variant: BadgeVariant } {
-  const variant = statusVariantFor(date, status);
+  const variant = statusVariantFor(booking);
   switch (variant) {
     case "arrived":
       return { label: t("admin.bookings.status.arrived"), variant };
     case "seated":
       return { label: t("admin.bookings.status.seated"), variant };
+    case "due":
+      return { label: t("admin.bookings.status.due"), variant };
     case "upcoming":
       return { label: t("admin.bookings.status.upcoming"), variant };
     case "scheduled":
       return { label: t("admin.bookings.status.scheduled"), variant };
-    case "completed":
-      return { label: t("admin.bookings.status.completed"), variant };
+    case "unmarked":
+      return { label: t("admin.bookings.status.unmarked"), variant };
     case "finished":
       return { label: t("admin.bookings.status.finished"), variant };
     case "noShow":
@@ -73,15 +85,16 @@ export function getStatus(
 
 // Lifecycle rank for status-based sorting (issue #208). Higher rank surfaces
 // earlier in the default (ascending) sort, so the most attention-worthy rows
-// land at the top: in-progress first, then upcoming/future, then historical,
-// with cancelled last. Reuses statusVariantFor so the time thresholds stay
-// defined in exactly one place (see the keep-in-sync note on isPast above).
+// land at the top: a party that should be here and isn't checked in, then the
+// floor, then upcoming/future, then historical, with cancelled last. Reuses
+// statusVariantFor so the time thresholds stay defined in exactly one place.
 const STATUS_RANK: Record<BadgeVariant, number> = {
-  arrived: 5, // in-progress: sitting down now
-  seated: 4, // in-progress: recently seated
-  upcoming: 3, // imminent (next hour)
-  scheduled: 2, // future
-  completed: 1, // historical
+  due: 6,
+  arrived: 5,
+  seated: 4,
+  upcoming: 3,
+  scheduled: 2,
+  unmarked: 1,
   finished: 1,
   noShow: 1,
 };
@@ -89,7 +102,7 @@ const STATUS_RANK: Record<BadgeVariant, number> = {
 /** Numeric status rank for sorting; cancelled bookings sort last (rank 0). */
 export function statusRankFor(b: BookingDetailDto): number {
   if (b.isCancelled) return 0;
-  return STATUS_RANK[statusVariantFor(b.date, b.status)];
+  return STATUS_RANK[statusVariantFor(b)];
 }
 
 const BADGE_STYLES: Record<
@@ -104,6 +117,10 @@ const BADGE_STYLES: Record<
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
+  due: theme.status.upcoming as {
+    bg: { light: string; dark: string };
+    text: string | { light: string; dark: string };
+  },
   upcoming: theme.status.upcoming as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
@@ -112,7 +129,7 @@ const BADGE_STYLES: Record<
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  completed: theme.status.completed as {
+  unmarked: theme.status.completed as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
@@ -123,17 +140,9 @@ const BADGE_STYLES: Record<
   noShow: theme.status.cancelled,
 };
 
-export function StatusBadge({
-  date,
-  status,
-  isDark,
-}: {
-  date: string;
-  status?: BookingStatus;
-  isDark: boolean;
-}) {
+export function StatusBadge({ booking, isDark }: { booking: BadgeBooking; isDark: boolean }) {
   const { t } = useTranslation();
-  const { label, variant } = getStatus(date, t, status);
+  const { label, variant } = getStatus(booking, t);
   const s = BADGE_STYLES[variant];
 
   const bg = isDark && s.bg.dark ? s.bg.dark : s.bg.light;
@@ -142,9 +151,9 @@ export function StatusBadge({
   // Fallbacks based on original implementation for contrast in dark mode
   if (isDark) {
     if (variant === "arrived") text = "#4ade80";
-    if (variant === "upcoming") text = "#fde047";
+    if (variant === "upcoming" || variant === "due") text = "#fde047";
     if (variant === "scheduled") text = "#94a3b8";
-    if (variant === "completed" || variant === "finished") text = "#64748b";
+    if (variant === "unmarked" || variant === "finished") text = "#64748b";
   }
 
   return (
