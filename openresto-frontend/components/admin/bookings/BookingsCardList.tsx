@@ -126,7 +126,7 @@ export function BookingsCardList({
                     </ThemedText>
                   </View>
                 ) : (
-                  <StatusBadge date={b.date} status={b.status} isDark={isDark} />
+                  <StatusBadge booking={b} isDark={isDark} />
                 )}
               </View>
             </View>

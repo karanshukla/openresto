@@ -7,7 +7,9 @@ import {
   isPast,
   statusRankFor,
   statusVariantFor,
+  type BadgeBooking,
 } from "@/components/admin/bookings/StatusBadge";
+import type { BookingDetailDto } from "@/api/admin";
 
 const t = i18n.getFixedT("en");
 
@@ -24,126 +26,110 @@ describe("isPast re-export", () => {
   });
 });
 
-describe("getStatus", () => {
-  it("returns 'Completed' for bookings more than 90 minutes ago", () => {
-    const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();
-    expect(getStatus(date, t)).toEqual({ label: "Completed", variant: "completed" });
+const MIN = 60 * 1000;
+const at = (minutesFromNow: number) => new Date(Date.now() + minutesFromNow * MIN).toISOString();
+
+/** A Booked sitting starting `start` minutes from now and lasting `length` minutes. */
+const booked = (start: number, length = 60): BadgeBooking => ({
+  date: at(start),
+  endTime: at(start + length),
+  status: "Booked",
+});
+
+describe("getStatus for a booking still Booked", () => {
+  it("is Scheduled more than an hour out", () => {
+    expect(getStatus(booked(120), t)).toEqual({ label: "Scheduled", variant: "scheduled" });
   });
 
-  it("returns 'Seated' for bookings 15-90 minutes ago", () => {
-    const date = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    expect(getStatus(date, t)).toEqual({ label: "Seated", variant: "seated" });
+  it("is Upcoming inside the hour before its start", () => {
+    expect(getStatus(booked(30), t)).toEqual({ label: "Upcoming", variant: "upcoming" });
   });
 
-  it("returns 'Arrived' for bookings within 5 minutes of now", () => {
-    const date = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    expect(getStatus(date, t)).toEqual({ label: "Arrived", variant: "arrived" });
+  it("is Due once its start has passed and nobody has checked the party in", () => {
+    expect(getStatus(booked(-1), t)).toEqual({ label: "Due", variant: "due" });
   });
 
-  it("returns 'Upcoming' for bookings 5-60 minutes in the future", () => {
-    const date = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    expect(getStatus(date, t)).toEqual({ label: "Upcoming", variant: "upcoming" });
+  it("stays Due until its own end, however long the sitting", () => {
+    expect(getStatus(booked(-100, 120), t).variant).toBe("due");
   });
 
-  it("returns 'Scheduled' for bookings more than 60 minutes in the future", () => {
-    const date = new Date(Date.now() + 120 * 60 * 1000).toISOString();
-    expect(getStatus(date, t)).toEqual({ label: "Scheduled", variant: "scheduled" });
+  it("is Unmarked once its own end has passed", () => {
+    expect(getStatus(booked(-121, 120), t)).toEqual({ label: "Unmarked", variant: "unmarked" });
+  });
+
+  it("falls back to an hour-long sitting without an end", () => {
+    expect(getStatus({ date: at(-50) }, t).variant).toBe("due");
+    expect(getStatus({ date: at(-61) }, t).variant).toBe("unmarked");
   });
 });
 
 describe("recorded status", () => {
-  it("overrides the time-derived guess once staff record one", () => {
-    const upcoming = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    expect(getStatus(upcoming, t, "Arrived")).toEqual({ label: "Arrived", variant: "arrived" });
-    expect(getStatus(upcoming, t, "NoShow")).toEqual({ label: "No-show", variant: "noShow" });
-  });
-
-  it("falls back to the time-derived guess while the booking is still Booked", () => {
-    const upcoming = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    expect(getStatus(upcoming, t, "Booked")).toEqual({ label: "Upcoming", variant: "upcoming" });
-  });
-
-  it("ranks a finished sitting with the historical ones", () => {
-    const now = Date.now();
-    const b = (date: string, status: "Finished" | "Booked") =>
-      ({ id: 1, date, status, isCancelled: false }) as never;
-    expect(statusRankFor(b(new Date(now - 30 * 60000).toISOString(), "Finished"))).toBe(
-      statusRankFor(b(new Date(now - 200 * 60000).toISOString(), "Booked"))
-    );
+  it("overrides the clock once staff record one", () => {
+    expect(getStatus({ ...booked(30), status: "Arrived" }, t)).toEqual({
+      label: "Arrived",
+      variant: "arrived",
+    });
+    expect(getStatus({ ...booked(-30), status: "Seated" }, t).variant).toBe("seated");
+    expect(getStatus({ ...booked(-200), status: "Finished" }, t).variant).toBe("finished");
+    expect(getStatus({ ...booked(-10), status: "NoShow" }, t)).toEqual({
+      label: "No-show",
+      variant: "noShow",
+    });
   });
 });
 
 describe("label/value split — variant stays untranslated so rank/style lookups don't break", () => {
-  it("resolves a localized label whose text differs from the internal variant identifier", () => {
-    const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();
-    const { label, variant } = getStatus(date, t);
-    expect(variant).toBe("completed");
-    expect(label).not.toBe(variant);
-    expect(label).toBe("Completed");
-  });
-
-  it("keeps statusVariantFor's identifier stable regardless of the active translation function", () => {
-    const date = new Date(Date.now() - 100 * 60 * 1000).toISOString();
+  it("resolves a localized label while the variant stays the same", () => {
     const frT = i18n.getFixedT("fr");
-    expect(statusVariantFor(date)).toBe("completed");
-    expect(getStatus(date, frT).variant).toBe("completed");
-    expect(getStatus(date, frT).label).not.toBe(getStatus(date, t).label);
+    expect(getStatus(booked(-121), frT).variant).toBe("unmarked");
+    expect(getStatus(booked(-121), frT).label).not.toBe(getStatus(booked(-121), t).label);
+    expect(statusVariantFor(booked(-121))).toBe("unmarked");
   });
 });
 
 describe("statusRankFor", () => {
-  const mk = (date: string, isCancelled = false) =>
-    ({ id: 1, restaurantId: 1, date, isCancelled }) as any;
+  const mk = (b: BadgeBooking, isCancelled = false) =>
+    ({ id: 1, restaurantId: 1, isCancelled, ...b }) as unknown as BookingDetailDto;
 
   it("ranks cancelled bookings lowest (0)", () => {
-    const now = Date.now();
-    expect(statusRankFor(mk(new Date(now + 120 * 60000).toISOString(), true))).toBe(0);
+    expect(statusRankFor(mk(booked(120), true))).toBe(0);
   });
 
-  it("ranks in-progress (arrived) above upcoming/scheduled/completed", () => {
-    const now = Date.now();
-    const min = 60 * 1000;
-    const arrived = mk(new Date(now - 2 * min).toISOString());
-    const upcoming = mk(new Date(now + 30 * min).toISOString());
-    const scheduled = mk(new Date(now + 120 * min).toISOString());
-    const completed = mk(new Date(now - 100 * min).toISOString());
-    expect(statusRankFor(arrived)).toBeGreaterThan(statusRankFor(upcoming));
-    expect(statusRankFor(upcoming)).toBeGreaterThan(statusRankFor(scheduled));
-    expect(statusRankFor(scheduled)).toBeGreaterThan(statusRankFor(completed));
+  it("puts a party that is due above the floor, then upcoming, scheduled and past", () => {
+    const due = statusRankFor(mk(booked(-5)));
+    const seated = statusRankFor(mk({ ...booked(-30), status: "Seated" }));
+    const upcoming = statusRankFor(mk(booked(30)));
+    const scheduled = statusRankFor(mk(booked(120)));
+    const unmarked = statusRankFor(mk(booked(-200)));
+    expect(due).toBeGreaterThan(seated);
+    expect(seated).toBeGreaterThan(upcoming);
+    expect(upcoming).toBeGreaterThan(scheduled);
+    expect(scheduled).toBeGreaterThan(unmarked);
+  });
+
+  it("ranks a finished sitting with the unmarked past ones", () => {
+    expect(statusRankFor(mk({ ...booked(-30), status: "Finished" }))).toBe(
+      statusRankFor(mk(booked(-200)))
+    );
   });
 });
 
 describe("StatusBadge", () => {
-  it("renders all variants in light mode", () => {
-    const variants: any[] = [
-      { d: -100, l: "Completed" },
-      { d: -30, l: "Seated" },
-      { d: 0, l: "Arrived" },
-      { d: 30, l: "Upcoming" },
-      { d: 120, l: "Scheduled" },
-    ];
-    variants.forEach((v) => {
-      const { unmount } = render(
-        <StatusBadge date={new Date(Date.now() + v.d * 60 * 1000).toISOString()} isDark={false} />
-      );
-      expect(screen.getByText(v.l)).toBeTruthy();
-      unmount();
-    });
-  });
+  const cases: { booking: BadgeBooking; label: string }[] = [
+    { booking: booked(-200), label: "Unmarked" },
+    { booking: booked(-5), label: "Due" },
+    { booking: booked(30), label: "Upcoming" },
+    { booking: booked(120), label: "Scheduled" },
+    { booking: { ...booked(-5), status: "Arrived" }, label: "Arrived" },
+    { booking: { ...booked(-30), status: "Seated" }, label: "Seated" },
+    { booking: { ...booked(-200), status: "Finished" }, label: "Finished" },
+    { booking: { ...booked(-10), status: "NoShow" }, label: "No-show" },
+  ];
 
-  it("renders all variants in dark mode (triggering fallbacks)", () => {
-    const variants: any[] = [
-      { d: -100, l: "Completed" },
-      { d: -30, l: "Seated" },
-      { d: 0, l: "Arrived" },
-      { d: 30, l: "Upcoming" },
-      { d: 120, l: "Scheduled" },
-    ];
-    variants.forEach((v) => {
-      const { unmount } = render(
-        <StatusBadge date={new Date(Date.now() + v.d * 60 * 1000).toISOString()} isDark={true} />
-      );
-      expect(screen.getByText(v.l)).toBeTruthy();
+  it.each([false, true])("renders every variant (dark mode: %s)", (isDark) => {
+    cases.forEach(({ booking, label }) => {
+      const { unmount } = render(<StatusBadge booking={booking} isDark={isDark} />);
+      expect(screen.getByText(label)).toBeTruthy();
       unmount();
     });
   });

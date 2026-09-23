@@ -196,7 +196,7 @@ export function BookingsWideTable({
                 </ThemedText>
               </View>
             ) : (
-              <StatusBadge date={b.date} status={b.status} isDark={isDark} />
+              <StatusBadge booking={b} isDark={isDark} />
             )}
           </View>
 

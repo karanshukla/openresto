@@ -839,11 +839,12 @@
         "notSorted": "sin ordenar"
       },
       "status": {
-        "completed": "Completada",
         "seated": "Sentados",
+        "due": "Esperada",
         "arrived": "Llegaron",
         "upcoming": "Próxima",
         "scheduled": "Programada",
+        "unmarked": "Sin marcar",
         "cancelled": "Cancelada",
         "booked": "Reservada",
         "finished": "Terminada",

@@ -151,14 +151,14 @@ describe("AdminDashboardScreen", () => {
     expect(mockPush).toHaveBeenCalledWith("/admin/bookings");
   });
 
-  it("shows Seated badge for a currently in-progress booking (via StatusBadge)", async () => {
+  it("shows Due for a sitting under way that nobody has checked in (via StatusBadge)", async () => {
     const now = Date.now();
     (getAdminDashboardStats as jest.Mock).mockResolvedValue({
       ...mockStats,
       recentBookings: [
         {
           id: 1,
-          // started 30 min ago → diffMins = -30 → StatusBadge renders "Seated"
+          // started 30 min ago, still Booked → StatusBadge renders "Due"
           date: new Date(now - 30 * 60 * 1000).toISOString(),
           endTime: new Date(now + 30 * 60 * 1000).toISOString(),
           seats: 2,
@@ -173,7 +173,8 @@ describe("AdminDashboardScreen", () => {
     const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
     await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
 
-    expect(screen.getByText("Seated")).toBeTruthy();
+    expect(screen.getByText("Due")).toBeTruthy();
+    expect(screen.queryByText("Seated")).toBeNull();
   });
 
   it("shows Scheduled badge for a future booking (via StatusBadge)", async () => {
@@ -223,14 +224,14 @@ describe("AdminDashboardScreen", () => {
     expect(screen.getByText("Cancelled")).toBeTruthy();
   });
 
-  it("shows Completed badge for a past booking (via StatusBadge)", async () => {
+  it("shows Unmarked for a past sitting with no recorded status (via StatusBadge)", async () => {
     const now = Date.now();
     (getAdminDashboardStats as jest.Mock).mockResolvedValue({
       ...mockStats,
       recentBookings: [
         {
           id: 4,
-          // started 3 hours ago → diffMins = -180 → StatusBadge renders "Completed"
+          // ended 2 hours ago, still Booked → StatusBadge renders "Unmarked"
           date: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
           endTime: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
           seats: 2,
@@ -245,7 +246,7 @@ describe("AdminDashboardScreen", () => {
     const { queryByTestId } = renderWithProviders(<AdminDashboardScreen />);
     await waitFor(() => expect(queryByTestId("dashboard-spinner")).toBeNull());
 
-    expect(screen.getByText("Completed")).toBeTruthy();
+    expect(screen.getByText("Unmarked")).toBeTruthy();
     expect(screen.queryByText("Cancelled")).toBeNull();
   });
 
