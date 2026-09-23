@@ -622,6 +622,117 @@ describe("RestaurantInfoForm", () => {
     sections: [],
   };
 
+  // ── Turn times by party size (#452) ──────────────────────────────────────
+
+  it("adds a turn time from the first party size at the default duration and saves it", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      turnTimes: [{ minSeats: 1, minutes: 90 }],
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.press(screen.getByText("Add a rule"));
+    expect(screen.getByText("Parties of 1 or more")).toBeTruthy();
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ turnTimes: [{ minSeats: 1, minutes: 90 }] })
+    );
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ turnTimes: [{ minSeats: 1, minutes: 90 }] })
+    );
+  });
+
+  it("shows the party sizes each saved rule covers", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{
+          ...mockRestaurant,
+          turnTimes: [
+            { minSeats: 1, minutes: 60 },
+            { minSeats: 3, minutes: 90 },
+            { minSeats: 5, minutes: 120 },
+          ],
+        }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByText("Parties of 1–2")).toBeTruthy();
+    expect(screen.getByText("Parties of 3–4")).toBeTruthy();
+    expect(screen.getByText("Parties of 5 or more")).toBeTruthy();
+  });
+
+  it("starts the next rule one guest above the last", () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, turnTimes: [{ minSeats: 4, minutes: 120 }] }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.press(screen.getByText("Add a rule"));
+    expect(screen.getByText("Parties of 4")).toBeTruthy();
+    expect(screen.getByText("Parties of 5 or more")).toBeTruthy();
+  });
+
+  it("saves a new length for a rule", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      turnTimes: [{ minSeats: 5, minutes: 180 }],
+    });
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, turnTimes: [{ minSeats: 5, minutes: 120 }] }}
+        onSaved={onSaved}
+      />
+    );
+    chooseOption("2h", "3h");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ turnTimes: [{ minSeats: 5, minutes: 180 }] })
+    );
+  });
+
+  it("saves an empty list when the last rule is removed", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      turnTimes: [],
+    });
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, turnTimes: [{ minSeats: 5, minutes: 120 }] }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.press(screen.getByLabelText("Remove the turn time from 5"));
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ turnTimes: [] })
+    );
+  });
+
+  it("holds the save while two rules start at the same party size", async () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{
+          ...mockRestaurant,
+          turnTimes: [
+            { minSeats: 3, minutes: 90 },
+            { minSeats: 4, minutes: 120 },
+          ],
+        }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.press(screen.getByText("From 4 guests"));
+    // The first row's trigger already reads "From 3 guests"; the open list's option is the last.
+    const options = screen.getAllByText("From 3 guests");
+    fireEvent.press(options[options.length - 1]);
+    await flushAutosave();
+    expect(screen.getByText("Two turn times start at the same party size.")).toBeTruthy();
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
+
   it("falls back to defaults when optional restaurant fields are unset", () => {
     render(<RestaurantInfoForm restaurant={sparseRestaurant} onSaved={onSaved} />);
     expect(screen.getByDisplayValue("Sparse Resto")).toBeTruthy();

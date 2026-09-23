@@ -58,6 +58,12 @@ export interface ScheduleConflictDto {
   reason: ScheduleConflictReason;
 }
 
+/** A party of `minSeats` or more holds its table for `minutes`, up to the next rule. */
+export interface TurnTimeDto {
+  minSeats: number;
+  minutes: number;
+}
+
 export interface DayHoursDto {
   /** ISO 8601 day number: 1=Monday … 7=Sunday. */
   day: number;
@@ -97,6 +103,8 @@ export interface RestaurantDto {
   /** Comma-separated ISO days (1=Monday … 7=Sunday) that are walk-in only ("" when none). */
   walkInDays?: string;
   defaultBookingDurationMinutes?: number;
+  /** Sitting lengths by party size, smallest party first. Empty when every party gets the default. */
+  turnTimes?: TurnTimeDto[];
   /** Step (minutes) between selectable booking start times (15/30/60). */
   bookingSlotIntervalMinutes?: number;
   /** Max allowed spare seats over party size, or null for unrestricted (off). */
@@ -198,6 +206,7 @@ export async function updateRestaurant(
     timezone?: string;
     tags?: string | null;
     defaultBookingDurationMinutes?: number;
+    turnTimes?: TurnTimeDto[];
     bookingSlotIntervalMinutes?: number;
     maxTableOversizeSeats?: number | null;
     bookingRefFormat?: BookingRefFormat;

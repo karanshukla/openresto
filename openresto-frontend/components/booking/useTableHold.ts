@@ -93,6 +93,10 @@ export function useTableHold({
    * The three shapes a hold request comes in. A group hold names the group and lets the server
    * resolve its members; auto-assign names nothing and lets the server pick; an explicit pick
    * names the table and resolves its own section, because the caller only tracks the table id.
+   * All three carry the party size, which sets how long the hold blocks the table.
+   *
+   * @see [useTableHold.test.ts](../../tests/hooks/useTableHold.test.ts) — pins that an explicit
+   * table hold sends the party size too.
    */
   function holdTarget() {
     if (tableGroupId) {
@@ -105,7 +109,7 @@ export function useTableHold({
       tableId: tableId!,
       sectionId: sections.find((s) => s.tables.some((t) => t.id === tableId))?.id ?? 0,
       tableGroupId: undefined,
-      seats: undefined,
+      seats,
     };
   }
 
