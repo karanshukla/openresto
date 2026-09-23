@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AdminAuditEntry> AdminAuditEntries { get; set; } = null!;
     public DbSet<AdminApiKey> AdminApiKeys { get; set; } = null!;
     public DbSet<NativeClientStat> NativeClientStats { get; set; } = null!;
+    public DbSet<WaitlistEntry> WaitlistEntries { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -207,6 +208,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             g.Property(x => x.Auth).HasMaxLength(GuestPushFields.MaxKeyLength);
             g.Property(x => x.Locale).IsRequired().HasMaxLength(GuestPushFields.MaxLocaleLength);
             g.HasIndex(x => new { x.BookingId, x.Endpoint }).IsUnique();
+        });
+
+        modelBuilder.Entity<WaitlistEntry>(w =>
+        {
+            w.HasKey(x => x.Id);
+            w.HasOne(x => x.Restaurant).WithMany().HasForeignKey(x => x.RestaurantId).OnDelete(DeleteBehavior.Cascade);
+            w.HasOne(x => x.Booking).WithMany().HasForeignKey(x => x.BookingId).OnDelete(DeleteBehavior.SetNull);
+            w.Property(x => x.Ref).IsRequired().HasMaxLength(WaitlistFields.RefLength);
+            w.Property(x => x.Name).IsRequired().HasMaxLength(WaitlistFields.MaxNameLength);
+            w.Property(x => x.Email).HasMaxLength(ContactLimits.MaxEmailLength);
+            w.Property(x => x.Locale).IsRequired().HasMaxLength(GuestPushFields.MaxLocaleLength);
+            w.Property(x => x.Status).HasConversion<string>().HasMaxLength(WaitlistFields.MaxStatusLength);
+            w.HasIndex(x => x.Ref).IsUnique();
+            w.HasIndex(x => new { x.RestaurantId, x.Status });
         });
     }
 }

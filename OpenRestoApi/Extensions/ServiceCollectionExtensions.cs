@@ -330,6 +330,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailFailureRepository, EmailFailureRepository>();
         services.AddScoped<IHighlightRepository, HighlightRepository>();
         services.AddScoped<ISocialLinkRepository, SocialLinkRepository>();
+        services.AddScoped<IWaitlistRepository, WaitlistRepository>();
         services.AddScoped<IAdminAuditRepository, AdminAuditRepository>();
         services.AddScoped<IAdminApiKeyRepository, AdminApiKeyRepository>();
         services.AddScoped<INativeClientStatsRepository, NativeClientStatsRepository>();
@@ -359,6 +360,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<EmailPreviewService>();
         services.AddScoped<HighlightService>();
         services.AddScoped<SocialLinkService>();
+        services.AddScoped<WaitlistService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
         services.AddScoped<MediaService>();
         services.AddScoped<NativeAppStatusService>();
@@ -417,6 +419,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGuestPushSender, OpenRestoApi.Core.Application.Services.GuestPushSender>();
         services.AddScoped<OpenRestoApi.Core.Application.Services.GuestReminderService>();
         services.AddHostedService<OpenRestoApi.Infrastructure.Notifications.GuestReminderWorker>();
+
+        services.AddScoped<IWaitlistReadyNotifier, WaitlistReadyNotifier>();
+        services.AddHostedService<OpenRestoApi.Infrastructure.Waitlist.WaitlistSweepWorker>();
 
         // Wallet passes: the signing material is read from disk once per process.
         services.AddOptions<OpenRestoApi.Core.Application.Settings.WalletSettings>()

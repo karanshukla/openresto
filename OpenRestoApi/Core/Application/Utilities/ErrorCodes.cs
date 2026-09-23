@@ -88,6 +88,16 @@ public static class ErrorCodes
     public const string RestaurantOpenHoursTimeInvalid = "restaurant.open_hours_time_invalid";
     public const string RestaurantSectionIdsMismatch = "restaurant.section_ids_mismatch";
 
+    // ── Waitlist ─────────────────────────────────────────────────────────────
+    public const string WaitlistNotFound = "waitlist.not_found";
+    public const string WaitlistNotWalkInNow = "waitlist.not_walk_in_now";
+    public const string WaitlistClosedNow = "waitlist.closed_now";
+    public const string WaitlistNameRequired = "waitlist.name_required";
+    public const string WaitlistEmailInvalid = "waitlist.email_invalid";
+    public const string WaitlistPartyTooLarge = "waitlist.party_too_large";
+    public const string WaitlistNotActive = "waitlist.not_active";
+    public const string WaitlistNoTableFree = "waitlist.no_table_free";
+
     // ── Accounts ─────────────────────────────────────────────────────────────
     public const string UserEmailAlreadyExists = "user.email_already_exists";
     public const string UserCannotChangeOwnRole = "user.cannot_change_own_role";
