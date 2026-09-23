@@ -7,6 +7,8 @@ import { StyleSheet, Text } from "react-native";
 import BookingForm from "@/components/booking/BookingForm";
 import { BookingDockProvider, useBookingDock } from "@/components/booking/BookingDockContext";
 import { getNowInTimezone } from "@/utils/date";
+import { getRestaurantDate } from "@/utils/restaurantTime";
+import { getIsoDayFromDateString } from "@/utils/openingHours";
 
 // WalkInNotice links to the waitlist; the real router can't load under Jest.
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
@@ -373,6 +375,42 @@ describe("BookingForm", () => {
     expect(screen.getByText("Walk-ins only on this day")).toBeTruthy();
     expect(screen.getByText(/doesn't take online bookings on Saturdays/)).toBeTruthy();
     expect(mockFetchAvailability).not.toHaveBeenCalled();
+  });
+
+  it("offers the waitlist on a walk-in day only when that day is today", async () => {
+    const today = getRestaurantDate(mockRestaurantAllDays.timezone ?? "UTC");
+    const restaurant = {
+      ...mockRestaurantAllDays,
+      walkInDays: String(getIsoDayFromDateString(today)),
+    };
+    const onJoinWaitlist = jest.fn();
+    const { rerender } = render(
+      <BookingForm
+        restaurant={restaurant}
+        onSubmit={jest.fn()}
+        date={today}
+        onDateChange={jest.fn()}
+        onJoinWaitlist={onJoinWaitlist}
+      />
+    );
+
+    // Button is mocked in this file, so the waitlist action is found by its label.
+    fireEvent.press(await screen.findByText("Join the waitlist"));
+    expect(onJoinWaitlist).toHaveBeenCalled();
+
+    const nextWeek = new Date(`${today}T12:00:00`);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    rerender(
+      <BookingForm
+        restaurant={restaurant}
+        onSubmit={jest.fn()}
+        date={nextWeek.toISOString().slice(0, 10)}
+        onDateChange={jest.fn()}
+        onJoinWaitlist={onJoinWaitlist}
+      />
+    );
+    await waitFor(() => expect(screen.getByTestId("walk-in-notice")).toBeTruthy());
+    expect(screen.queryByText("Join the waitlist")).toBeNull();
   });
 
   it("keeps walk-in-only days in the date picker, marked unpickable", () => {

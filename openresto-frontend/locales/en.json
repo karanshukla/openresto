@@ -24,7 +24,10 @@
       "summaryLine_one": "{{count}} guest · {{when}} · {{time}}",
       "summaryLine_other": "{{count}} guests · {{when}} · {{time}}",
       "today": "Today",
-      "yourDetailsHeading": "Your details"
+      "yourDetailsHeading": "Your details",
+      "waitlistSummary_one": "Walk-in waitlist · {{count}} guest",
+      "waitlistSummary_other": "Walk-in waitlist · {{count}} guests",
+      "waitlistLocationLabel": "Join the waitlist at {{name}}"
     },
     "factsBand": {
       "dateKey": "Date",
@@ -181,7 +184,6 @@
     },
     "waitlist": {
       "joinCta": "Join the waitlist",
-      "routeTitle": "Join the waitlist",
       "intro": "Add your name and we'll tell you when your table is ready.",
       "partySizeLabel": "Party size",
       "emailHint": "Optional. We'll email you when your table is ready.",
@@ -192,7 +194,9 @@
       "waitMinutes": "About {{minutes}} min wait",
       "waitUnknown": "No table here seats a party that size",
       "notAccepting": "The waitlist isn't open right now. It runs while the location takes walk-ins and is open.",
-      "loadFailed": "Couldn't load the waitlist. Please try again."
+      "loadFailed": "Couldn't load the waitlist. Please try again.",
+      "joinAgain": "Join again",
+      "openTicket": "Open your ticket in its own page"
     },
     "waitlistStatus": {
       "routeTitle": "Your place in line",
@@ -587,7 +591,9 @@
       "showDetails": "Show details",
       "showDetailsFor": "Show details for {{name}}",
       "today": "today",
-      "viewMenu": "View menu"
+      "viewMenu": "View menu",
+      "joinWaitlist": "Join waitlist",
+      "joinWaitlistAt": "Join the waitlist at {{name}}"
     },
     "locationsScreen": {
       "availabilitySummary_one": "{{withTables}} of {{count}} location have tables",

@@ -73,9 +73,16 @@ jest.mock("@/components/booking/BookingDrawer", () => {
       onClose,
       onSeatsChange,
       onDateChange,
+      waitlist,
+      onJoinWaitlist,
     }: any) {
       return (
         <View testID="mock-drawer">
+          <Text testID="drawer-mode">{waitlist ? "waitlist" : "book"}</Text>
+          <Text testID="drawer-ticket">{String(waitlist?.entryRef)}</Text>
+          <Pressable testID="drawer-join-waitlist" onPress={onJoinWaitlist} />
+          <Pressable testID="drawer-joined" onPress={() => waitlist.onJoined("abc234")} />
+          <Pressable testID="drawer-reset" onPress={() => waitlist.onReset()} />
           <Text testID="drawer-restaurant">{restaurant.name}</Text>
           <Text testID="drawer-seats">{String(seats)}</Text>
           <Text testID="drawer-date">{String(date)}</Text>
@@ -105,6 +112,7 @@ jest.mock("@/components/restaurant/LocationListItem", () => {
       registerRef,
       onExpand,
       onBook,
+      onJoinWaitlist,
       onAvailabilityChange,
     }: any) {
       return (
@@ -122,6 +130,10 @@ jest.mock("@/components/restaurant/LocationListItem", () => {
           />
           <Pressable testID={`expand-${restaurant.id}`} onPress={() => onExpand?.(restaurant.id)} />
           <Pressable testID={`book-${restaurant.id}`} onPress={() => onBook(restaurant, "19:30")} />
+          <Pressable
+            testID={`waitlist-${restaurant.id}`}
+            onPress={() => onJoinWaitlist(restaurant)}
+          />
           <Pressable
             testID={`avail-${restaurant.id}`}
             onPress={() => onAvailabilityChange?.(restaurant.id, restaurant.id === 1 ? 3 : 0)}
@@ -692,6 +704,64 @@ describe("LocationsScreen", () => {
       await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
 
       expect(within(screen.getByTestId("locations-row")).getByTestId("mock-footer")).toBeTruthy();
+    });
+  });
+
+  describe("waitlist", () => {
+    beforeEach(() => localStorage.clear());
+
+    it("opens a location's waitlist in the booking panel", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+
+      fireEvent.press(await screen.findByTestId("waitlist-2"));
+
+      expect(screen.getByTestId("drawer-mode").props.children).toBe("waitlist");
+      expect(screen.getByTestId("drawer-restaurant").props.children).toBe("Uptown Grill");
+    });
+
+    it("switches an open booking panel to the waitlist", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      fireEvent.press(await screen.findByTestId("book-1"));
+      expect(screen.getByTestId("drawer-mode").props.children).toBe("book");
+
+      fireEvent.press(screen.getByTestId("drawer-join-waitlist"));
+
+      expect(screen.getByTestId("drawer-mode").props.children).toBe("waitlist");
+    });
+
+    it("keeps the guest's ticket when the panel closes and opens again, until it is reset", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      fireEvent.press(await screen.findByTestId("waitlist-1"));
+      fireEvent.press(screen.getByTestId("drawer-joined"));
+      fireEvent.press(screen.getByTestId("drawer-close"));
+
+      fireEvent.press(screen.getByTestId("waitlist-1"));
+      expect(screen.getByTestId("drawer-ticket").props.children).toBe("abc234");
+
+      fireEvent.press(screen.getByTestId("drawer-reset"));
+      expect(screen.getByTestId("drawer-ticket").props.children).toBe("undefined");
+    });
+
+    it("keeps each location's ticket to that location", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen />);
+      fireEvent.press(await screen.findByTestId("waitlist-1"));
+      fireEvent.press(screen.getByTestId("drawer-joined"));
+
+      fireEvent.press(screen.getByTestId("waitlist-2"));
+
+      expect(screen.getByTestId("drawer-ticket").props.children).toBe("undefined");
+    });
+
+    it("opens straight onto the waitlist from a link", async () => {
+      (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
+      renderWithProviders(<LocationsScreen highlightId={2} initialWaitlist />);
+
+      await waitFor(() => expect(screen.getByTestId("mock-drawer")).toBeTruthy());
+      expect(screen.getByTestId("drawer-mode").props.children).toBe("waitlist");
     });
   });
 

@@ -15,6 +15,7 @@ export interface LocationDetailsPanelProps {
   restaurant: RestaurantDto;
   /** True for a location that never takes online bookings, which earns the standing notice. */
   walkInLocation: boolean;
+  onJoinWaitlist: () => void;
   isDark: boolean;
   borderColor: string;
   mutedColor: string;
@@ -65,6 +66,7 @@ function MapLink({
 export function LocationDetailsPanel({
   restaurant,
   walkInLocation,
+  onJoinWaitlist,
   isDark,
   borderColor,
   mutedColor,
@@ -131,7 +133,7 @@ export function LocationDetailsPanel({
         <OpeningHoursTable restaurant={restaurant} />
       </View>
 
-      {walkInLocation && <WalkInNotice scope="location" waitlistRestaurantId={restaurant.id} />}
+      {walkInLocation && <WalkInNotice scope="location" onJoinWaitlist={onJoinWaitlist} />}
 
       <LocationSeatingMap
         restaurant={restaurant}

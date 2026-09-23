@@ -24,7 +24,10 @@
       "summaryLine_one": "{{count}} convive · {{when}} · {{time}}",
       "summaryLine_other": "{{count}} convives · {{when}} · {{time}}",
       "today": "Aujourd'hui",
-      "yourDetailsHeading": "Vos coordonnées"
+      "yourDetailsHeading": "Vos coordonnées",
+      "waitlistSummary_one": "Liste d'attente · {{count}} convive",
+      "waitlistSummary_other": "Liste d'attente · {{count}} convives",
+      "waitlistLocationLabel": "Rejoindre la liste d'attente de {{name}}"
     },
     "factsBand": {
       "dateKey": "Date",
@@ -181,7 +184,6 @@
     },
     "waitlist": {
       "joinCta": "Rejoindre la liste d'attente",
-      "routeTitle": "Rejoindre la liste d'attente",
       "intro": "Laissez votre nom, nous vous préviendrons quand votre table sera prête.",
       "partySizeLabel": "Nombre de convives",
       "emailHint": "Facultatif. Nous vous écrirons quand votre table sera prête.",
@@ -192,7 +194,9 @@
       "waitMinutes": "Environ {{minutes}} min d'attente",
       "waitUnknown": "Aucune table ne peut accueillir un groupe de cette taille",
       "notAccepting": "La liste d'attente n'est pas ouverte pour le moment. Elle fonctionne quand l'établissement accueille sans réservation et est ouvert.",
-      "loadFailed": "Impossible de charger la liste d'attente. Veuillez réessayer."
+      "loadFailed": "Impossible de charger la liste d'attente. Veuillez réessayer.",
+      "joinAgain": "Rejoindre à nouveau",
+      "openTicket": "Ouvrir votre ticket sur sa propre page"
     },
     "waitlistStatus": {
       "routeTitle": "Votre place dans la file",
@@ -587,7 +591,9 @@
       "showDetails": "Afficher les détails",
       "showDetailsFor": "Afficher les détails de {{name}}",
       "today": "aujourd'hui",
-      "viewMenu": "Voir le menu"
+      "viewMenu": "Voir le menu",
+      "joinWaitlist": "Liste d'attente",
+      "joinWaitlistAt": "Rejoindre la liste d'attente de {{name}}"
     },
     "locationsScreen": {
       "availabilitySummary_one": "{{withTables}} établissement sur {{count}} a des tables disponibles",

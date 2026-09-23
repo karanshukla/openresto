@@ -20,6 +20,7 @@ import PageLoader from "@/components/common/PageLoader";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useTabBarClearance } from "@/hooks/use-tab-bar-clearance";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { getRestaurantDate } from "@/utils/restaurantTime";
@@ -34,11 +35,18 @@ import { hexToRgb } from "@/utils/colors";
 import { theme } from "@/theme/theme";
 import { styles, pinnedMask } from "./LocationsScreen.styles";
 
-/** What the user is currently booking: a location plus the time they tapped. */
+/**
+ * What the panel is open on: a location plus the time tapped, or that location's walk-in
+ * waitlist, which has no time.
+ */
 interface DrawerTarget {
   restaurant: RestaurantDto;
   time: string;
+  waitlist?: boolean;
 }
+
+/** Each location's waitlist ticket, kept so the guest finds it again after closing the panel. */
+const WAITLIST_TICKETS_KEY = "openresto.waitlistTickets";
 
 export function availabilitySummary(
   counts: Record<number, number | null>,
@@ -82,11 +90,14 @@ export default function LocationsScreen({
   highlightId,
   initialTime,
   initialSeats,
+  initialWaitlist = false,
   hasNativeHeader = false,
 }: {
   highlightId?: number;
   initialTime?: string;
   initialSeats?: number;
+  /** Opens the highlighted location's walk-in waitlist on arrival. */
+  initialWaitlist?: boolean;
   /**
    * True on the route pushed over a tab root, where a native stack header sits above this
    * screen; false on the header-less `locations` root. The two need opposite treatment of the
@@ -123,6 +134,10 @@ export default function LocationsScreen({
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const [meal, setMeal] = useState<MealWindow>("All");
   const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
+  const [waitlistTickets, setWaitlistTickets] = usePersistedState<Record<number, string>>(
+    WAITLIST_TICKETS_KEY,
+    {}
+  );
   /**
    * Two panes rather than an overlay, so the drawer takes its width off everything in the
    * list column — the footer included, which is why the footer moves out from under the
@@ -230,6 +245,21 @@ export default function LocationsScreen({
 
   const closeDrawer = useCallback(() => setDrawer(null), []);
 
+  const handleJoinWaitlist = useCallback((restaurant: RestaurantDto) => {
+    setDrawer({ restaurant, time: "", waitlist: true });
+  }, []);
+
+  const rememberTicket = useCallback(
+    (restaurantId: number, entryRef: string | undefined) =>
+      setWaitlistTickets((tickets) => {
+        const next = { ...tickets };
+        if (entryRef) next[restaurantId] = entryRef;
+        else delete next[restaurantId];
+        return next;
+      }),
+    [setWaitlistTickets]
+  );
+
   // Deep link: scroll the highlighted location into view, and when the link carried a
   // time, open its booking drawer straight away — that link's intent is to book.
   useEffect(() => {
@@ -238,9 +268,10 @@ export default function LocationsScreen({
     if (!target) return;
     didDeepLink.current = true;
     scrollToItem(highlightId, 220);
-    if (initialTime) setDrawer({ restaurant: target, time: initialTime });
+    if (initialWaitlist) setDrawer({ restaurant: target, time: "", waitlist: true });
+    else if (initialTime) setDrawer({ restaurant: target, time: initialTime });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, restaurants, highlightId, initialTime]);
+  }, [loading, restaurants, highlightId, initialTime, initialWaitlist]);
 
   if (loading) {
     return <PageLoader />;
@@ -299,6 +330,7 @@ export default function LocationsScreen({
           registerRef={registerRef}
           onExpand={handleExpand}
           onBook={handleBook}
+          onJoinWaitlist={handleJoinWaitlist}
           onAvailabilityChange={handleAvailability}
         />
       ))}
@@ -469,6 +501,16 @@ export default function LocationsScreen({
             onSeatsChange={setSeats}
             onDateChange={setDateOverride}
             onClose={closeDrawer}
+            onJoinWaitlist={() => handleJoinWaitlist(drawer.restaurant)}
+            waitlist={
+              drawer.waitlist
+                ? {
+                    entryRef: waitlistTickets[drawer.restaurant.id],
+                    onJoined: (entryRef) => rememberTicket(drawer.restaurant.id, entryRef),
+                    onReset: () => rememberTicket(drawer.restaurant.id, undefined),
+                  }
+                : undefined
+            }
           />
         )}
       </View>

@@ -24,7 +24,10 @@
       "summaryLine_one": "{{count}} comensal · {{when}} · {{time}}",
       "summaryLine_other": "{{count}} comensales · {{when}} · {{time}}",
       "today": "Hoy",
-      "yourDetailsHeading": "Tus datos"
+      "yourDetailsHeading": "Tus datos",
+      "waitlistSummary_one": "Lista de espera · {{count}} comensal",
+      "waitlistSummary_other": "Lista de espera · {{count}} comensales",
+      "waitlistLocationLabel": "Unirse a la lista de espera de {{name}}"
     },
     "factsBand": {
       "dateKey": "Fecha",
@@ -181,7 +184,6 @@
     },
     "waitlist": {
       "joinCta": "Unirse a la lista de espera",
-      "routeTitle": "Unirse a la lista de espera",
       "intro": "Déjenos su nombre y le avisaremos cuando su mesa esté lista.",
       "partySizeLabel": "Número de comensales",
       "emailHint": "Opcional. Le escribiremos cuando su mesa esté lista.",
@@ -192,7 +194,9 @@
       "waitMinutes": "Unos {{minutes}} min de espera",
       "waitUnknown": "Ninguna mesa admite un grupo de ese tamaño",
       "notAccepting": "La lista de espera no está abierta ahora. Funciona mientras el local atiende sin reserva y está abierto.",
-      "loadFailed": "No se pudo cargar la lista de espera. Inténtelo de nuevo."
+      "loadFailed": "No se pudo cargar la lista de espera. Inténtelo de nuevo.",
+      "joinAgain": "Volver a unirse",
+      "openTicket": "Abrir tu turno en su propia página"
     },
     "waitlistStatus": {
       "routeTitle": "Su lugar en la fila",
@@ -587,7 +591,9 @@
       "showDetails": "Mostrar detalles",
       "showDetailsFor": "Mostrar detalles de {{name}}",
       "today": "hoy",
-      "viewMenu": "Ver menú"
+      "viewMenu": "Ver menú",
+      "joinWaitlist": "Lista de espera",
+      "joinWaitlistAt": "Unirse a la lista de espera de {{name}}"
     },
     "locationsScreen": {
       "availabilitySummary_one": "{{withTables}} de {{count}} local tiene mesas disponibles",

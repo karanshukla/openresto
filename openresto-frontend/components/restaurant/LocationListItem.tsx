@@ -44,6 +44,7 @@ export default function LocationListItem({
   registerRef,
   onExpand,
   onBook,
+  onJoinWaitlist,
   onAvailabilityChange,
 }: {
   restaurant: RestaurantDto;
@@ -58,6 +59,7 @@ export default function LocationListItem({
   registerRef: (id: number, ref: View | null) => void;
   onExpand?: (id: number) => void;
   onBook: (restaurant: RestaurantDto, time: string) => void;
+  onJoinWaitlist: (restaurant: RestaurantDto) => void;
   /**
    * Reports how many times this location can offer under the current filters, so the
    * page bar can summarise ("2 of 3 locations have tables"). `null` while loading.
@@ -187,10 +189,31 @@ export default function LocationListItem({
     </Button>
   ) : null;
 
+  // The waitlist is today's queue, so a walk-in day offers it only when that day is today.
+  const takesWaitlist = walkInLocation || (walkInOnDate && isToday);
+  const joinWaitlist = () => onJoinWaitlist(restaurant);
+  const joinWaitlistButton =
+    takesWaitlist && !bookNowButton ? (
+      <Button
+        testID={`location-join-waitlist-${restaurant.id}`}
+        size="sm"
+        icon="hourglass-outline"
+        accessibilityLabel={t("restaurant.locationListItem.joinWaitlistAt", {
+          name: restaurant.name,
+        })}
+        onPress={(event) => {
+          event?.stopPropagation?.();
+          joinWaitlist();
+        }}
+      >
+        {t("restaurant.locationListItem.joinWaitlist")}
+      </Button>
+    ) : null;
+
   const headerActions = (
     <View style={styles.headerActions}>
       {detailsToggle}
-      {bookNowButton}
+      {bookNowButton ?? joinWaitlistButton}
     </View>
   );
 
@@ -354,6 +377,7 @@ export default function LocationListItem({
         <LocationDetailsPanel
           restaurant={restaurant}
           walkInLocation={walkInLocation}
+          onJoinWaitlist={joinWaitlist}
           isDark={isDark}
           borderColor={borderColor}
           mutedColor={mutedColor}
