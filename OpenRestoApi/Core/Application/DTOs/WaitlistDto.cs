@@ -43,6 +43,17 @@ public class WaitlistStatusDto
     public DateTime? NotifiedAt { get; set; }
 }
 
+/// <summary>What a guest sees before joining: whether the queue is open and the wait a new party would face.</summary>
+public class WaitlistQuoteDto
+{
+    public int RestaurantId { get; set; }
+    public bool AcceptingGuests { get; set; }
+    public int PartiesWaiting { get; set; }
+
+    /// <summary>Minutes a party of the requested size would wait if it joined now; null when no table can seat it.</summary>
+    public int? EstimatedWaitMinutes { get; set; }
+}
+
 public class WaitlistEntryDto
 {
     public int Id { get; set; }

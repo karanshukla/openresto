@@ -16,6 +16,9 @@ import { getRestaurantNow } from "@/utils/restaurantTime";
 import * as useAppThemeModule from "@/hooks/use-app-theme";
 import { getThemeColors } from "@/theme/theme";
 
+// WalkInNotice links to the waitlist; the real router can't load under Jest.
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));

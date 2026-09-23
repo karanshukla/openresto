@@ -16,6 +16,9 @@ import { confirm } from "@/utils/confirm";
 // The oversize prompt goes through the cross-platform helper (window.confirm on web,
 // Alert.alert on native), so the guard is exercised through it rather than through a
 // browser API the form no longer calls directly.
+// WalkInNotice links to the waitlist; the real router can't load under Jest.
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: jest.fn() }) }));
+
 jest.mock("@/utils/confirm", () => ({ confirm: jest.fn() }));
 
 // Mock useTableHold

@@ -91,6 +91,7 @@ function AdminLayoutInner() {
       "/admin/bookings": "Bookings",
       "/admin/bookings/new": "New Walk-in",
       "/admin/locations": "Locations",
+      "/admin/waitlist": "Waitlist",
       "/admin/notifications": "Notifications",
       "/admin/activity": "Activity",
       "/admin/login": "Admin Login",

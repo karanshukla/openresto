@@ -41,6 +41,7 @@ export function getActionGroups(t: TFunction): ActionGroupOption[] {
     { label: t("admin.activity.actionGroups.brand"), value: "brand" },
     { label: t("admin.activity.actionGroups.email"), value: "email_settings" },
     { label: t("admin.activity.actionGroups.media"), value: "media" },
+    { label: t("admin.activity.actionGroups.waitlist"), value: "waitlist" },
   ];
 }
 
@@ -63,6 +64,10 @@ const ACTION_LABEL_KEYS: Record<string, TranslationKey> = {
   "booking.extend": "admin.activity.actions.bookingExtend",
   "booking.purge": "admin.activity.actions.bookingPurge",
   "booking.email": "admin.activity.actions.bookingEmail",
+  "waitlist.add": "admin.activity.actions.waitlistAdd",
+  "waitlist.notify": "admin.activity.actions.waitlistNotify",
+  "waitlist.seat": "admin.activity.actions.waitlistSeat",
+  "waitlist.remove": "admin.activity.actions.waitlistRemove",
 
   "restaurant.create": "admin.activity.actions.restaurantCreate",
   "restaurant.update": "admin.activity.actions.restaurantUpdate",
@@ -165,6 +170,7 @@ const GROUP_ICONS: Record<string, IconName> = {
   social_link: "link-outline",
   notification: "notifications-outline",
   push: "notifications-outline",
+  waitlist: "hourglass-outline",
 };
 
 /** Exact keys whose meaning differs from the rest of their group. */

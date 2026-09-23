@@ -23,6 +23,10 @@ export default function BookingsTabLayout() {
         name="booking-confirmation/[bookingRef]"
         options={{ ...tabRoot(), title: t("booking.result.routeTitleConfirmed") }}
       />
+      <Stack.Screen
+        name="waitlist/[ref]"
+        options={{ title: t("booking.waitlistStatus.routeTitle") }}
+      />
     </GuestTabStack>
   );
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import WalkInNotice from "@/components/booking/WalkInNotice";
 
 jest.mock("@expo/vector-icons", () => ({
@@ -13,6 +13,9 @@ jest.mock("@/hooks/use-color-scheme", () => ({
 jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
 }));
+
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 
 describe("WalkInNotice", () => {
   it("renders the location-wide notice", () => {
@@ -32,5 +35,16 @@ describe("WalkInNotice", () => {
     render(<WalkInNotice scope="day" daysLabel="Saturdays and Sundays" />);
     expect(screen.getByText("Walk-ins only on this day")).toBeTruthy();
     expect(screen.getByText(/doesn't take online bookings on Saturdays and Sundays/)).toBeTruthy();
+  });
+
+  it("offers no waitlist unless given a location to join", () => {
+    render(<WalkInNotice scope="location" />);
+    expect(screen.queryByTestId("walk-in-join-waitlist")).toBeNull();
+  });
+
+  it("sends the guest to the location's waitlist", () => {
+    render(<WalkInNotice scope="day" waitlistRestaurantId={7} />);
+    fireEvent.press(screen.getByTestId("walk-in-join-waitlist"));
+    expect(mockPush).toHaveBeenCalledWith("/join-waitlist/7");
   });
 });

@@ -27,6 +27,12 @@ public class WaitlistController(WaitlistService waitlistService) : ControllerBas
         return CreatedAtAction(nameof(GetStatus), new { entryRef = status.Ref }, status);
     }
 
+    [HttpGet("api/restaurants/{restaurantId:int}/waitlist")]
+    public async Task<IActionResult> GetQuote(int restaurantId, [FromQuery] int seats = 2)
+    {
+        return Ok(await _waitlist.GetQuoteAsync(restaurantId, Math.Clamp(seats, BookingLimits.MinSeats, BookingLimits.MaxSeats)));
+    }
+
     [HttpGet("api/waitlist/{entryRef}")]
     public async Task<IActionResult> GetStatus(string entryRef)
     {

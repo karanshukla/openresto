@@ -29,4 +29,8 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
+  action: {
+    flexDirection: "row",
+    marginTop: 8,
+  },
 });

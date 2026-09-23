@@ -80,6 +80,25 @@ public class WaitlistService(
         return board.Entries.First(e => e.Id == entry.Id);
     }
 
+    /// <summary>The wait a party of <paramref name="seats"/> would face joining behind today's queue.</summary>
+    /// <seealso>WaitlistServiceTests.GetQuoteAsync_QuotesANewPartyBehindTheQueue</seealso>
+    public async Task<WaitlistQuoteDto> GetQuoteAsync(int restaurantId, int seats)
+    {
+        Restaurant restaurant = await LoadRestaurantAsync(restaurantId);
+        DateTime now = _clock.UtcNow;
+        List<WaitlistEntry> queue = Order(await _waitlist.GetActiveForRestaurantAsync(restaurantId));
+        List<int> parties = queue.Select(e => e.Seats).Append(seats).ToList();
+        IReadOnlyList<DateTime?> seatAt = await EstimateAsync(restaurant, parties, now);
+
+        return new WaitlistQuoteDto
+        {
+            RestaurantId = restaurantId,
+            AcceptingGuests = AcceptsGuestsAt(restaurant, now),
+            PartiesWaiting = queue.Count,
+            EstimatedWaitMinutes = WaitEstimator.MinutesUntil(seatAt[^1], now),
+        };
+    }
+
     public async Task<WaitlistStatusDto?> GetStatusAsync(string entryRef)
     {
         WaitlistEntry? entry = await _waitlist.GetByRefAsync(entryRef);
@@ -297,12 +316,15 @@ public class WaitlistService(
         return dto;
     }
 
-    private async Task<IReadOnlyList<DateTime?>> EstimateAsync(Restaurant restaurant, List<WaitlistEntry> queue, DateTime now)
+    private Task<IReadOnlyList<DateTime?>> EstimateAsync(Restaurant restaurant, List<WaitlistEntry> queue, DateTime now)
+        => EstimateAsync(restaurant, queue.Select(e => e.Seats).ToList(), now);
+
+    private async Task<IReadOnlyList<DateTime?>> EstimateAsync(Restaurant restaurant, List<int> partySizes, DateTime now)
     {
         List<Booking> seated = await _bookings.GetInProgressForRestaurantAsync(restaurant.Id, now, restaurant.DefaultBookingDurationMinutes);
         return WaitEstimator.EstimateSeatingTimes(
             restaurant,
-            queue.Select(e => e.Seats).ToList(),
+            partySizes,
             WaitEstimator.TableFreeTimes(restaurant, seated),
             now);
     }

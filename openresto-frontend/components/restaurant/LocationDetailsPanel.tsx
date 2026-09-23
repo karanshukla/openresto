@@ -131,7 +131,7 @@ export function LocationDetailsPanel({
         <OpeningHoursTable restaurant={restaurant} />
       </View>
 
-      {walkInLocation && <WalkInNotice scope="location" />}
+      {walkInLocation && <WalkInNotice scope="location" waitlistRestaurantId={restaurant.id} />}
 
       <LocationSeatingMap
         restaurant={restaurant}

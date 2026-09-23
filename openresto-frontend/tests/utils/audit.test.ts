@@ -27,6 +27,7 @@ describe("actionLabel", () => {
     expect(actionLabel("booking.cancel", t)).toBe("Cancelled booking");
     expect(actionLabel("auth.login_failed", t)).toBe("Failed sign-in");
     expect(actionLabel("table_group.update", t)).toBe("Updated table group");
+    expect(actionLabel("waitlist.seat", t)).toBe("Seated a waitlist party");
   });
 
   it("names an undescribed request by its HTTP method", () => {
@@ -183,6 +184,7 @@ describe("getActionGroups", () => {
       "brand",
       "email_settings",
       "media",
+      "waitlist",
     ]);
   });
 

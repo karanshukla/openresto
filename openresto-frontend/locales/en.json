@@ -178,6 +178,41 @@
       "appleA11y": "Add this booking to Apple Wallet",
       "googleA11y": "Save this booking to Google Wallet",
       "failed": "Couldn't prepare the pass. Check your connection and try again."
+    },
+    "waitlist": {
+      "joinCta": "Join the waitlist",
+      "routeTitle": "Join the waitlist",
+      "intro": "Add your name and we'll tell you when your table is ready.",
+      "partySizeLabel": "Party size",
+      "emailHint": "Optional. We'll email you when your table is ready.",
+      "submit": "Join the waitlist",
+      "partiesWaiting_one": "1 party waiting",
+      "partiesWaiting_other": "{{count}} parties waiting",
+      "waitNow": "A table is free now",
+      "waitMinutes": "About {{minutes}} min wait",
+      "waitUnknown": "No table here seats a party that size",
+      "notAccepting": "The waitlist isn't open right now. It runs while the location takes walk-ins and is open.",
+      "loadFailed": "Couldn't load the waitlist. Please try again."
+    },
+    "waitlistStatus": {
+      "routeTitle": "Your place in line",
+      "ticket": "Ticket #{{number}}",
+      "partySize_one": "1 guest",
+      "partySize_other": "{{count}} guests",
+      "waitingTitle": "You're on the list",
+      "partiesAhead_one": "1 party ahead of you",
+      "partiesAhead_other": "{{count}} parties ahead of you",
+      "next": "You're next",
+      "readyTitle": "Your table is ready",
+      "readyBody": "Please head to the host stand.",
+      "seatedTitle": "Enjoy your meal",
+      "leftTitle": "You've left the waitlist",
+      "expiredTitle": "This waitlist entry has expired",
+      "keepOpen": "Keep this page open. It updates on its own.",
+      "leave": "Leave the waitlist",
+      "leaveFailed": "Couldn't leave the waitlist. Please try again.",
+      "notFound": "We couldn't find that waitlist entry.",
+      "loadFailed": "Couldn't refresh your place in line."
     }
   },
   "common": {
@@ -424,6 +459,16 @@
       "not_found": "User {{id}} not found.",
       "password_too_short": "Password must be at least {{min}} characters.",
       "role_invalid": "Role must be one of: {{allowed}}."
+    },
+    "waitlist": {
+      "not_found": "Waitlist entry not found.",
+      "not_walk_in_now": "This location isn't running a walk-in waitlist today.",
+      "closed_now": "This location is closed right now.",
+      "name_required": "A name is required to join the waitlist.",
+      "email_invalid": "That email address doesn't look right.",
+      "party_too_large": "No table here can seat a party of {{seats}}.",
+      "not_active": "This party has already left the waitlist.",
+      "no_table_free": "No free table can seat this party right now."
     }
   },
   "lookup": {
@@ -598,7 +643,8 @@
         "signIns": "Sign-ins",
         "brand": "Brand",
         "email": "Email",
-        "media": "Media"
+        "media": "Media",
+        "waitlist": "Waitlist"
       },
       "error": {
         "title": "Something went wrong",
@@ -677,7 +723,11 @@
         "socialLinkDelete": "Removed social link",
         "notificationDelete": "Deleted notification",
         "pushSubscribe": "Enabled push notifications",
-        "pushUnsubscribe": "Disabled push notifications"
+        "pushUnsubscribe": "Disabled push notifications",
+        "waitlistAdd": "Added a party to the waitlist",
+        "waitlistNotify": "Called a waitlist party",
+        "waitlistSeat": "Seated a waitlist party",
+        "waitlistRemove": "Removed a waitlist party"
       }
     },
     "bookings": {
@@ -1960,7 +2010,8 @@
           "users": "Users",
           "apiKeys": "API Keys",
           "nativeApp": "Native app",
-          "account": "Account"
+          "account": "Account",
+          "waitlist": "Waitlist"
         },
         "unreadLabel_one": "{{label}}, {{count}} unread",
         "unreadLabel_other": "{{label}}, {{count}} unread"
@@ -1976,6 +2027,32 @@
         "darkMode": "Dark mode"
       },
       "logOut": "Log out"
+    },
+    "waitlist": {
+      "title": "Waitlist",
+      "locationLabel": "Location",
+      "noLocations": "Add a location to start a waitlist.",
+      "accepting": "Guests can join from the site right now.",
+      "notAccepting": "Guests can join from the site only while this location takes walk-ins and is open. You can still add parties here.",
+      "empty": "No one is waiting.",
+      "addTitle": "Add a party",
+      "nameLabel": "Name",
+      "emailLabel": "Email (optional)",
+      "seatsLabel": "Party size",
+      "add": "Add",
+      "call": "Call",
+      "callAgain": "Call again",
+      "seat": "Seat",
+      "remove": "Remove",
+      "guests_one": "1 guest",
+      "guests_other": "{{count}} guests",
+      "waitNow": "Table free now",
+      "waitMinutes": "~{{minutes}} min",
+      "waitUnknown": "No table fits",
+      "joined": "Joined {{time}}",
+      "called": "Called {{time}}",
+      "hiddenGuest": "Guest details hidden",
+      "loadFailed": "Couldn't load the waitlist."
     }
   }
 }

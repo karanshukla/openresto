@@ -209,6 +209,27 @@ public class WaitlistServiceTests
     }
 
     [Fact]
+    public async Task GetQuoteAsync_QuotesANewPartyBehindTheQueue()
+    {
+        _inProgress.Add(new Booking { TableId = 1, Date = Now.AddMinutes(-40), EndTime = Now.AddMinutes(20) });
+        Seed(2, minutesAgo: 5);
+
+        WaitlistQuoteDto quote = await CreateService().GetQuoteAsync(1, 2);
+
+        Assert.True(quote.AcceptingGuests);
+        Assert.Equal(1, quote.PartiesWaiting);
+        Assert.Equal(20, quote.EstimatedWaitMinutes);
+    }
+
+    [Fact]
+    public async Task GetQuoteAsync_HasNoEstimate_ForAPartyNoTableCanSeat()
+    {
+        WaitlistQuoteDto quote = await CreateService().GetQuoteAsync(1, 9);
+
+        Assert.Null(quote.EstimatedWaitMinutes);
+    }
+
+    [Fact]
     public async Task GetStatusAsync_IsNull_ForAnUnknownRef()
     {
         Assert.Null(await CreateService().GetStatusAsync("nope"));

@@ -178,6 +178,41 @@
       "appleA11y": "Diese Buchung zu Apple Wallet hinzufügen",
       "googleA11y": "Diese Buchung in Google Wallet speichern",
       "failed": "Der Pass konnte nicht erstellt werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut."
+    },
+    "waitlist": {
+      "joinCta": "Auf die Warteliste",
+      "routeTitle": "Auf die Warteliste",
+      "intro": "Geben Sie Ihren Namen an, wir sagen Bescheid, sobald Ihr Tisch bereit ist.",
+      "partySizeLabel": "Personenzahl",
+      "emailHint": "Optional. Wir schreiben Ihnen, sobald Ihr Tisch bereit ist.",
+      "submit": "Auf die Warteliste",
+      "partiesWaiting_one": "1 Gruppe wartet",
+      "partiesWaiting_other": "{{count}} Gruppen warten",
+      "waitNow": "Ein Tisch ist frei",
+      "waitMinutes": "Etwa {{minutes}} Min. Wartezeit",
+      "waitUnknown": "Kein Tisch hier passt für diese Gruppengröße",
+      "notAccepting": "Die Warteliste ist gerade nicht geöffnet. Sie läuft, solange das Lokal ohne Reservierung bedient und geöffnet ist.",
+      "loadFailed": "Die Warteliste konnte nicht geladen werden. Bitte versuchen Sie es erneut."
+    },
+    "waitlistStatus": {
+      "routeTitle": "Ihr Platz in der Warteschlange",
+      "ticket": "Nummer {{number}}",
+      "partySize_one": "1 Gast",
+      "partySize_other": "{{count}} Gäste",
+      "waitingTitle": "Sie stehen auf der Liste",
+      "partiesAhead_one": "1 Gruppe vor Ihnen",
+      "partiesAhead_other": "{{count}} Gruppen vor Ihnen",
+      "next": "Sie sind als Nächstes dran",
+      "readyTitle": "Ihr Tisch ist bereit",
+      "readyBody": "Bitte kommen Sie zum Empfang.",
+      "seatedTitle": "Guten Appetit",
+      "leftTitle": "Sie haben die Warteliste verlassen",
+      "expiredTitle": "Dieser Eintrag ist abgelaufen",
+      "keepOpen": "Lassen Sie diese Seite offen. Sie aktualisiert sich selbst.",
+      "leave": "Warteliste verlassen",
+      "leaveFailed": "Die Warteliste konnte nicht verlassen werden. Bitte versuchen Sie es erneut.",
+      "notFound": "Dieser Eintrag wurde nicht gefunden.",
+      "loadFailed": "Ihr Platz konnte nicht aktualisiert werden."
     }
   },
   "common": {
@@ -424,6 +459,16 @@
       "not_found": "Benutzer {{id}} nicht gefunden.",
       "password_too_short": "Das Passwort muss mindestens {{min}} Zeichen lang sein.",
       "role_invalid": "Die Rolle muss einer dieser Werte sein: {{allowed}}."
+    },
+    "waitlist": {
+      "not_found": "Eintrag nicht gefunden.",
+      "not_walk_in_now": "Dieser Standort führt heute keine Warteliste.",
+      "closed_now": "Dieser Standort ist gerade geschlossen.",
+      "name_required": "Für die Warteliste wird ein Name benötigt.",
+      "email_invalid": "Diese E-Mail-Adresse scheint nicht zu stimmen.",
+      "party_too_large": "Kein Tisch hier passt für {{seats}} Personen.",
+      "not_active": "Diese Gruppe hat die Warteliste bereits verlassen.",
+      "no_table_free": "Gerade ist kein passender Tisch für diese Gruppe frei."
     }
   },
   "lookup": {
@@ -598,7 +643,8 @@
         "signIns": "Anmeldungen",
         "brand": "Marke",
         "email": "E-Mail",
-        "media": "Medien"
+        "media": "Medien",
+        "waitlist": "Warteliste"
       },
       "error": {
         "title": "Etwas ist schiefgelaufen",
@@ -677,7 +723,11 @@
         "socialLinkDelete": "Social-Media-Link entfernt",
         "notificationDelete": "Benachrichtigung gelöscht",
         "pushSubscribe": "Push-Benachrichtigungen aktiviert",
-        "pushUnsubscribe": "Push-Benachrichtigungen deaktiviert"
+        "pushUnsubscribe": "Push-Benachrichtigungen deaktiviert",
+        "waitlistAdd": "Gruppe zur Warteliste hinzugefügt",
+        "waitlistNotify": "Wartende Gruppe aufgerufen",
+        "waitlistSeat": "Wartende Gruppe platziert",
+        "waitlistRemove": "Gruppe von der Warteliste entfernt"
       }
     },
     "bookings": {
@@ -1960,7 +2010,8 @@
           "users": "Benutzer",
           "apiKeys": "API-Schlüssel",
           "nativeApp": "Native App",
-          "account": "Konto"
+          "account": "Konto",
+          "waitlist": "Warteliste"
         },
         "unreadLabel_one": "{{label}}, {{count}} ungelesen",
         "unreadLabel_other": "{{label}}, {{count}} ungelesen"
@@ -1976,6 +2027,32 @@
         "darkMode": "Dunkler Modus"
       },
       "logOut": "Abmelden"
+    },
+    "waitlist": {
+      "title": "Warteliste",
+      "locationLabel": "Standort",
+      "noLocations": "Legen Sie einen Standort an, um eine Warteliste zu führen.",
+      "accepting": "Gäste können sich gerade über die Website eintragen.",
+      "notAccepting": "Gäste können sich nur über die Website eintragen, solange der Standort ohne Reservierung bedient und geöffnet ist. Hier können Sie weiterhin Gruppen hinzufügen.",
+      "empty": "Niemand wartet.",
+      "addTitle": "Gruppe hinzufügen",
+      "nameLabel": "Name",
+      "emailLabel": "E-Mail (optional)",
+      "seatsLabel": "Personenzahl",
+      "add": "Hinzufügen",
+      "call": "Aufrufen",
+      "callAgain": "Erneut aufrufen",
+      "seat": "Platzieren",
+      "remove": "Entfernen",
+      "guests_one": "1 Gast",
+      "guests_other": "{{count}} Gäste",
+      "waitNow": "Tisch frei",
+      "waitMinutes": "~{{minutes}} Min.",
+      "waitUnknown": "Kein Tisch passt",
+      "joined": "Eingetragen {{time}}",
+      "called": "Aufgerufen {{time}}",
+      "hiddenGuest": "Gästedaten ausgeblendet",
+      "loadFailed": "Die Warteliste konnte nicht geladen werden."
     }
   }
 }

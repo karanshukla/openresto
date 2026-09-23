@@ -49,6 +49,17 @@ public class WaitlistControllerTests(TestWebAppFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task GetQuote_SaysWhetherGuestsCanJoin()
+    {
+        int id = SeedRestaurant(walkInOnly: false);
+
+        WaitlistQuoteDto? quote = await _factory.CreateClient().GetFromJsonAsync<WaitlistQuoteDto>($"/api/restaurants/{id}/waitlist?seats=2");
+
+        Assert.False(quote!.AcceptingGuests);
+        Assert.Equal(0, quote.EstimatedWaitMinutes);
+    }
+
+    [Fact]
     public async Task GetStatus_Returns404_ForAnUnknownRef()
     {
         HttpResponseMessage response = await _factory.CreateClient().GetAsync("/api/waitlist/unknown-ref");
