@@ -18,15 +18,15 @@
 
   <ItemGroup>
     <PackageReference Include="csulpizi.CustomAccessibility" Version="1.0.3" />
-    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.16.0" />
-    <PackageReference Include="MailKit" Version="4.17.0" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.17.1" />
+    <PackageReference Include="MailKit" Version="4.18.0" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
-<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" PrivateAssets="all" />
     <!-- Microsoft.EntityFrameworkCore.Design 10.0.11 depends on these at 5.0.0, which pins
          Microsoft.CodeAnalysis.Workspaces.Common to an exact [5.0.0], while
          Microsoft.CodeAnalysis.CSharp/.Common resolve to 5.3.0 elsewhere in the graph. That
@@ -35,7 +35,7 @@
          whole Roslyn dependency chain on one version. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.3.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.3.0" PrivateAssets="all" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.11" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.12" />
     <PackageReference Include="WebPush" Version="1.0.13" />
   </ItemGroup>
 
