@@ -440,7 +440,7 @@ public class RestaurantManagementService(
         return ToTableDto(table);
     }
 
-    public async Task<TableDto?> UpdateTableAsync(int restaurantId, int sectionId, int tableId, string? name, int seats, bool? walkInOnly = null)
+    public async Task<TableDto?> UpdateTableAsync(int restaurantId, int sectionId, int tableId, string? name, int seats, bool walkInOnly = false)
     {
         Table? table = await _tableRepository.GetForRestaurantAsync(tableId, sectionId, restaurantId);
 
@@ -453,11 +453,11 @@ public class RestaurantManagementService(
 
         _audit.RecordChange("name", table.Name, name);
         _audit.RecordChange("seats", table.Seats, seats);
-        _audit.RecordChange("walkInOnly", table.WalkInOnly, walkInOnly ?? table.WalkInOnly);
+        _audit.RecordChange("walkInOnly", table.WalkInOnly, walkInOnly);
 
         table.Name = name;
         table.Seats = seats;
-        table.WalkInOnly = walkInOnly ?? table.WalkInOnly;
+        table.WalkInOnly = walkInOnly;
         await _tableRepository.SaveChangesAsync();
 
         // After the save, so the reconcile reads the new capacity rather than the pre-edit one.

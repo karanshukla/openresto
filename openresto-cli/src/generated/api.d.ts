@@ -4673,8 +4673,8 @@ export interface components {
             name?: null | string;
             /** Format: int32 */
             seats?: number | string;
-            /** @description Keep the table for walk-ins. Null leaves the stored value untouched. */
-            walkInOnly?: null | boolean;
+            /** @description Keep the table for walk-ins: never offered or bookable online. */
+            walkInOnly?: boolean;
         };
         UpdateUserRoleRequest: {
             role?: string;

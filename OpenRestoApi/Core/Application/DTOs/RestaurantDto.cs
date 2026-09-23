@@ -126,8 +126,8 @@ public class UpdateTableRequest
     [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
 
-    /// <summary>Keep the table for walk-ins. Null leaves the stored value untouched.</summary>
-    public bool? WalkInOnly { get; set; }
+    /// <summary>Keep the table for walk-ins: never offered or bookable online.</summary>
+    public bool WalkInOnly { get; set; }
 }
 
 /// <summary>

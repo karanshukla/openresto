@@ -1322,20 +1322,18 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
-    public async Task UpdateTableAsync_TogglesWalkInOnly_AndKeepsItWhenOmitted()
+    public async Task UpdateTableAsync_TogglesWalkInOnly()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(UpdateTableAsync_TogglesWalkInOnly_AndKeepsItWhenOmitted));
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateTableAsync_TogglesWalkInOnly));
         db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
         db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
         await db.SaveChangesAsync();
         var svc = CreateService(db);
         TableDto added = (await svc.AddTableAsync(1, 1, "Door", 2, walkInOnly: true))!;
 
-        TableDto? renamed = await svc.UpdateTableAsync(1, 1, added.Id, "Window", 2);
         TableDto? released = await svc.UpdateTableAsync(1, 1, added.Id, "Window", 2, walkInOnly: false);
 
         Assert.True(added.WalkInOnly);
-        Assert.True(renamed!.WalkInOnly);
         Assert.False(released!.WalkInOnly);
         Assert.False(db.Tables.Single().WalkInOnly);
     }
