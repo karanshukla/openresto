@@ -47,8 +47,9 @@ public sealed class AvailabilityService(
             DateTime slotUtc = TimeZoneInfo.ConvertTimeToUtc(current, tz);
 
             // A pause closes the slots inside its window only; later sittings — including
-            // later today — stay bookable.
-            if (restaurant.IsPausedFor(slotUtc))
+            // later today — stay bookable. A slot this party would push over the cover cap is
+            // closed the same way.
+            if (restaurant.IsPausedFor(slotUtc) || !HasPacingRoom(restaurant, activeBookings, slotUtc, seats))
             {
                 slots.Add(ClosedSlot(current));
                 continue;
@@ -103,26 +104,35 @@ public sealed class AvailabilityService(
     /// A zero or negative stored interval would spin the slot loop forever. Validation keeps
     /// the column to 15/30/60, so this only ever catches a stale or hand-edited row.
     /// </summary>
-    private static int SlotInterval(Restaurant restaurant)
+    internal static int SlotInterval(Restaurant restaurant)
         => restaurant.BookingSlotIntervalMinutes > 0 ? restaurant.BookingSlotIntervalMinutes : 30;
 
+    /// <summary>Whether this party still fits under the cover cap in the slot starting at <paramref name="slotUtc"/>.</summary>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_ClosesASlot_ThePartyWouldTakeOverTheCoverCap</seealso>
+    private static bool HasPacingRoom(Restaurant restaurant, IEnumerable<Booking> activeBookings, DateTime slotUtc, int seats)
+        => (CoverPacing.Remaining(restaurant, activeBookings, slotUtc) ?? int.MaxValue) >= seats;
+
+    /// <summary>Tables that can seat the party online. Walk-in-only tables are never offered.</summary>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_NeverOffersAWalkInOnlyTable</seealso>
     private static List<Table> EligibleTables(Restaurant restaurant, int seats)
         => restaurant.Sections
             ?.SelectMany(s => s.Tables ?? new List<Table>())
-            .Where(t => t != null && restaurant.CanSeat(t.Seats, seats))
+            .Where(t => t != null && !t.WalkInOnly && restaurant.CanSeat(t.Seats, seats))
             .ToList() ?? new List<Table>();
 
     /// <summary>
     /// Combinable groups are bookable units alongside the individual tables. Member tables
     /// stay in the eligible set — grouping a table does not stop it being booked on its own —
     /// so the mutual exclusion between a member and its group is resolved per slot by
-    /// <see cref="UnitReservations"/> rather than by hiding the members here.
+    /// <see cref="UnitReservations"/> rather than by hiding the members here. A group holding a
+    /// walk-in-only table is left out, or booking it online would take that table.
     /// </summary>
     /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_StillOffersGroupMembers_Individually</seealso>
     /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_RemovesGroupMember_WhenReservedByItsGroupBooking</seealso>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_NeverOffersAGroupWithAWalkInOnlyMember</seealso>
     private static List<TableGroup> EligibleGroups(Restaurant restaurant, int seats)
         => (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
-            .Where(g => restaurant.CanSeat(g.CombinedSeats, seats))
+            .Where(g => !g.HasWalkInOnlyMember() && restaurant.CanSeat(g.CombinedSeats, seats))
             .ToList();
 
     /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_RefusesALargePartyAGapThatOnlyFitsTheSmallerTurnTime</seealso>

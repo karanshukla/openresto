@@ -115,6 +115,26 @@ describe("LocationListItem", () => {
     expect(screen.queryByPlaceholderText("your@email.com")).toBeNull();
   });
 
+  it("tells a guest which tables are kept for walk-ins", async () => {
+    const withDoorTable = {
+      ...mockRestaurant,
+      sections: [
+        {
+          ...mockRestaurant.sections[0],
+          tables: [
+            ...mockRestaurant.sections[0].tables,
+            { id: 102, name: "D3", seats: 2, sectionId: 1, walkInOnly: true },
+          ],
+        },
+      ],
+    };
+    renderWithProviders(
+      <LocationListItem {...baseProps} restaurant={withDoorTable as any} defaultExpanded />
+    );
+    await waitFor(() => expect(screen.getByText("D3")).toBeTruthy());
+    expect(screen.getAllByText("Walk-ins only")).toHaveLength(1);
+  });
+
   it("registers its view ref with the parent for scroll anchoring", async () => {
     renderWithProviders(<LocationListItem {...baseProps} restaurant={mockRestaurant as any} />);
     await waitFor(() => expect(registerRef).toHaveBeenCalledWith(1, expect.anything()));

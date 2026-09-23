@@ -1,4 +1,5 @@
 import { getIsoDayFromDateString } from "@/utils/openingHours";
+import type { RestaurantDto, SectionDto, TableGroupDto } from "@/api/restaurants";
 
 /**
  * Shared helpers for the walk-in-only policy. A location is walk-in only
@@ -101,4 +102,19 @@ export function walkInBadgeLabel(restaurant: WalkInSource): string | null {
   if (restaurant.walkInOnly) return "Walk-ins only";
   const daysLabel = walkInDaysLabel(restaurant);
   return daysLabel ? `Walk-ins on ${daysLabel}` : null;
+}
+
+/**
+ * The sections with their walk-in-only tables left out: the tables a guest can pick online.
+ *
+ * @see [walkIn.test.ts](../tests/utils/walkIn.test.ts): pins that a held-back table, and any
+ * group containing one, never reaches the booking form.
+ */
+export function onlineSections(restaurant: Pick<RestaurantDto, "sections">): SectionDto[] {
+  return restaurant.sections.map((s) => ({ ...s, tables: s.tables.filter((t) => !t.walkInOnly) }));
+}
+
+/** Combinable groups a guest can book online: booking one takes every member, held back or not. */
+export function onlineGroups(restaurant: Pick<RestaurantDto, "groups">): TableGroupDto[] {
+  return (restaurant.groups ?? []).filter((g) => !g.members.some((m) => m.walkInOnly));
 }

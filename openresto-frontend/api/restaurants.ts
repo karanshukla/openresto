@@ -4,6 +4,8 @@ export interface TableDto {
   id: number;
   name?: string | null;
   seats: number;
+  /** Kept for walk-ins: never offered online, still seatable by staff. */
+  walkInOnly?: boolean;
 }
 
 export interface SectionDto {
@@ -109,6 +111,8 @@ export interface RestaurantDto {
   bookingSlotIntervalMinutes?: number;
   /** Max allowed spare seats over party size, or null for unrestricted (off). */
   maxTableOversizeSeats?: number | null;
+  /** Most guests whose online bookings may start in one slot, or null for no cap. */
+  maxCoversPerSlot?: number | null;
   /** Format of references minted for new bookings; existing bookings keep theirs. */
   bookingRefFormat?: BookingRefFormat;
   sections: SectionDto[];
@@ -209,6 +213,7 @@ export async function updateRestaurant(
     turnTimes?: TurnTimeDto[];
     bookingSlotIntervalMinutes?: number;
     maxTableOversizeSeats?: number | null;
+    maxCoversPerSlot?: number | null;
     bookingRefFormat?: BookingRefFormat;
     walkInOnly?: boolean;
     walkInDays?: string;
@@ -267,7 +272,7 @@ export async function deleteSection(restaurantId: number, sectionId: number): Pr
 export async function addTable(
   restaurantId: number,
   sectionId: number,
-  data: { name?: string; seats: number }
+  data: { name?: string; seats: number; walkInOnly?: boolean }
 ): Promise<TableDto | null> {
   try {
     const res = await post(`/restaurants/${restaurantId}/sections/${sectionId}/tables`, data);
@@ -283,7 +288,7 @@ export async function updateTable(
   restaurantId: number,
   sectionId: number,
   tableId: number,
-  data: { name?: string; seats: number }
+  data: { name?: string; seats: number; walkInOnly?: boolean }
 ): Promise<TableDto | null> {
   try {
     const res = await put(

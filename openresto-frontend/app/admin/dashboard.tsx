@@ -20,6 +20,7 @@ import RestaurantActionModal from "@/components/admin/bookings/RestaurantActionM
 import AlertModal from "@/components/common/AlertModal";
 import { styles } from "@/styles/admin/dashboard.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
+import { CoverPacingCard } from "@/components/admin/dashboard/CoverPacingCard";
 import { ScheduleConflictsBanner } from "@/components/admin/dashboard/ScheduleConflictsBanner";
 import { fmtMonthDay, fmtNumber, fmtTime, fmtWeekday } from "@/utils/formatters";
 
@@ -223,6 +224,8 @@ export default function AdminDashboardScreen() {
                 ))}
               </View>
             </View>
+
+            <CoverPacingCard pacing={stats?.pacing ?? []} />
 
             <View
               style={[

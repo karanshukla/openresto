@@ -94,6 +94,7 @@ describe("TableRow", () => {
     expect(restaurantsApi.updateTable).toHaveBeenCalledWith(1, 2, 5, {
       name: "T1-Updated",
       seats: 2,
+      walkInOnly: false,
     });
     expect(baseProps.onUpdated).toHaveBeenCalledWith(updatedTable);
   });
@@ -113,6 +114,7 @@ describe("TableRow", () => {
     expect(restaurantsApi.updateTable).toHaveBeenCalledWith(1, 2, 5, {
       name: "T1",
       seats: 4,
+      walkInOnly: false,
     });
   });
 
@@ -279,6 +281,7 @@ describe("TableRow", () => {
     expect(restaurantsApi.updateTable).toHaveBeenCalledWith(1, 2, 5, {
       name: undefined,
       seats: 4,
+      walkInOnly: false,
     });
   });
 
@@ -312,6 +315,35 @@ describe("TableRow", () => {
     expect(screen.getByText("Saving…")).toBeTruthy();
     await act(async () => {
       resolve!(baseTable);
+    });
+  });
+
+  // ── Walk-in-only tables (#454) ────────────────────────────────────────────
+
+  it("marks a walk-in-only table with a chip", () => {
+    render(<TableRow {...baseProps} table={{ ...baseTable, walkInOnly: true }} />);
+    expect(screen.getByTestId("table-walk-in-chip-5")).toBeTruthy();
+  });
+
+  it("holds a table back for walk-ins from the editor", async () => {
+    (restaurantsApi.updateTable as jest.Mock).mockResolvedValue({ ...baseTable, walkInOnly: true });
+    render(<TableRow {...baseProps} />);
+    fireEvent.press(screen.getByTestId("table-edit-btn-5"));
+    const toggle = screen.getByTestId("table-walk-in-toggle-5");
+    expect(toggle.props.accessibilityState).toEqual({ checked: false });
+
+    fireEvent.press(toggle);
+    expect(screen.getByTestId("table-walk-in-toggle-5").props.accessibilityState).toEqual({
+      checked: true,
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save"));
+    });
+
+    expect(restaurantsApi.updateTable).toHaveBeenCalledWith(1, 2, 5, {
+      name: "T1",
+      seats: 4,
+      walkInOnly: true,
     });
   });
 

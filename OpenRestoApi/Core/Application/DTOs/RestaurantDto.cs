@@ -68,6 +68,12 @@ public class UpdateRestaurantRequest
     public int? MaxTableOversizeSeats { get; set; }
 
     /// <summary>
+    /// Most guests whose online bookings may start in one slot. Null clears the cap. Always
+    /// assigned from the settings form, like <see cref="MaxTableOversizeSeats"/>; validated as 1 or more.
+    /// </summary>
+    public int? MaxCoversPerSlot { get; set; }
+
+    /// <summary>
     /// Booking reference format for new bookings — "AlphaNumeric" (three words) or "Numeric"
     /// (digits only), case-insensitive. Null leaves the stored value untouched (PATCH-style).
     /// Sent as a string rather than the enum because the API has no string-enum converter
@@ -108,6 +114,9 @@ public class CreateTableRequest
 
     [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
+
+    /// <summary>Keep the table for walk-ins: never offered or bookable online.</summary>
+    public bool WalkInOnly { get; set; }
 }
 
 public class UpdateTableRequest
@@ -116,6 +125,9 @@ public class UpdateTableRequest
 
     [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
+
+    /// <summary>Keep the table for walk-ins. Null leaves the stored value untouched.</summary>
+    public bool? WalkInOnly { get; set; }
 }
 
 /// <summary>
@@ -180,6 +192,9 @@ public class TableDto
     public int Id { get; set; }
     public string? Name { get; set; }
     public int Seats { get; set; }
+
+    /// <summary>Kept for walk-ins: never offered online, still seatable by staff.</summary>
+    public bool WalkInOnly { get; set; }
 }
 
 public class SectionDto
@@ -273,6 +288,9 @@ public class RestaurantDto
 
     /// <summary>Max allowed spare seats over party size, or null for unrestricted (off).</summary>
     public int? MaxTableOversizeSeats { get; set; }
+
+    /// <summary>Most guests whose online bookings may start in one slot, or null for no cap.</summary>
+    public int? MaxCoversPerSlot { get; set; }
 
     /// <summary>Format of references minted for new bookings: "AlphaNumeric" or "Numeric".</summary>
     public string BookingRefFormat { get; set; } = Domain.BookingRefFormat.AlphaNumeric.ToString();

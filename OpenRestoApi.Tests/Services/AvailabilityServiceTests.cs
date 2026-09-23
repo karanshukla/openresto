@@ -1020,6 +1020,68 @@ public class AvailabilityServiceTests
     }
 
     [Fact]
+    public async Task GetAvailabilityAsync_NeverOffersAWalkInOnlyTable()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_NeverOffersAWalkInOnlyTable));
+        SeedRestaurantWithGroup(db);
+        db.Tables.Find(1)!.WalkInOnly = true;
+        db.SaveChanges();
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.All(result.Slots, s => Assert.DoesNotContain(1, s.AvailableTableIds));
+        Assert.All(result.Slots, s => Assert.True(s.IsAvailable));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_NeverOffersAGroupWithAWalkInOnlyMember()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_NeverOffersAGroupWithAWalkInOnlyMember));
+        SeedRestaurantWithGroup(db);
+        db.Tables.Find(3)!.WalkInOnly = true;
+        db.SaveChanges();
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+        // Only the group seats six, so holding T3 back leaves nothing for them online.
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(
+            1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 6);
+
+        Assert.All(result.Slots, s =>
+        {
+            Assert.False(s.IsAvailable);
+            Assert.Empty(s.AvailableGroupIds);
+        });
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ClosesASlot_ThePartyWouldTakeOverTheCoverCap()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ClosesASlot_ThePartyWouldTakeOverTheCoverCap));
+        SeedRestaurantWithGroup(db);
+        db.Restaurants.Find(1)!.MaxCoversPerSlot = 6;
+        var noon = new DateTime(2026, 10, 10, 12, 0, 0, DateTimeKind.Utc);
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Seats = 2,
+            Date = noon.AddMinutes(15), EndTime = noon.AddMinutes(75), BookingRef = "P1",
+        });
+        db.SaveChanges();
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+        var day = new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc);
+
+        AvailabilityResponseDto fits = await svc.GetAvailabilityAsync(1, day, 4);
+        AvailabilityResponseDto over = await svc.GetAvailabilityAsync(1, day, 5);
+
+        Assert.True(fits.Slots.First(s => s.Time == "12:00").IsAvailable);
+        Assert.False(over.Slots.First(s => s.Time == "12:00").IsAvailable);
+        // The 12:15 start only counts against its own slot.
+        Assert.True(over.Slots.First(s => s.Time == "11:30").IsAvailable);
+        Assert.True(over.Slots.First(s => s.Time == "12:30").IsAvailable);
+    }
+
+    [Fact]
     public async Task GetAvailabilityAsync_RemovesGroupMember_WhenReservedByItsGroupBooking()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_RemovesGroupMember_WhenReservedByItsGroupBooking));

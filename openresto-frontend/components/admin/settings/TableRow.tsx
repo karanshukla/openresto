@@ -77,6 +77,7 @@ export function TableRow({
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(table.name ?? "");
   const [draftSeats, setDraftSeats] = useState(table.seats);
+  const [draftWalkInOnly, setDraftWalkInOnly] = useState(!!table.walkInOnly);
   const [saving, setSaving] = useState(false);
   const [deleteStep, setDeleteStep] = useState<"idle" | "confirm">("idle");
   /** Null while loading, and when the read fails — the confirmation falls back to generic copy. */
@@ -92,6 +93,7 @@ export function TableRow({
   // rest of the settings cards.
   const surface2 = isDark ? "#252729" : "#f9fafb";
   const cardBg = isDark ? "#1e2022" : "#ffffff";
+  const surfaceMuted = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
 
   const startDelete = async () => {
     setDeleteStep("confirm");
@@ -271,6 +273,17 @@ export function TableRow({
                 </Pressable>
               </View>
             )}
+            {table.walkInOnly && (
+              <View
+                testID={`table-walk-in-chip-${table.id}`}
+                style={[styles.groupChip, styles.walkInChip, { backgroundColor: surfaceMuted }]}
+              >
+                <Icon name="walk-outline" size={11} color={mutedColor} />
+                <ThemedText style={[styles.groupChipText, { color: mutedColor }]}>
+                  {t("admin.settings.tableRow.walkInOnlyChip")}
+                </ThemedText>
+              </View>
+            )}
           </View>
         </View>
 
@@ -295,6 +308,7 @@ export function TableRow({
             onPress={() => {
               setDraftName(table.name ?? "");
               setDraftSeats(table.seats);
+              setDraftWalkInOnly(!!table.walkInOnly);
               setEditing(true);
             }}
             accessibilityLabel={t("admin.settings.tableRow.editLabel", { name: tableName })}
@@ -350,6 +364,27 @@ export function TableRow({
           />
         </View>
       </View>
+      <Pressable
+        testID={`table-walk-in-toggle-${table.id}`}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: draftWalkInOnly }}
+        onPress={() => setDraftWalkInOnly((v) => !v)}
+        style={styles.walkInToggle}
+      >
+        <Icon
+          name={draftWalkInOnly ? "checkbox" : "square-outline"}
+          size="md"
+          color={primaryColor}
+        />
+        <View style={settingsStyles.tileCopy}>
+          <ThemedText style={styles.walkInToggleLabel}>
+            {t("admin.settings.tableRow.walkInOnlyLabel")}
+          </ThemedText>
+          <ThemedText style={[styles.seatsText, { color: mutedColor }]}>
+            {t("admin.settings.tableRow.walkInOnlyHint")}
+          </ThemedText>
+        </View>
+      </Pressable>
       <ButtonRow style={styles.editActions}>
         <Button
           variant="secondary"
@@ -370,6 +405,7 @@ export function TableRow({
             const result = await updateTable(restaurantId, sectionId, table.id, {
               name: draftName.trim() || undefined,
               seats: draftSeats,
+              walkInOnly: draftWalkInOnly,
             });
             setSaving(false);
             if (result) {

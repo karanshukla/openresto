@@ -361,7 +361,8 @@
       "table_id_required_for_section_change": "Indica tableId al reasignar a otra sala.",
       "table_not_in_section": "No se ha encontrado la mesa en la sala indicada.",
       "walk_in_only": "Este local solo admite visitas sin reserva y no acepta reservas en línea.",
-      "walk_in_only_today": "Este local solo admite visitas sin reserva el día seleccionado. Elige otro día o acércate directamente."
+      "walk_in_only_today": "Este local solo admite visitas sin reserva el día seleccionado. Elige otro día o acércate directamente.",
+      "pacing_full": "Solo pueden llegar {{remaining}} comensales más a las {{time}}. Elige otra hora."
     },
     "brand": {
       "accent_color_invalid": "Código hexadecimal de color de acento no válido.",
@@ -425,7 +426,8 @@
       "turn_time_duplicate_seats": "Hay más de una duración de mesa para grupos de {{seats}}.",
       "turn_time_minutes_invalid": "Los minutos de una duración de mesa deben ser uno de estos valores: {{allowed}}.",
       "turn_time_seats_out_of_range": "El tamaño de grupo de una duración de mesa debe estar entre {{min}} y {{max}}.",
-      "walk_in_days_invalid": "WalkInDays debe ser una lista de números de día ISO del 1 (lunes) al 7 (domingo), separados por comas."
+      "walk_in_days_invalid": "WalkInDays debe ser una lista de números de día ISO del 1 (lunes) al 7 (domingo), separados por comas.",
+      "max_covers_invalid": "El máximo de comensales por franja debe ser 1 o más, o quedar vacío para no tener límite."
     },
     "social_link": {
       "label_required": "La etiqueta del enlace social no puede estar vacía.",
@@ -436,7 +438,8 @@
     "table": {
       "oversize_cap": "Esta mesa tiene {{seats}} plazas, demasiadas para un grupo de {{partySize}}.",
       "seats_exceeded": "Esta mesa solo tiene {{seats}} plazas, pero se han solicitado {{requested}} comensales.",
-      "seats_out_of_range": "El número de plazas debe estar entre {{min}} y {{max}}."
+      "seats_out_of_range": "El número de plazas debe estar entre {{min}} y {{max}}.",
+      "walk_in_only": "Esta mesa se reserva para clientes sin reserva y no se puede reservar en línea."
     },
     "table_group": {
       "booking_conflict": "Una de las mesas combinadas ya está reservada para esa hora.",
@@ -617,7 +620,8 @@
       "seatsCount_one": "{{count}} plaza",
       "seatsCount_other": "{{count}} plazas",
       "seatsUpTo": "Hasta {{count}} plazas juntando mesas",
-      "tableFallbackName": "Mesa {{id}}"
+      "tableFallbackName": "Mesa {{id}}",
+      "walkInOnly": "Solo sin reserva"
     },
     "slotRow": {
       "bookAt": "Reservar {{name}} a las {{time}}",
@@ -1045,6 +1049,13 @@
         "subtitle": "Se tomaron antes del horario actual y siguen en el libro. A los clientes no se les avisó del cambio. Consulta los locales.",
         "accessibilityLabel_one": "{{count}} reserva próxima ya no encaja en el horario de su local. Consulta los locales.",
         "accessibilityLabel_other": "{{count}} reservas próximas ya no encajan en el horario de su local. Consulta los locales."
+      },
+      "pacing": {
+        "title": "Llegadas por franja hoy",
+        "cap_one": "Límite {{count}} comensal",
+        "cap_other": "Límite {{count}} comensales",
+        "empty": "Aún no hay llegadas hoy.",
+        "slotLabel": "{{time}}: {{covers}} de {{cap}} comensales"
       }
     },
     "layout": {
@@ -1645,7 +1656,10 @@
         "seatsPlaceholder": "Asientos",
         "cancelEditLabel": "Cancelar la edición de {{name}}",
         "saveLabel": "Guardar {{name}}",
-        "save": "Guardar"
+        "save": "Guardar",
+        "walkInOnlyChip": "Sin reserva",
+        "walkInOnlyLabel": "Solo sin reserva",
+        "walkInOnlyHint": "Nunca se ofrece en línea. El personal y la lista de espera pueden seguir sentando grupos aquí."
       },
       "sectionBlock": {
         "namedGroupLabel": "{{name}} ({{seats}} asientos)",
@@ -1915,7 +1929,11 @@
         "oversizeLabel": "Exceso máximo de mesa",
         "oversizeHint": "No ofrezca mesas con más asientos de más que el tamaño del grupo indicado aquí.",
         "refFormatLabel": "Formato de referencia de reserva",
-        "refFormatHint": "El aspecto de las nuevas referencias de reserva. Las reservas existentes conservan la suya."
+        "refFormatHint": "El aspecto de las nuevas referencias de reserva. Las reservas existentes conservan la suya.",
+        "maxCoversLabel": "Máx. de comensales por franja",
+        "maxCoversPlaceholder": "Sin límite",
+        "maxCoversHint": "Limita los comensales cuyas reservas en línea empiezan en cada franja de {{minutes}} minutos. Las reservas del personal y la lista de espera no tienen límite.",
+        "blockedInvalidMaxCovers": "El máximo de comensales por franja debe ser un número entero de 1 o más, o quedar vacío."
       },
       "accountRoute": {
         "title": "Cuenta",

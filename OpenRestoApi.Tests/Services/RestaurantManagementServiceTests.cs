@@ -470,6 +470,34 @@ public class RestaurantManagementServiceTests
         Assert.Null(entity.MaxTableOversizeSeats);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(null)]
+    public async Task UpdateAsync_SetsOrClearsMaxCoversPerSlot(int? cap)
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_SetsOrClearsMaxCoversPerSlot) + cap);
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", MaxCoversPerSlot = 20 });
+        await db.SaveChangesAsync();
+
+        RestaurantDto? result = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", MaxCoversPerSlot = cap });
+
+        Assert.Equal(cap, result!.MaxCoversPerSlot);
+        Assert.Equal(cap, (await db.Restaurants.SingleAsync()).MaxCoversPerSlot);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RejectsAMaxCoversPerSlotOfZero()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_RejectsAMaxCoversPerSlotOfZero));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(
+            () => CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", MaxCoversPerSlot = 0 }));
+
+        Assert.Equal(ErrorCodes.RestaurantMaxCoversInvalid, ex.Code);
+    }
+
     [Fact]
     public async Task UpdateAsync_RejectsNegativeMaxTableOversizeSeats()
     {
@@ -1291,6 +1319,25 @@ public class RestaurantManagementServiceTests
         Assert.NotNull(result);
         Assert.Equal("T1", result.Name);
         Assert.Equal(4, result.Seats);
+    }
+
+    [Fact]
+    public async Task UpdateTableAsync_TogglesWalkInOnly_AndKeepsItWhenOmitted()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateTableAsync_TogglesWalkInOnly_AndKeepsItWhenOmitted));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R" });
+        db.Sections.Add(new Section { Id = 1, Name = "S", RestaurantId = 1 });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+        TableDto added = (await svc.AddTableAsync(1, 1, "Door", 2, walkInOnly: true))!;
+
+        TableDto? renamed = await svc.UpdateTableAsync(1, 1, added.Id, "Window", 2);
+        TableDto? released = await svc.UpdateTableAsync(1, 1, added.Id, "Window", 2, walkInOnly: false);
+
+        Assert.True(added.WalkInOnly);
+        Assert.True(renamed!.WalkInOnly);
+        Assert.False(released!.WalkInOnly);
+        Assert.False(db.Tables.Single().WalkInOnly);
     }
 
     [Fact]

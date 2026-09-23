@@ -107,6 +107,7 @@ describe("getAdminDashboardStats", () => {
       occupancyData: [],
       occupancyDates: [],
       occupancyCounts: [],
+      pacing: [],
       recentBookings: [
         {
           id: 1,
@@ -130,6 +131,23 @@ describe("getAdminDashboardStats", () => {
     });
 
     expect((await getAdminDashboardStats())?.noShowCount).toBe(2);
+  });
+
+  it("passes today's pacing through", async () => {
+    const todayPacing = [
+      {
+        restaurantId: 1,
+        restaurantName: "R1",
+        maxCoversPerSlot: 8,
+        slots: [{ time: "19:00", covers: 6 }],
+      },
+    ];
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ todayBookings: 1, totalSeats: 6, todayPacing }),
+    });
+
+    expect((await getAdminDashboardStats())?.pacing).toEqual(todayPacing);
   });
 
   it("passes occupancyDates through when present in overview", async () => {

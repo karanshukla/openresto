@@ -361,7 +361,8 @@
       "table_id_required_for_section_change": "Geben Sie tableId an, wenn Sie in einen anderen Bereich umbuchen.",
       "table_not_in_section": "Tisch im angegebenen Bereich nicht gefunden.",
       "walk_in_only": "Dieser Standort nimmt nur spontane Gäste an und akzeptiert keine Onlinebuchungen.",
-      "walk_in_only_today": "Dieser Standort nimmt am gewählten Tag nur spontane Gäste an. Bitte wählen Sie einen anderen Tag oder kommen Sie einfach vorbei."
+      "walk_in_only_today": "Dieser Standort nimmt am gewählten Tag nur spontane Gäste an. Bitte wählen Sie einen anderen Tag oder kommen Sie einfach vorbei.",
+      "pacing_full": "Um {{time}} können nur noch {{remaining}} Gäste ankommen. Bitte wählen Sie eine andere Uhrzeit."
     },
     "brand": {
       "accent_color_invalid": "Ungültiger Hexcode für die Akzentfarbe.",
@@ -425,7 +426,8 @@
       "turn_time_duplicate_seats": "Es gibt mehr als eine Tischzeit für Gruppen von {{seats}}.",
       "turn_time_minutes_invalid": "Die Minuten einer Tischzeit müssen einer dieser Werte sein: {{allowed}}.",
       "turn_time_seats_out_of_range": "Die Gruppengröße einer Tischzeit muss zwischen {{min}} und {{max}} liegen.",
-      "walk_in_days_invalid": "WalkInDays muss eine durch Kommas getrennte Liste von ISO-Tagesnummern von 1 (Montag) bis 7 (Sonntag) sein."
+      "walk_in_days_invalid": "WalkInDays muss eine durch Kommas getrennte Liste von ISO-Tagesnummern von 1 (Montag) bis 7 (Sonntag) sein.",
+      "max_covers_invalid": "Die maximale Gästezahl pro Zeitfenster muss mindestens 1 sein oder leer bleiben (kein Limit)."
     },
     "social_link": {
       "label_required": "Die Bezeichnung des Social-Media-Links darf nicht leer sein.",
@@ -436,7 +438,8 @@
     "table": {
       "oversize_cap": "Dieser Tisch hat {{seats}} Plätze und ist damit zu groß für eine Gruppe von {{partySize}} Personen.",
       "seats_exceeded": "Dieser Tisch hat nur {{seats}} Plätze, angefragt wurden aber {{requested}} Gäste.",
-      "seats_out_of_range": "Die Platzzahl muss zwischen {{min}} und {{max}} liegen."
+      "seats_out_of_range": "Die Platzzahl muss zwischen {{min}} und {{max}} liegen.",
+      "walk_in_only": "Dieser Tisch ist für Laufkundschaft freigehalten und kann nicht online gebucht werden."
     },
     "table_group": {
       "booking_conflict": "Einer der kombinierten Tische ist zu dieser Zeit bereits gebucht.",
@@ -617,7 +620,8 @@
       "seatsCount_one": "{{count}} Platz",
       "seatsCount_other": "{{count}} Plätze",
       "seatsUpTo": "Bis zu {{count}} Plätze bei Zusammenstellung",
-      "tableFallbackName": "Tisch {{id}}"
+      "tableFallbackName": "Tisch {{id}}",
+      "walkInOnly": "Nur Laufkundschaft"
     },
     "slotRow": {
       "bookAt": "{{name}} um {{time}} reservieren",
@@ -1045,6 +1049,13 @@
         "subtitle": "Diese wurden vor den aktuellen Öffnungszeiten vorgenommen und stehen weiterhin im Buch. Die Gäste wurden nicht über die Änderung informiert. Sehen Sie sich die Standorte an.",
         "accessibilityLabel_one": "{{count}} bevorstehende Buchung passt nicht mehr in den Zeitplan ihres Standorts. Sehen Sie sich die Standorte an.",
         "accessibilityLabel_other": "{{count}} bevorstehende Buchungen passen nicht mehr in den Zeitplan ihres Standorts. Sehen Sie sich die Standorte an."
+      },
+      "pacing": {
+        "title": "Ankünfte pro Zeitfenster heute",
+        "cap_one": "Limit {{count}} Gast",
+        "cap_other": "Limit {{count}} Gäste",
+        "empty": "Heute noch keine Ankünfte.",
+        "slotLabel": "{{time}}: {{covers}} von {{cap}} Gästen"
       }
     },
     "layout": {
@@ -1645,7 +1656,10 @@
         "seatsPlaceholder": "Sitzplätze",
         "cancelEditLabel": "Bearbeitung von {{name}} abbrechen",
         "saveLabel": "{{name}} speichern",
-        "save": "Speichern"
+        "save": "Speichern",
+        "walkInOnlyChip": "Laufkundschaft",
+        "walkInOnlyLabel": "Nur Laufkundschaft",
+        "walkInOnlyHint": "Wird nie online angeboten. Personal und Warteliste können hier trotzdem Gäste platzieren."
       },
       "sectionBlock": {
         "namedGroupLabel": "{{name}} ({{seats}} Sitzplätze)",
@@ -1915,7 +1929,11 @@
         "oversizeLabel": "Maximale Tischüberschreitung",
         "oversizeHint": "Bieten Sie keine Tische mit mehr als dieser Anzahl zusätzlicher Plätze über der Gruppengröße an.",
         "refFormatLabel": "Format der Buchungsreferenz",
-        "refFormatHint": "Wie neue Buchungsreferenzen aussehen. Bestehende Buchungen behalten ihre."
+        "refFormatHint": "Wie neue Buchungsreferenzen aussehen. Bestehende Buchungen behalten ihre.",
+        "maxCoversLabel": "Max. Gäste pro Zeitfenster",
+        "maxCoversPlaceholder": "Kein Limit",
+        "maxCoversHint": "Begrenzt die Gäste, deren Online-Buchung in einem {{minutes}}-Minuten-Fenster beginnt. Buchungen durch das Personal und die Warteliste sind nicht begrenzt.",
+        "blockedInvalidMaxCovers": "Die maximale Gästezahl pro Zeitfenster muss eine ganze Zahl ab 1 sein oder leer bleiben."
       },
       "accountRoute": {
         "title": "Konto",

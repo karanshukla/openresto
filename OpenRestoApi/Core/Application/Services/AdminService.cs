@@ -87,6 +87,7 @@ public class AdminService(
         int scheduleConflictsCount = 0;
         List<int> scheduleConflictLocationIds = [];
         List<BookingDetailDto> todayBookingsList = [];
+        List<LocationPacingDto> todayPacing = [];
         foreach (Restaurant? r in restaurants)
         {
             (DateTime start, DateTime end) = TimeZoneHelper.GetUtcRangeForLocalDay(nowUtc, r.Timezone);
@@ -94,6 +95,10 @@ public class AdminService(
             todayBookingsCount += rTodayBookings.Count;
             todayNoShowsCount += rTodayBookings.Count(b => b.Status == BookingStatus.NoShow);
             todayBookingsList.AddRange(rTodayBookings.Select(ToDetailDto));
+            if (r.MaxCoversPerSlot is int cap)
+            {
+                todayPacing.Add(PacingFor(r, cap, rTodayBookings));
+            }
 
             List<Booking> upcoming = await _bookingRepository.GetFutureForRestaurantAsync(r.Id, nowUtc);
             int rScheduleConflicts = ScheduleConflictHelper.Conflicting(r, upcoming).Count;
@@ -127,8 +132,25 @@ public class AdminService(
             OccupancyDates = occupancyDates,
             OccupancyCounts = rawCounts,
             TodayBookingsList = [.. todayBookingsList.OrderBy(b => b.Date)],
+            TodayPacing = todayPacing,
         };
     }
+
+    /// <seealso>AdminServiceTests.GetOverviewAsync_ReportsTodaysCoversPerSlot_ForACappedLocation</seealso>
+    private static LocationPacingDto PacingFor(Restaurant restaurant, int cap, IEnumerable<Booking> todayBookings) => new()
+    {
+        RestaurantId = restaurant.Id,
+        RestaurantName = restaurant.Name,
+        MaxCoversPerSlot = cap,
+        Slots = CoverPacing.CoversBySlot(restaurant, todayBookings)
+            .Select(slot => new SlotCoversDto
+            {
+                Time = TimeZoneHelper.ConvertUtcToLocal(slot.SlotStartUtc, restaurant.Timezone)
+                    .ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture),
+                Covers = slot.Covers,
+            })
+            .ToList(),
+    };
 
     private const int OccupancyChartDays = 7;
 
@@ -851,6 +873,7 @@ public class AdminService(
                 Id = t.Id,
                 Name = t.Name,
                 Seats = t.Seats,
+                WalkInOnly = t.WalkInOnly,
             }).ToList(),
         }).ToList();
     }

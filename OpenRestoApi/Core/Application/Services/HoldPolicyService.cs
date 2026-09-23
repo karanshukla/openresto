@@ -26,9 +26,17 @@ public sealed class HoldPolicyService(
             return restaurantPolicy;
         }
 
-        // Existing confirmed booking on the same table.
         DateTime bookingDate = restaurantPolicy.BookingDate;
         Restaurant restaurant = restaurantPolicy.Restaurant!;
+        bool walkInOnly = restaurant.Sections?
+            .SelectMany(s => s.Tables ?? [])
+            .Any(t => t.Id == tableId && t.WalkInOnly) == true;
+        if (walkInOnly)
+        {
+            return HoldPolicyResult.Booked("This table is kept for walk-ins and can't be booked online.", ErrorCodes.TableWalkInOnly);
+        }
+
+        // Existing confirmed booking on the same table.
         bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
             tableId, bookingDate, BookingDuration.For(restaurant, seats));
         if (alreadyBooked)

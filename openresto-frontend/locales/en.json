@@ -361,7 +361,8 @@
       "table_id_required_for_section_change": "Provide tableId when reassigning to a different section.",
       "table_not_in_section": "Table not found in the specified section.",
       "walk_in_only": "This location accepts walk-ins only and does not take online bookings.",
-      "walk_in_only_today": "This location accepts walk-ins only on the selected day. Please choose another day or just come in."
+      "walk_in_only_today": "This location accepts walk-ins only on the selected day. Please choose another day or just come in.",
+      "pacing_full": "Only {{remaining}} more guests can start at {{time}}. Please pick another time."
     },
     "brand": {
       "accent_color_invalid": "Invalid accent color hex code.",
@@ -425,7 +426,8 @@
       "turn_time_duplicate_seats": "There is more than one turn time for parties of {{seats}}.",
       "turn_time_minutes_invalid": "Turn time minutes must be one of: {{allowed}}.",
       "turn_time_seats_out_of_range": "Turn time party sizes must be between {{min}} and {{max}}.",
-      "walk_in_days_invalid": "WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday)."
+      "walk_in_days_invalid": "WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday).",
+      "max_covers_invalid": "Max guests per slot must be 1 or more, or blank for no limit."
     },
     "social_link": {
       "label_required": "Social link label cannot be empty.",
@@ -436,7 +438,8 @@
     "table": {
       "oversize_cap": "This table has {{seats}} seats, which is too large for a party of {{partySize}}.",
       "seats_exceeded": "This table only has {{seats}} seats, but {{requested}} guests were requested.",
-      "seats_out_of_range": "Seats must be between {{min}} and {{max}}."
+      "seats_out_of_range": "Seats must be between {{min}} and {{max}}.",
+      "walk_in_only": "This table is kept for walk-ins and can't be booked online."
     },
     "table_group": {
       "booking_conflict": "One of the combined tables is already booked for that time.",
@@ -617,7 +620,8 @@
       "seatsCount_one": "{{count}} seat",
       "seatsCount_other": "{{count}} seats",
       "seatsUpTo": "Seats up to {{count}} pushed together",
-      "tableFallbackName": "Table {{id}}"
+      "tableFallbackName": "Table {{id}}",
+      "walkInOnly": "Walk-ins only"
     },
     "slotRow": {
       "bookAt": "Book {{name}} at {{time}}",
@@ -1045,6 +1049,13 @@
         "subtitle": "Taken before the current hours and still on the books. The guests have not been told anything changed. Review locations.",
         "accessibilityLabel_one": "{{count}} upcoming booking no longer fits its location's schedule. Review locations.",
         "accessibilityLabel_other": "{{count}} upcoming bookings no longer fit their location's schedule. Review locations."
+      },
+      "pacing": {
+        "title": "Arrivals per slot today",
+        "cap_one": "Cap {{count}} guest",
+        "cap_other": "Cap {{count}} guests",
+        "empty": "No arrivals yet today.",
+        "slotLabel": "{{time}}: {{covers}} of {{cap}} guests"
       }
     },
     "layout": {
@@ -1645,7 +1656,10 @@
         "seatsPlaceholder": "Seats",
         "cancelEditLabel": "Cancel editing {{name}}",
         "saveLabel": "Save {{name}}",
-        "save": "Save"
+        "save": "Save",
+        "walkInOnlyChip": "Walk-ins",
+        "walkInOnlyLabel": "Walk-ins only",
+        "walkInOnlyHint": "Never offered online. Staff and the waitlist can still seat parties here."
       },
       "sectionBlock": {
         "namedGroupLabel": "{{name}} ({{seats}} seats)",
@@ -1915,7 +1929,11 @@
         "oversizeLabel": "Max table oversize",
         "oversizeHint": "Don't offer tables more than this many seats larger than the party size.",
         "refFormatLabel": "Booking reference format",
-        "refFormatHint": "What new booking references look like. Existing bookings keep theirs."
+        "refFormatHint": "What new booking references look like. Existing bookings keep theirs.",
+        "maxCoversLabel": "Max guests starting per slot",
+        "maxCoversPlaceholder": "No limit",
+        "maxCoversHint": "Caps the guests whose online bookings start in each {{minutes}}-minute slot. Staff bookings and the waitlist aren't limited.",
+        "blockedInvalidMaxCovers": "Max guests per slot must be a whole number of 1 or more, or blank."
       },
       "accountRoute": {
         "title": "Account",

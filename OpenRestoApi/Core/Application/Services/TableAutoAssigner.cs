@@ -21,14 +21,19 @@ public sealed class TableAutoAssigner(
     /// The restaurant's bookable units that can seat <paramref name="seats"/> (see
     /// <see cref="Restaurant.CanSeat"/>) and carry no overlapping booking or hold at
     /// <paramref name="bookingDateUtc"/>, ordered smallest-fitting-first and then by
-    /// <see cref="DeprioritizationTier"/>. Empty when nothing fits.
+    /// <see cref="DeprioritizationTier"/>. Empty when nothing fits. Walk-in-only tables, and groups
+    /// holding one, are left out unless <paramref name="includeWalkInOnly"/> is set, which only the
+    /// waitlist does: every other caller is placing an online booking.
     /// </summary>
     /// <seealso>TableAutoAssignerTests.BuildCandidates_PrefersStandaloneTable_WhenPartyFitsBoth</seealso>
     /// <seealso>TableAutoAssignerTests.BuildCandidates_OffersGroupOnly_WhenNoStandaloneTableFits</seealso>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_SkipsWalkInOnlyTablesAndGroups_Online</seealso>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_OffersWalkInOnlyTablesAndGroups_ToTheWaitlist</seealso>
     public async Task<IReadOnlyList<TableCandidate>> BuildCandidatesAsync(
         Restaurant restaurant,
         int seats,
-        DateTime bookingDateUtc)
+        DateTime bookingDateUtc,
+        bool includeWalkInOnly = false)
     {
         if (restaurant.Sections is null || restaurant.Sections.Count == 0 || seats <= 0)
         {
@@ -37,8 +42,8 @@ public sealed class TableAutoAssigner(
 
         int durationMinutes = BookingDuration.For(restaurant, seats);
         var free = new List<TableCandidate>();
-        free.AddRange(await FreeTablesAsync(restaurant, seats, bookingDateUtc, durationMinutes));
-        free.AddRange(await FreeGroupsAsync(restaurant, seats, bookingDateUtc, durationMinutes));
+        free.AddRange(await FreeTablesAsync(restaurant, seats, bookingDateUtc, durationMinutes, includeWalkInOnly));
+        free.AddRange(await FreeGroupsAsync(restaurant, seats, bookingDateUtc, durationMinutes, includeWalkInOnly));
 
         HashSet<int> groupedTableIds = GroupedTableIds(restaurant);
 
@@ -69,14 +74,14 @@ public sealed class TableAutoAssigner(
     /// restaurant's tables and this runs once per auto-assign request, before the lock.
     /// </summary>
     private async Task<List<TableCandidate>> FreeTablesAsync(
-        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes)
+        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes, bool includeWalkInOnly)
     {
         var free = new List<TableCandidate>();
 
         IEnumerable<(Table Table, int SectionId)> eligible = restaurant.Sections!
             .Where(s => s.Tables != null)
             .SelectMany(s => s.Tables!.Where(t => t != null).Select(t => (Table: t!, SectionId: s.Id)))
-            .Where(x => restaurant.CanSeat(x.Table.Seats, seats));
+            .Where(x => (includeWalkInOnly || !x.Table.WalkInOnly) && restaurant.CanSeat(x.Table.Seats, seats));
 
         foreach ((Table table, int sectionId) in eligible)
         {
@@ -92,7 +97,7 @@ public sealed class TableAutoAssigner(
     }
 
     private async Task<List<TableCandidate>> FreeGroupsAsync(
-        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes)
+        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes, bool includeWalkInOnly)
     {
         var free = new List<TableCandidate>();
         if (restaurant.Groups is not { Count: > 0 })
@@ -103,6 +108,7 @@ public sealed class TableAutoAssigner(
         foreach (TableGroup group in restaurant.Groups)
         {
             if (!restaurant.CanSeat(group.CombinedSeats, seats)) continue;
+            if (!includeWalkInOnly && group.HasWalkInOnlyMember()) continue;
 
             var memberIds = group.Members.Select(m => m.TableId).ToList();
             if (memberIds.Count == 0) continue;

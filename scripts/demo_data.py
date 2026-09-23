@@ -96,8 +96,8 @@ BRAND = {
 # past-midnight wrap), both booking-reference formats, all three contact
 # fallback states, every slot interval (15/30/60), walk-in-only both globally
 # and per-day, a live booking pause, an archived location, the table-oversize
-# cap, turn times by party size, and combinable table groups both named and
-# unnamed.
+# cap, turn times by party size, a walk-in-only table, a cover cap, and
+# combinable table groups both named and unnamed.
 
 LOCATIONS = [
     {
@@ -125,6 +125,13 @@ LOCATIONS = [
             {"name": "Patio", "tables": [("P1", 4), ("P2", 4)]},
             {"name": "Snack Bar", "tables": [("S1", 2), ("S2", 2)]},
         ],
+        # Table.WalkInOnly: S1 is kept for the door, so it never shows up online
+        # and the seating map marks it.
+        "walk_in_tables": ["S1"],
+        # MaxCoversPerSlot: low enough that a busy dinner slot can fill, and no
+        # lower than the largest party (the 7-seat patio run) or it could never
+        # book online. The dashboard's pacing bars read from this location.
+        "max_covers": 8,
         # CombinedSeats sits in (largest member, sum of members]: pushing tables
         # together loses a cover at the shared corner. The patio pair matters for
         # the demo — at 7 seats it beats the biggest single table (T3's 6), so a
@@ -467,6 +474,7 @@ def build_dataset(now_utc):
                     "PhoneNumber": spec.get("phone"),
                     "EmailAddress": spec.get("email"),
                     "MaxTableOversizeSeats": spec.get("max_oversize"),
+                    "MaxCoversPerSlot": spec.get("max_covers"),
                     "BookingRefFormat": spec["ref_format"],
                 },
             }
@@ -478,7 +486,15 @@ def build_dataset(now_utc):
             sections.append({"Id": sid, "Name": sec["name"], "RestaurantId": rid, "SortOrder": order})
             for tname, seats in sec["tables"]:
                 tid += 1
-                tables.append({"Id": tid, "Name": tname, "Seats": seats, "SectionId": sid})
+                tables.append(
+                    {
+                        "Id": tid,
+                        "Name": tname,
+                        "Seats": seats,
+                        "SectionId": sid,
+                        "WalkInOnly": tname in spec.get("walk_in_tables", ()),
+                    }
+                )
                 by_name[tname] = {"id": tid, "seats": seats, "section_id": sid}
 
         resolved_groups = []
@@ -952,12 +968,16 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
 
             attempts = 0
             placed = 0
+            covers_by_slot = {}
             while placed < target and attempts < target * 6:
                 attempts += 1
                 unit_kind, unit_id, capacity, section_id, keys = rng.choice(units)
                 minutes = rng.choice(candidates)
 
                 seats = party_size_for(rng, capacity, spec.get("max_oversize"))
+                # Grid minutes are slot starts, so this is the cap BookingService enforces.
+                if spec.get("max_covers") and covers_by_slot.get(minutes, 0) + seats > spec["max_covers"]:
+                    continue
                 local_start = datetime.combine(local_day, datetime.min.time()) + timedelta(minutes=minutes)
                 start_utc = local_start.replace(tzinfo=tz).astimezone(timezone.utc)
                 end_utc = start_utc + timedelta(minutes=duration_for(spec, seats))
@@ -965,6 +985,7 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
                 if not ledger.is_free(keys, start_utc, end_utc):
                     continue
                 ledger.reserve(keys, start_utc, end_utc)
+                covers_by_slot[minutes] = covers_by_slot.get(minutes, 0) + seats
                 placed += 1
 
                 name, email, special = GUESTS[guest_idx % len(GUESTS)]

@@ -105,6 +105,11 @@ public class HoldsController(
             return NotFound(new MessageResponse { Message = "Table group not found.", Code = ErrorCodes.TableGroupNotFound });
         }
 
+        if (group.HasWalkInOnlyMember())
+        {
+            return Conflict(new MessageResponse { Message = "This table is kept for walk-ins and can't be booked online.", Code = ErrorCodes.TableWalkInOnly });
+        }
+
         if (request.Seats <= 0)
         {
             return BadRequest(new MessageResponse

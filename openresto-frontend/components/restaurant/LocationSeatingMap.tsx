@@ -20,7 +20,8 @@ export interface LocationSeatingMapProps {
  * Sections and their tables, plus the groups an admin has flagged as pushable together.
  *
  * Grouped tables stay listed individually because they stay individually bookable — the
- * link glyph marks them rather than folding them away.
+ * link glyph marks them rather than folding them away. A table kept for walk-ins carries the
+ * walk-in glyph and a line under its seats, so a guest sees why it is never offered.
  */
 export function LocationSeatingMap({
   restaurant,
@@ -68,10 +69,16 @@ export function LocationSeatingMap({
                     {groupMemberIds.has(table.id) && (
                       <Icon name="link" size={11} color={primaryColor} />
                     )}
+                    {table.walkInOnly && <Icon name="walk-outline" size={11} color={mutedColor} />}
                   </View>
                   <ThemedText style={[styles.tableSeats, { color: mutedColor }]}>
                     {t("restaurant.seatingMap.seatsCount", { count: table.seats })}
                   </ThemedText>
+                  {table.walkInOnly && (
+                    <ThemedText style={[styles.tableSeats, { color: mutedColor }]}>
+                      {t("restaurant.seatingMap.walkInOnly")}
+                    </ThemedText>
+                  )}
                 </View>
               ))}
             </View>

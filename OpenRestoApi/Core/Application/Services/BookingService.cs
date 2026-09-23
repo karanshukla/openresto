@@ -42,6 +42,7 @@ public class BookingService(
 
         RejectIfClosedToOnlineBookings(restaurant, bookingDate);
         RejectIfPartySizeOutOfRange(bookingDto.Seats);
+        await RejectIfOverCoverCapAsync(restaurant, bookingDate, bookingDto.Seats);
 
         if (bookingDto.TableGroupId.HasValue && bookingDto.TableId is null)
         {
@@ -86,6 +87,10 @@ public class BookingService(
 
         Table? table = await _tableRepository.GetByIdAsync(tableId);
         RejectIfTableCannotSeat(table, restaurant, bookingDto.Seats);
+        if (table?.WalkInOnly == true)
+        {
+            throw WalkInOnlyTable();
+        }
 
         Booking booking = _mapper.ToEntity(bookingDto);
         booking.Date = bookingDate;
@@ -135,6 +140,38 @@ public class BookingService(
             { Code = restaurant.WalkInOnly ? ErrorCodes.BookingWalkInOnly : ErrorCodes.BookingWalkInOnlyToday };
         }
     }
+
+    /// <summary>
+    /// Re-checks the cover cap at write time, since availability only reflected it when the guest
+    /// loaded the page. A hold reserves a table, not covers, so two guests can race for the last
+    /// seats in a slot and the second is refused here.
+    /// </summary>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_AcceptsAPartyThatExactlyFillsTheCoverCap</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsAPartyOneGuestOverTheCoverCap</seealso>
+    private async Task RejectIfOverCoverCapAsync(Restaurant restaurant, DateTime bookingDate, int seats)
+    {
+        if (restaurant.MaxCoversPerSlot is not int cap)
+        {
+            return;
+        }
+
+        DateTime slotStart = CoverPacing.SlotStartUtc(restaurant, bookingDate);
+        IEnumerable<Booking> bookings = await _bookingRepository.GetActiveBookingsForDateAsync(restaurant.Id, bookingDate);
+        int remaining = CoverPacing.Remaining(restaurant, bookings, slotStart)!.Value;
+        if (seats > remaining)
+        {
+            string time = TimeZoneHelper.ConvertUtcToLocal(slotStart, restaurant.Timezone)
+                .ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+            throw new ConflictException($"Only {remaining} more guests can start at {time}.")
+            {
+                Code = ErrorCodes.BookingPacingFull,
+                Args = new Dictionary<string, object> { ["cap"] = cap, ["remaining"] = remaining, ["time"] = time }
+            };
+        }
+    }
+
+    private static ConflictException WalkInOnlyTable()
+        => new("This table is kept for walk-ins and can't be booked online.") { Code = ErrorCodes.TableWalkInOnly };
 
     /// <summary>
     /// Defence in depth behind the DTO's <c>[Range]</c>: without it a party of zero clears the
@@ -292,6 +329,10 @@ public class BookingService(
             ?? throw new NotFoundException("The selected table group no longer exists.") { Code = ErrorCodes.TableGroupNotFound };
 
         RejectIfGroupCannotSeat(group, restaurant, bookingDto.Seats);
+        if (group.HasWalkInOnlyMember())
+        {
+            throw WalkInOnlyTable();
+        }
 
         // Member tables come from the persisted group, never from the request: MemberTableIds is
         // part of the public POST body, so trusting it would let a caller omit members and skip the

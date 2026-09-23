@@ -117,6 +117,14 @@ public class Restaurant
     public int? MaxTableOversizeSeats { get; set; }
 
     /// <summary>
+    /// Pacing: the most guests whose online bookings may start in one slot, a slot being
+    /// <see cref="BookingSlotIntervalMinutes"/> long. Null is no cap. Only starts count, so a
+    /// party seated in the previous slot is not new kitchen load. Admin-recorded bookings and
+    /// the waitlist are exempt but still count toward the total. Resolve with <c>CoverPacing</c>.
+    /// </summary>
+    public int? MaxCoversPerSlot { get; set; }
+
+    /// <summary>
     /// True when a bookable unit of <paramref name="unitSeats"/> seats — a table or a
     /// combinable group — may take a party of <paramref name="partySize"/>: large enough to
     /// seat them, and not so much larger that <see cref="MaxTableOversizeSeats"/> would rather

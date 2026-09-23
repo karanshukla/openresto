@@ -138,7 +138,7 @@ public class WaitlistService(
         var canSeatBySize = new Dictionary<int, bool>();
         foreach (int seats in queue.Select(e => e.Seats).Distinct())
         {
-            canSeatBySize[seats] = (await _autoAssigner.BuildCandidatesAsync(restaurant, seats, now)).Count > 0;
+            canSeatBySize[seats] = (await _autoAssigner.BuildCandidatesAsync(restaurant, seats, now, includeWalkInOnly: true)).Count > 0;
         }
 
         var entries = new List<WaitlistEntryDto>(queue.Count);
@@ -190,6 +190,7 @@ public class WaitlistService(
     /// </summary>
     /// <seealso>WaitlistServiceTests.SeatAsync_CreatesABookingOnTheSmallestFreeTable</seealso>
     /// <seealso>WaitlistServiceTests.SeatAsync_RecordsTheBookingAsSeated</seealso>
+    /// <seealso>WaitlistServiceTests.SeatAsync_UsesAWalkInOnlyTable</seealso>
     /// <seealso>WaitlistServiceTests.SeatAsync_Rejects_WhenNoTableIsFree</seealso>
     /// <seealso>WaitlistServiceTests.SeatAsync_Rejects_ATableThatIsNotFree</seealso>
     public async Task<SeatWaitlistEntryResponse> SeatAsync(int entryId, SeatWaitlistEntryRequest req)
@@ -198,7 +199,7 @@ public class WaitlistService(
         Restaurant restaurant = await LoadRestaurantAsync(entry.RestaurantId);
         DateTime now = _clock.UtcNow;
 
-        IReadOnlyList<TableCandidate> free = await _autoAssigner.BuildCandidatesAsync(restaurant, entry.Seats, now);
+        IReadOnlyList<TableCandidate> free = await _autoAssigner.BuildCandidatesAsync(restaurant, entry.Seats, now, includeWalkInOnly: true);
         TableCandidate unit = PickUnit(free, req)
             ?? throw new ConflictException("No free table can seat this party right now.") { Code = ErrorCodes.WaitlistNoTableFree };
 
