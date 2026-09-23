@@ -28,7 +28,8 @@ export interface SortState {
  * where the most recent event is the interesting one.
  */
 export function defaultSortFor(statusFilter: BookingStatusFilter): SortState {
-  const historical = statusFilter === "past" || statusFilter === "cancelled";
+  const historical =
+    statusFilter === "past" || statusFilter === "cancelled" || statusFilter === "noshow";
   return { key: "date", dir: historical ? "desc" : "asc" };
 }
 

@@ -346,12 +346,16 @@
       "lookup_not_found": "Keine Buchung zu dieser Referenz und E-Mail-Adresse gefunden.",
       "move_conflict": "Diese Änderung würde mit einer bestehenden Buchung kollidieren.",
       "no_customer_email": "Die E-Mail-Adresse des Gastes ist nicht verfügbar.",
+      "no_show_before_start": "Eine Buchung kann erst als nicht erschienen markiert werden, wenn ihre Zeit begonnen hat.",
       "no_tables_available": "Für die gewünschte Zeit und Personenzahl sind keine Tische verfügbar.",
       "party_size_out_of_range": "Die Personenzahl muss zwischen {{min}} und {{max}} liegen.",
       "past_date": "Eine Buchung in der Vergangenheit kann nicht erstellt werden.",
       "paused": "Buchungen sind bis {{until}} Uhr pausiert. Bitte wählen Sie eine spätere Zeit.",
       "paused_indefinitely": "Buchungen für dieses Restaurant sind derzeit pausiert. Bitte versuchen Sie es später erneut.",
       "section_mismatch": "Dieser Bereich gehört nicht zu diesem Restaurant.",
+      "status_cancelled": "Eine stornierte Buchung kann ihren Status nicht ändern.",
+      "status_invalid": "Der Status muss einer dieser Werte sein: {{allowed}}.",
+      "status_transition_invalid": "Eine Buchung mit Status {{from}} kann nicht als {{to}} markiert werden.",
       "table_conflict": "Für diesen Tisch besteht bereits eine Buchung, die sich mit der gewünschten Zeit überschneidet.",
       "table_held": "Dieser Tisch ist bereits von einem anderen Nutzer reserviert. Bitte wählen Sie einen anderen Tisch oder versuchen Sie es gleich noch einmal.",
       "table_id_required_for_section_change": "Geben Sie tableId an, wenn Sie in einen anderen Bereich umbuchen.",
@@ -683,6 +687,7 @@
         "bookingExtend": "Buchung verlängert",
         "bookingPurge": "Buchung endgültig gelöscht",
         "bookingEmail": "Buchungs-E-Mail erneut gesendet",
+        "bookingStatus": "Status einer Buchung geändert",
         "restaurantCreate": "Standort erstellt",
         "restaurantUpdate": "Standort aktualisiert",
         "restaurantArchive": "Standort archiviert",
@@ -746,11 +751,15 @@
       "screenTitle": {
         "live": "Aktuelle Buchungen",
         "past": "Vergangene Buchungen",
-        "cancelled": "Stornierte Buchungen"
+        "cancelled": "Stornierte Buchungen",
+        "noShow": "Nicht erschienene Buchungen"
       },
+      "previousNoShows_one": "{{count}} früheres Nichterscheinen",
+      "previousNoShows_other": "{{count}} frühere Nichterscheinen",
       "tabs": {
         "active": "Aktiv",
         "past": "Vergangen",
+        "noShow": "Nicht erschienen",
         "cancelled": "Storniert",
         "showLabel": "{{tab}} Buchungen anzeigen"
       },
@@ -835,7 +844,10 @@
         "arrived": "Angekommen",
         "upcoming": "Bevorstehend",
         "scheduled": "Geplant",
-        "cancelled": "Storniert"
+        "cancelled": "Storniert",
+        "booked": "Gebucht",
+        "finished": "Beendet",
+        "noShow": "Nicht erschienen"
       },
       "rowSummary": "{{name}}, {{when}}, {{seats}}",
       "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
@@ -881,6 +893,7 @@
           "ref": "Ref.",
           "party": "Personen",
           "name": "Name",
+          "noShows": "Nichterscheinen",
           "requests": "Wünsche"
         },
         "noRequests": "Keine",
@@ -888,6 +901,11 @@
         "extendSection": "Buchung verlängern",
         "extendByMinutes": "+{{mins}} Min.",
         "extendByMinutesLabel": "Buchung um {{mins}} Minuten verlängern",
+        "statusActions": {
+          "title": "Status",
+          "markAs": "Als {{status}} markieren",
+          "undo": "Rückgängig, zurück zu {{status}}"
+        },
         "emailGuest": "E-Mail an Gast",
         "emailTo": "An: {{email}}",
         "moveNotice": "Die Sitzung wurde verschoben. Unten steht ein noch nicht gesendeter Hinweis: bearbeiten Sie ihn oder senden Sie ihn so, wie er ist.",
@@ -965,7 +983,9 @@
       "metrics": {
         "todayBookings": {
           "label": "Heutige Buchungen",
-          "sub": "Gedecke insgesamt heute"
+          "sub": "Gedecke insgesamt heute",
+          "noShows_one": "{{count}} Gast heute nicht erschienen",
+          "noShows_other": "{{count}} Gäste heute nicht erschienen"
         },
         "activeHolds": {
           "label": "Aktive Reservierungen",

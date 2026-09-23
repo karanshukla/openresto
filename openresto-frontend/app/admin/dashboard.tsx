@@ -55,7 +55,10 @@ export default function AdminDashboardScreen() {
         {
           label: t("admin.dashboard.metrics.todayBookings.label"),
           value: stats.todayCount,
-          sub: t("admin.dashboard.metrics.todayBookings.sub"),
+          sub:
+            stats.noShowCount > 0
+              ? t("admin.dashboard.metrics.todayBookings.noShows", { count: stats.noShowCount })
+              : t("admin.dashboard.metrics.todayBookings.sub"),
           icon: "calendar-outline" as const,
           accent: "#2563eb",
         },
@@ -544,7 +547,7 @@ function BookingItem({
               </ThemedText>
             </View>
           ) : (
-            <StatusBadge date={booking.date} isDark={isDark} />
+            <StatusBadge date={booking.date} status={booking.status} isDark={isDark} />
           )}
         </View>
         {booking.customerName && (

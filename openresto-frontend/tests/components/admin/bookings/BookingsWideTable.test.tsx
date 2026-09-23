@@ -52,6 +52,36 @@ describe("BookingsWideTable", () => {
     expect(screen.getByText("AW")).toBeTruthy(); // initials
   });
 
+  it("flags a guest's previous no-shows under their name", () => {
+    render(
+      <BookingsWideTable
+        bookings={[{ ...activeBooking, previousNoShows: 2 }]}
+        focusedRowId={null}
+        onOpenBooking={() => {}}
+        onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
+        {...theme}
+      />
+    );
+    expect(screen.getByText("2 previous no-shows")).toBeTruthy();
+  });
+
+  it("says nothing about no-shows for a guest with none", () => {
+    render(
+      <BookingsWideTable
+        bookings={[{ ...activeBooking, previousNoShows: 0 }]}
+        focusedRowId={null}
+        onOpenBooking={() => {}}
+        onCancelBooking={() => {}}
+        sort={sort}
+        onSortChange={() => {}}
+        {...theme}
+      />
+    );
+    expect(screen.queryByText(/no-show/)).toBeNull();
+  });
+
   it("renders the cancel button for an active, non-past booking", () => {
     render(
       <BookingsWideTable

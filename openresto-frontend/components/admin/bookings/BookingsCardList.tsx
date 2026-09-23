@@ -93,6 +93,14 @@ export function BookingsCardList({
                     {b.customerEmail}
                   </ThemedText>
                 ) : null}
+                {!!b.previousNoShows && (
+                  <ThemedText
+                    style={[styles.tdNotes, { color: theme.colors.error }]}
+                    numberOfLines={1}
+                  >
+                    {t("admin.bookings.previousNoShows", { count: b.previousNoShows })}
+                  </ThemedText>
+                )}
                 <ThemedText style={[styles.tdTime, { fontSize: 13 }]}>
                   {fmtDateTime(new Date(b.date))}
                 </ThemedText>
@@ -118,7 +126,7 @@ export function BookingsCardList({
                     </ThemedText>
                   </View>
                 ) : (
-                  <StatusBadge date={b.date} isDark={isDark} />
+                  <StatusBadge date={b.date} status={b.status} isDark={isDark} />
                 )}
               </View>
             </View>

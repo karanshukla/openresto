@@ -346,12 +346,16 @@
       "lookup_not_found": "Aucune réservation ne correspond à cette référence et à cette adresse e-mail.",
       "move_conflict": "Cette modification entrerait en conflit avec une réservation existante.",
       "no_customer_email": "L'adresse e-mail du client n'est pas disponible.",
+      "no_show_before_start": "Une réservation ne peut être marquée comme absente qu'une fois le service commencé.",
       "no_tables_available": "Aucune table n'est disponible pour l'horaire et le nombre de convives demandés.",
       "party_size_out_of_range": "Le nombre de convives doit être compris entre {{min}} et {{max}}.",
       "past_date": "Impossible de créer une réservation dans le passé.",
       "paused": "Les réservations sont suspendues jusqu'à {{until}}. Veuillez choisir un horaire plus tardif.",
       "paused_indefinitely": "Les réservations pour ce restaurant sont actuellement suspendues. Veuillez réessayer plus tard.",
       "section_mismatch": "Cette salle n'appartient pas à ce restaurant.",
+      "status_cancelled": "Une réservation annulée ne peut pas changer de statut.",
+      "status_invalid": "Le statut doit être l'une des valeurs suivantes : {{allowed}}.",
+      "status_transition_invalid": "Une réservation au statut {{from}} ne peut pas passer à {{to}}.",
       "table_conflict": "Cette table a déjà une réservation qui chevauche l'horaire demandé.",
       "table_held": "Cette table est déjà réservée par un autre utilisateur. Veuillez choisir une autre table ou réessayer dans un instant.",
       "table_id_required_for_section_change": "Indiquez tableId lors d'un changement de salle.",
@@ -683,6 +687,7 @@
         "bookingExtend": "Réservation prolongée",
         "bookingPurge": "Réservation purgée",
         "bookingEmail": "E-mail de réservation renvoyé",
+        "bookingStatus": "A changé le statut d'une réservation",
         "restaurantCreate": "Établissement créé",
         "restaurantUpdate": "Établissement modifié",
         "restaurantArchive": "Établissement archivé",
@@ -746,11 +751,15 @@
       "screenTitle": {
         "live": "Réservations en cours",
         "past": "Réservations passées",
-        "cancelled": "Réservations annulées"
+        "cancelled": "Réservations annulées",
+        "noShow": "Réservations sans présentation"
       },
+      "previousNoShows_one": "{{count}} absence précédente",
+      "previousNoShows_other": "{{count}} absences précédentes",
       "tabs": {
         "active": "En cours",
         "past": "Passées",
+        "noShow": "Absents",
         "cancelled": "Annulées",
         "showLabel": "Afficher les réservations {{tab}}"
       },
@@ -835,7 +844,10 @@
         "arrived": "Arrivé",
         "upcoming": "À venir",
         "scheduled": "Planifié",
-        "cancelled": "Annulé"
+        "cancelled": "Annulé",
+        "booked": "Réservée",
+        "finished": "Terminée",
+        "noShow": "Absent"
       },
       "rowSummary": "{{name}}, {{when}}, {{seats}}",
       "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
@@ -881,6 +893,7 @@
           "ref": "Réf.",
           "party": "Convives",
           "name": "Nom",
+          "noShows": "Absences",
           "requests": "Demandes"
         },
         "noRequests": "Aucune",
@@ -888,6 +901,11 @@
         "extendSection": "Prolonger la réservation",
         "extendByMinutes": "+{{mins}} min",
         "extendByMinutesLabel": "Prolonger la réservation de {{mins}} minutes",
+        "statusActions": {
+          "title": "Statut",
+          "markAs": "Marquer comme {{status}}",
+          "undo": "Annuler, revenir à {{status}}"
+        },
         "emailGuest": "E-mail au client",
         "emailTo": "À : {{email}}",
         "moveNotice": "Le créneau a changé. Un message a été préparé ci-dessous et n'a pas été envoyé : modifiez-le ou envoyez-le tel quel.",
@@ -965,7 +983,9 @@
       "metrics": {
         "todayBookings": {
           "label": "Réservations du jour",
-          "sub": "Total des couverts pour aujourd'hui"
+          "sub": "Total des couverts pour aujourd'hui",
+          "noShows_one": "{{count}} absent aujourd'hui",
+          "noShows_other": "{{count}} absents aujourd'hui"
         },
         "activeHolds": {
           "label": "Réservations temporaires actives",

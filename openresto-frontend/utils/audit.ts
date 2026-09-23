@@ -64,6 +64,7 @@ const ACTION_LABEL_KEYS: Record<string, TranslationKey> = {
   "booking.extend": "admin.activity.actions.bookingExtend",
   "booking.purge": "admin.activity.actions.bookingPurge",
   "booking.email": "admin.activity.actions.bookingEmail",
+  "booking.status": "admin.activity.actions.bookingStatus",
   "waitlist.add": "admin.activity.actions.waitlistAdd",
   "waitlist.notify": "admin.activity.actions.waitlistNotify",
   "waitlist.seat": "admin.activity.actions.waitlistSeat",

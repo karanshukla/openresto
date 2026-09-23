@@ -346,12 +346,16 @@
       "lookup_not_found": "No se ha encontrado ninguna reserva con esa referencia y ese correo electrónico.",
       "move_conflict": "Este cambio entraría en conflicto con una reserva existente.",
       "no_customer_email": "El correo electrónico del cliente no está disponible.",
+      "no_show_before_start": "Una reserva solo se puede marcar como no presentada una vez que ha empezado su turno.",
       "no_tables_available": "No hay mesas disponibles para la hora y el número de comensales solicitados.",
       "party_size_out_of_range": "El número de comensales debe estar entre {{min}} y {{max}}.",
       "past_date": "No se puede crear una reserva en el pasado.",
       "paused": "Las reservas están pausadas hasta las {{until}}. Elige una hora posterior.",
       "paused_indefinitely": "Las reservas de este restaurante están pausadas en este momento. Vuelve a intentarlo más tarde.",
       "section_mismatch": "La sala no pertenece a este restaurante.",
+      "status_cancelled": "Una reserva cancelada no admite cambios de estado.",
+      "status_invalid": "El estado debe ser uno de estos valores: {{allowed}}.",
+      "status_transition_invalid": "Una reserva en estado {{from}} no se puede marcar como {{to}}.",
       "table_conflict": "Esta mesa ya tiene una reserva que se solapa con la hora solicitada.",
       "table_held": "Otro usuario tiene retenida esta mesa. Elige otra mesa o vuelve a intentarlo en unos instantes.",
       "table_id_required_for_section_change": "Indica tableId al reasignar a otra sala.",
@@ -683,6 +687,7 @@
         "bookingExtend": "Reserva ampliada",
         "bookingPurge": "Reserva purgada",
         "bookingEmail": "Correo de reserva reenviado",
+        "bookingStatus": "Cambió el estado de una reserva",
         "restaurantCreate": "Local creado",
         "restaurantUpdate": "Local modificado",
         "restaurantArchive": "Local archivado",
@@ -746,11 +751,15 @@
       "screenTitle": {
         "live": "Reservas activas",
         "past": "Reservas pasadas",
-        "cancelled": "Reservas canceladas"
+        "cancelled": "Reservas canceladas",
+        "noShow": "Reservas no presentadas"
       },
+      "previousNoShows_one": "{{count}} ausencia anterior",
+      "previousNoShows_other": "{{count}} ausencias anteriores",
       "tabs": {
         "active": "Activas",
         "past": "Pasadas",
+        "noShow": "No presentados",
         "cancelled": "Canceladas",
         "showLabel": "Mostrar reservas {{tab}}"
       },
@@ -835,7 +844,10 @@
         "arrived": "Llegaron",
         "upcoming": "Próxima",
         "scheduled": "Programada",
-        "cancelled": "Cancelada"
+        "cancelled": "Cancelada",
+        "booked": "Reservada",
+        "finished": "Terminada",
+        "noShow": "No se presentó"
       },
       "rowSummary": "{{name}}, {{when}}, {{seats}}",
       "rowSummaryWithTable": "{{name}}, {{when}}, {{seats}}, {{table}}",
@@ -881,6 +893,7 @@
           "ref": "Ref.",
           "party": "Comensales",
           "name": "Nombre",
+          "noShows": "Ausencias",
           "requests": "Solicitudes"
         },
         "noRequests": "Ninguna",
@@ -888,6 +901,11 @@
         "extendSection": "Ampliar reserva",
         "extendByMinutes": "+{{mins}} min",
         "extendByMinutesLabel": "Ampliar la reserva {{mins}} minutos",
+        "statusActions": {
+          "title": "Estado",
+          "markAs": "Marcar como {{status}}",
+          "undo": "Deshacer, volver a {{status}}"
+        },
         "emailGuest": "Enviar correo al cliente",
         "emailTo": "Para: {{email}}",
         "moveNotice": "El turno cambió. Se ha redactado un aviso a continuación y aún no se ha enviado: editálo o envíalo tal cual.",
@@ -965,7 +983,9 @@
       "metrics": {
         "todayBookings": {
           "label": "Reservas de hoy",
-          "sub": "Total de comensales para hoy"
+          "sub": "Total de comensales para hoy",
+          "noShows_one": "{{count}} no presentado hoy",
+          "noShows_other": "{{count}} no presentados hoy"
         },
         "activeHolds": {
           "label": "Retenciones activas",
