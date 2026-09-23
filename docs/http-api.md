@@ -85,13 +85,13 @@ Every admin endpoint is gated on a `{resource}:{access}` scope:
 
 | Resource    | Access         | Covers                                                    |
 | ----------- | -------------- | --------------------------------------------------------- |
-| `bookings`  | `read`/`write` | Reservations and their details                            |
+| `bookings`  | `read`/`write` | Reservations, their details and the walk-in waitlist      |
 | `locations` | `read`/`write` | Restaurants, opening hours and their settings             |
 | `tables`    | `read`/`write` | Sections, tables and combinable groups                    |
 | `brand`     | `read`/`write` | Site name, colours, contact details, highlights and media |
 | `users`     | `read`/`write` | List accounts; `write` activates and deactivates them     |
 | `audit`     | `read`         | The admin activity trail                                  |
-| `guests`    | `read`         | Customer names and emails on bookings                     |
+| `guests`    | `read`         | Customer names and emails on bookings and the waitlist    |
 | `email`     | `read`         | Whether outgoing mail is configured and delivering        |
 
 A `write` grant satisfies a `read` requirement; the reverse is never true. `audit`, `guests` and
