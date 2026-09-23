@@ -72,6 +72,15 @@ jobs:
 
             trap 'echo "==> Error — dumping container logs:"; docker compose -f docker-compose.vps.yml logs --tail=80' ERR
 
+            # A hand edit on the VPS makes `git pull` refuse to merge and blocks
+            # every deploy until someone can SSH in. Stash it instead: the
+            # checkout tracks main, and the edit stays recoverable.
+            if ! git diff --quiet HEAD; then
+              echo "==> Stashing local changes on the VPS (recover with git stash list):"
+              git diff --stat HEAD
+              git stash push -m "deploy autostash $(date -u +%FT%TZ)"
+            fi
+
             echo "==> Pulling latest code..."
             git pull origin main
 
@@ -132,5 +141,5 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            -d '{state: "failure", description: "Deployment failed"}' \
+            -d '{"state": "failure", "description": "Deployment failed"}' \
             "https://api.github.com/repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses"
