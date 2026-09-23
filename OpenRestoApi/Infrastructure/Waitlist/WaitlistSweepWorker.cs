@@ -4,9 +4,10 @@ using OpenRestoApi.Core.Application.Services;
 namespace OpenRestoApi.Infrastructure.Waitlist;
 
 /// <summary>
-/// Runs <see cref="WaitlistService.SweepAsync"/> hourly, in <c>GuestReminderWorker</c>'s shape:
-/// a scope per pass, a catch-all so one bad pass does not stop the next, and injectable
-/// intervals so a test can drive the loop in milliseconds.
+/// Runs <see cref="WaitlistService.SweepAsync"/> every 15 minutes, so a party expires within a
+/// quarter hour of <see cref="WaitlistService.StaleAfter"/>. Same shape as
+/// <c>GuestReminderWorker</c>: a scope per pass, a catch-all so one bad pass does not stop the
+/// next, and injectable intervals so a test can drive the loop in milliseconds.
 /// </summary>
 /// <seealso>WaitlistSweepWorkerTests.RunsThePassRepeatedly</seealso>
 /// <seealso>WaitlistSweepWorkerTests.SurvivesAFailedPass_AndTriesAgainOnTheNextTick</seealso>
@@ -20,7 +21,7 @@ internal sealed class WaitlistSweepWorker(
     TimeSpan? interval = null) : BackgroundService
 {
     private static readonly TimeSpan DefaultStartupDelay = TimeSpan.FromMinutes(1);
-    private static readonly TimeSpan DefaultInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(15);
 
     private readonly TimeSpan _startupDelay = startupDelay ?? DefaultStartupDelay;
     private readonly TimeSpan _interval = interval ?? DefaultInterval;

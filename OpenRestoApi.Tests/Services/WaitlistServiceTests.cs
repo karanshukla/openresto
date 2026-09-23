@@ -465,8 +465,8 @@ public class WaitlistServiceTests
     {
         await CreateService().SweepAsync();
 
-        Assert.Equal(Now - WaitlistService.StaleAfter, _waitlist.ExpiredBefore);
-        Assert.Equal(Now - WaitlistService.RetainFor, _waitlist.DeletedBefore);
+        Assert.Equal(Now.AddHours(-6), _waitlist.ExpiredBefore);
+        Assert.Equal(Now.AddDays(-7), _waitlist.DeletedBefore);
     }
 
     /// <summary>A list-backed repository, so the service's reads see its own writes.</summary>

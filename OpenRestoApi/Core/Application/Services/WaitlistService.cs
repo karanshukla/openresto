@@ -23,8 +23,8 @@ public class WaitlistService(
     ICurrentUserService? currentUser = null,
     IAuditScope? audit = null)
 {
-    /// <summary>An entry still queued this long after joining belongs to a service that has ended.</summary>
-    public static readonly TimeSpan StaleAfter = TimeSpan.FromHours(12);
+    /// <summary>A party still queued this long after joining has almost certainly gone, and would clog the queue.</summary>
+    public static readonly TimeSpan StaleAfter = TimeSpan.FromHours(6);
 
     /// <summary>Entries hold a guest's name and email, so they are deleted this long after joining.</summary>
     public static readonly TimeSpan RetainFor = TimeSpan.FromDays(7);
@@ -240,7 +240,7 @@ public class WaitlistService(
         Describe(AuditActions.WaitlistRemove, entry, $"Removed ticket #{entry.Number} from the waitlist");
     }
 
-    /// <summary>Expires entries left over from an ended service and deletes old ones.</summary>
+    /// <summary>Expires parties queued past <see cref="StaleAfter"/> and hard-deletes entries past <see cref="RetainFor"/>.</summary>
     /// <seealso>WaitlistServiceTests.SweepAsync_ExpiresEntriesPastStaleAfter_AndDeletesPastRetainFor</seealso>
     public virtual async Task SweepAsync()
     {

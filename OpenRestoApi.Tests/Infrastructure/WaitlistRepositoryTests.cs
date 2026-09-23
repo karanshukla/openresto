@@ -123,7 +123,7 @@ public class WaitlistRepositoryTests : IDisposable
     [Fact]
     public async Task ExpireActiveCreatedBeforeAsync_ExpiresOnlyStillQueuedEntries_BeforeTheCutoff()
     {
-        DateTime cutoff = Now.AddHours(-12);
+        DateTime cutoff = Now.AddHours(-6);
         await SeedAsync(
             Entry("stale", cutoff.AddSeconds(-1)),
             Entry("called-stale", cutoff.AddSeconds(-1), WaitlistStatus.Notified),
