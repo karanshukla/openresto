@@ -42,6 +42,26 @@ public class AdminOverviewDto
     public List<string> OccupancyDates { get; set; } = [];
     public List<int> OccupancyCounts { get; set; } = [];
     public List<BookingDetailDto> TodayBookingsList { get; set; } = [];
+
+    /// <summary>Today's covers per slot at each location with a cover cap, so a manager can see where it bites.</summary>
+    public List<LocationPacingDto> TodayPacing { get; set; } = [];
+}
+
+public class LocationPacingDto
+{
+    public int RestaurantId { get; set; }
+    public string RestaurantName { get; set; } = string.Empty;
+    public int MaxCoversPerSlot { get; set; }
+
+    /// <summary>Slots with at least one arrival, earliest first.</summary>
+    public List<SlotCoversDto> Slots { get; set; } = [];
+}
+
+public class SlotCoversDto
+{
+    /// <summary>Slot start as local "HH:mm" in the location's timezone.</summary>
+    public string Time { get; set; } = string.Empty;
+    public int Covers { get; set; }
 }
 
 // ── Booking detail (admin view — includes resolved names) ────────────────────

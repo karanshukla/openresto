@@ -34,6 +34,7 @@ import { rememberBooking } from "@/utils/bookingCache";
 import { convertLocalToUtc } from "@/utils/date";
 import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
+import WaitlistPanel from "@/components/waitlist/WaitlistPanel";
 import Select from "@/components/common/Select";
 import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
 import {
@@ -77,8 +78,17 @@ function summaryLine(
   return t("booking.drawer.summaryLine", { count: seats, when, time });
 }
 
+/** What the panel shows in place of the booking form when the guest is joining the waitlist. */
+export interface DrawerWaitlist {
+  /** The guest's ticket at this location, once they have joined. */
+  entryRef?: string;
+  onJoined: (entryRef: string) => void;
+  onReset: () => void;
+}
+
 /**
  * Booking surface for the Locations list: a side panel on desktop, a bottom sheet on phones.
+ * The walk-in waitlist opens in the same panel, so joining the queue works like booking a table.
  */
 export default function BookingDrawer({
   restaurant,
@@ -92,6 +102,8 @@ export default function BookingDrawer({
   today,
   variant,
   onClose,
+  waitlist,
+  onJoinWaitlist,
 }: {
   restaurant: RestaurantDto;
   /**
@@ -111,6 +123,10 @@ export default function BookingDrawer({
   today: string;
   variant: "side" | "sheet";
   onClose: () => void;
+  /** Shows the walk-in waitlist instead of the booking form. */
+  waitlist?: DrawerWaitlist;
+  /** Switches the panel to the waitlist, from the walk-in notice inside the booking form. */
+  onJoinWaitlist?: () => void;
 }) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -271,7 +287,12 @@ export default function BookingDrawer({
     }
   };
 
-  const switchableLocations = onRestaurantChange && restaurants && restaurants.length > 1;
+  // The waitlist is one location's queue, so it offers no switching.
+  const switchableLocations =
+    !waitlist && onRestaurantChange && restaurants && restaurants.length > 1;
+  const panelLabel = waitlist
+    ? t("booking.drawer.waitlistLocationLabel", { name: restaurant.name })
+    : t("booking.drawer.bookLocationLabel", { name: restaurant.name });
 
   const heading = switchableLocations ? (
     <Select
@@ -322,7 +343,9 @@ export default function BookingDrawer({
           </Pressable>
         </View>
         <ThemedText style={[styles.summary, { color: colors.muted }]}>
-          {summaryLine(t, seats, date, time, today)}
+          {waitlist
+            ? t("booking.drawer.waitlistSummary", { count: seats })
+            : summaryLine(t, seats, date, time, today)}
         </ThemedText>
       </View>
 
@@ -337,22 +360,33 @@ export default function BookingDrawer({
             <ThemedText style={styles.errorText}>{submitError}</ThemedText>
           </ThemedView>
         )}
-        <BookingForm
-          // Remounting on a new (location, time) resets the hold and the suggested table
-          // rather than carrying the old ones over. Party size and date are deliberately not
-          // part of the key — both are changed from inside the form, which already releases
-          // the hold and re-asks for availability, and remounting on them would throw away a
-          // name and email the diner has just typed.
-          key={`${restaurant.id}-${time}`}
-          layout="drawer"
-          restaurant={restaurant}
-          seats={seats}
-          onSeatsChange={onSeatsChange}
-          date={date}
-          onDateChange={onDateChange}
-          initialTime={time}
-          onSubmit={(data) => handleSubmit(data, onCloseRequest)}
-        />
+        {waitlist ? (
+          <WaitlistPanel
+            key={restaurant.id}
+            restaurantId={restaurant.id}
+            seats={seats}
+            onSeatsChange={onSeatsChange}
+            {...waitlist}
+          />
+        ) : (
+          <BookingForm
+            // Remounting on a new (location, time) resets the hold and the suggested table
+            // rather than carrying the old ones over. Party size and date are deliberately not
+            // part of the key — both are changed from inside the form, which already releases
+            // the hold and re-asks for availability, and remounting on them would throw away a
+            // name and email the diner has just typed.
+            key={`${restaurant.id}-${time}`}
+            layout="drawer"
+            restaurant={restaurant}
+            seats={seats}
+            onSeatsChange={onSeatsChange}
+            date={date}
+            onDateChange={onDateChange}
+            initialTime={time}
+            onSubmit={(data) => handleSubmit(data, onCloseRequest)}
+            onJoinWaitlist={onJoinWaitlist}
+          />
+        )}
       </KeyboardAwareScroll>
     </>
   );
@@ -364,10 +398,7 @@ export default function BookingDrawer({
    */
   if (variant === "sheet" && Platform.OS !== "web") {
     return (
-      <NativeBookingSheet
-        accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
-        onClose={onClose}
-      >
+      <NativeBookingSheet accessibilityLabel={panelLabel} onClose={onClose}>
         {({ dismiss }) => (
           /* Inside the sheet's own children, not around it. The sheet renders its content
              through `@gorhom/portal`, which re-renders the node at the portal host's position
@@ -403,7 +434,7 @@ export default function BookingDrawer({
             role="dialog"
             aria-modal
             accessibilityViewIsModal
-            accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
+            accessibilityLabel={panelLabel}
             style={[
               styles.sheet,
               { backgroundColor: colors.card, borderTopColor: colors.border },
@@ -441,7 +472,7 @@ export default function BookingDrawer({
       ref={sideRef}
       testID="booking-drawer"
       role="dialog"
-      accessibilityLabel={t("booking.drawer.bookLocationLabel", { name: restaurant.name })}
+      accessibilityLabel={panelLabel}
       tabIndex={-1}
       style={[
         styles.side,

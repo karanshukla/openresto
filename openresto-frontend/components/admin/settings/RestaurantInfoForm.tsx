@@ -267,6 +267,11 @@ export function RestaurantInfoForm({
   const [bookingSlotIntervalMinutes, setBookingSlotIntervalMinutes] = useState(
     restaurant.bookingSlotIntervalMinutes ?? 30
   );
+  // Held as typed so a half-cleared field doesn't snap back; blank is "no cap".
+  const [maxCoversText, setMaxCoversText] = useState(
+    restaurant.maxCoversPerSlot == null ? "" : String(restaurant.maxCoversPerSlot)
+  );
+  const maxCoversPerSlot = maxCoversText.trim() === "" ? null : Number(maxCoversText.trim());
   const [maxTableOversizeSeats, setMaxTableOversizeSeats] = useState<number | null>(
     restaurant.maxTableOversizeSeats ?? null
   );
@@ -392,6 +397,7 @@ export function RestaurantInfoForm({
     turnTimes,
     bookingSlotIntervalMinutes,
     maxTableOversizeSeats,
+    maxCoversPerSlot,
     bookingRefFormat,
     tags: tags.join(","),
   };
@@ -414,6 +420,7 @@ export function RestaurantInfoForm({
     turnTimes: restaurant.turnTimes ?? [],
     bookingSlotIntervalMinutes: restaurant.bookingSlotIntervalMinutes ?? 30,
     maxTableOversizeSeats: restaurant.maxTableOversizeSeats ?? null,
+    maxCoversPerSlot: restaurant.maxCoversPerSlot ?? null,
     bookingRefFormat: restaurant.bookingRefFormat ?? "AlphaNumeric",
     tags: (restaurant.tags ?? []).join(","),
   };
@@ -441,6 +448,12 @@ export function RestaurantInfoForm({
     }
     if (hasDuplicateTurnTimes(turnTimes)) {
       return t("admin.settings.restaurantInfo.blockedDuplicateTurnTimes");
+    }
+    if (
+      maxCoversPerSlot !== null &&
+      !(Number.isInteger(maxCoversPerSlot) && maxCoversPerSlot >= 1)
+    ) {
+      return t("admin.settings.restaurantInfo.blockedInvalidMaxCovers");
     }
     return null;
   })();
@@ -470,6 +483,7 @@ export function RestaurantInfoForm({
         turnTimes: result.turnTimes,
         bookingSlotIntervalMinutes: result.bookingSlotIntervalMinutes,
         maxTableOversizeSeats: result.maxTableOversizeSeats,
+        maxCoversPerSlot: result.maxCoversPerSlot,
         bookingRefFormat: result.bookingRefFormat,
         tags: result.tags,
       });
@@ -493,6 +507,7 @@ export function RestaurantInfoForm({
       setTurnTimes(previous.turnTimes);
       setBookingSlotIntervalMinutes(previous.bookingSlotIntervalMinutes);
       setMaxTableOversizeSeats(previous.maxTableOversizeSeats);
+      setMaxCoversText(previous.maxCoversPerSlot == null ? "" : String(previous.maxCoversPerSlot));
       setBookingRefFormat(previous.bookingRefFormat);
       setTags(previous.tags ? previous.tags.split(",") : []);
       const restored: WeekHours = {};
@@ -806,6 +821,24 @@ export function RestaurantInfoForm({
                 />
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
                   {t("admin.settings.restaurantInfo.oversizeHint")}
+                </ThemedText>
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.maxCoversLabel")}
+                </ThemedText>
+                <Input
+                  testID="max-covers-input"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.maxCoversLabel")}
+                  value={maxCoversText}
+                  onChangeText={setMaxCoversText}
+                  keyboardType="number-pad"
+                  placeholder={t("admin.settings.restaurantInfo.maxCoversPlaceholder")}
+                />
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.maxCoversHint", {
+                    minutes: bookingSlotIntervalMinutes,
+                  })}
                 </ThemedText>
               </View>
               <View style={styles.gridField}>

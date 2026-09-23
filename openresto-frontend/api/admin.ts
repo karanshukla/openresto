@@ -16,6 +16,16 @@ export interface AdminOverviewDto {
   occupancyDates?: string[];
   occupancyCounts?: number[];
   todayBookingsList?: BookingDetailDto[];
+  todayPacing?: LocationPacingDto[];
+}
+
+/** Today's covers per slot at a location with a cover cap. Slots with no arrivals are left out. */
+export interface LocationPacingDto {
+  restaurantId: number;
+  restaurantName: string;
+  maxCoversPerSlot: number;
+  /** `time` is the slot start as local "HH:mm". */
+  slots: { time: string; covers: number }[];
 }
 
 export interface BookingSummaryDto {
@@ -43,6 +53,7 @@ export interface AdminDashboardStats {
   occupancyDates: string[];
   occupancyCounts: number[];
   recentBookings: BookingSummaryDto[];
+  pacing: LocationPacingDto[];
 }
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats | null> {
@@ -82,6 +93,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats | nu
           return end >= now;
         })
         .slice(0, 5),
+      pacing: overview.todayPacing ?? [],
     };
   } catch (err) {
     console.error("getAdminDashboardStats error:", err);

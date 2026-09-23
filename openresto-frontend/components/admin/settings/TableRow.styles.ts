@@ -52,4 +52,12 @@ export const styles = StyleSheet.create({
   editSeatsField: { flex: 1, gap: theme.spacing.xs },
   editFieldLabel: { fontSize: 11, fontWeight: "600" },
   editActions: { marginTop: theme.spacing.xs },
+  walkInChip: { marginLeft: theme.spacing.xs, paddingHorizontal: theme.spacing.sm },
+  walkInToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+    minHeight: 44,
+  },
+  walkInToggleLabel: { fontSize: 14, fontWeight: "600" },
 });

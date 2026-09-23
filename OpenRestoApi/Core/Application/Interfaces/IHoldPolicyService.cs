@@ -11,8 +11,9 @@ namespace OpenRestoApi.Core.Application.Interfaces;
 /// </summary>
 /// <summary>
 /// <see cref="Rejected"/> covers policy violations (past date, paused, walk-in, closed) that map
-/// to HTTP 400. <see cref="Booked"/> is a distinct outcome for a conflict with an existing
-/// confirmed booking — it maps to HTTP 409, preserving the controller's original status code.
+/// to HTTP 400. <see cref="Booked"/> is a distinct outcome for a table that isn't free to take (an
+/// existing confirmed booking, or a walk-in-only table) — it maps to HTTP 409, preserving the
+/// controller's original status code.
 /// </summary>
 public enum HoldPolicyStatus { Eligible, NotFound, Rejected, Booked }
 

@@ -1,6 +1,7 @@
 using Moq;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -289,6 +290,22 @@ public class HoldPolicyServiceTests
 
         Assert.Equal(HoldPolicyStatus.Booked, result.Status);
         Assert.Equal("This table is already booked for that time.", result.FailureMessage);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsBooked_ForAWalkInOnlyTable()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsBooked_ForAWalkInOnlyTable));
+        SeedRestaurant(db);
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "Door", Seats = 2, SectionId = 1, WalkInOnly = true });
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.AddDays(1), seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Booked, result.Status);
+        Assert.Equal(ErrorCodes.TableWalkInOnly, result.Code);
     }
 
     [Fact]

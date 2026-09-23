@@ -51,10 +51,12 @@ public static class ErrorCodes
     public const string BookingStatusCancelled = "booking.status_cancelled";
     public const string BookingStatusTransitionInvalid = "booking.status_transition_invalid";
     public const string BookingNoShowBeforeStart = "booking.no_show_before_start";
+    public const string BookingPacingFull = "booking.pacing_full";
 
     public const string TableSeatsExceeded = "table.seats_exceeded";
     public const string TableOversizeCap = "table.oversize_cap";
     public const string TableSeatsOutOfRange = "table.seats_out_of_range";
+    public const string TableWalkInOnly = "table.walk_in_only";
 
     public const string TableGroupNotFound = "table_group.not_found";
     public const string TableGroupBookingConflict = "table_group.booking_conflict";
@@ -84,6 +86,7 @@ public static class ErrorCodes
     public const string RestaurantDurationInvalid = "restaurant.duration_invalid";
     public const string RestaurantSlotIntervalInvalid = "restaurant.slot_interval_invalid";
     public const string RestaurantOversizeCapInvalid = "restaurant.oversize_cap_invalid";
+    public const string RestaurantMaxCoversInvalid = "restaurant.max_covers_invalid";
     public const string RestaurantMenuUrlInvalid = "restaurant.menu_url_invalid";
     public const string RestaurantBookingRefFormatInvalid = "restaurant.booking_ref_format_invalid";
     public const string RestaurantWalkInDaysInvalid = "restaurant.walk_in_days_invalid";

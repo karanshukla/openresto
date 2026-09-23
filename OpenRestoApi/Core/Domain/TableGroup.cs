@@ -30,4 +30,10 @@ public class TableGroup
 
     /// <summary>Member tables (the physical tables pushed together). A table belongs to at most one group.</summary>
     public ICollection<TableGroupMembership> Members { get; set; } = new List<TableGroupMembership>();
+
+    /// <summary>
+    /// True when a member is a <see cref="Table.WalkInOnly"/> table, which keeps the whole group
+    /// off the online paths. Needs <c>Members.Table</c> loaded.
+    /// </summary>
+    public bool HasWalkInOnlyMember() => Members.Any(m => m.Table?.WalkInOnly == true);
 }

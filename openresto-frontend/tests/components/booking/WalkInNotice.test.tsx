@@ -14,9 +14,6 @@ jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
 }));
 
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
-
 describe("WalkInNotice", () => {
   it("renders the location-wide notice", () => {
     render(<WalkInNotice scope="location" />);
@@ -37,14 +34,15 @@ describe("WalkInNotice", () => {
     expect(screen.getByText(/doesn't take online bookings on Saturdays and Sundays/)).toBeTruthy();
   });
 
-  it("offers no waitlist unless given a location to join", () => {
+  it("offers no waitlist unless given a way to join", () => {
     render(<WalkInNotice scope="location" />);
     expect(screen.queryByTestId("walk-in-join-waitlist")).toBeNull();
   });
 
-  it("sends the guest to the location's waitlist", () => {
-    render(<WalkInNotice scope="day" waitlistRestaurantId={7} />);
+  it("opens the location's waitlist", () => {
+    const onJoinWaitlist = jest.fn();
+    render(<WalkInNotice scope="day" onJoinWaitlist={onJoinWaitlist} />);
     fireEvent.press(screen.getByTestId("walk-in-join-waitlist"));
-    expect(mockPush).toHaveBeenCalledWith("/join-waitlist/7");
+    expect(onJoinWaitlist).toHaveBeenCalled();
   });
 });

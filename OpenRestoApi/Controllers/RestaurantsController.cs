@@ -92,7 +92,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> AddTable(int id, int sectionId, CreateTableRequest req)
     {
-        TableDto? result = await _service.AddTableAsync(id, sectionId, req.Name, req.Seats);
+        TableDto? result = await _service.AddTableAsync(id, sectionId, req.Name, req.Seats, req.WalkInOnly);
         return result == null ? NotFound() : Ok(result);
     }
 
@@ -101,7 +101,7 @@ public class RestaurantsController(RestaurantManagementService service) : Contro
     [RequiresScope(ApiKeyScopes.Tables, ApiKeyScopes.Write)]
     public async Task<IActionResult> UpdateTable(int id, int sectionId, int tableId, UpdateTableRequest req)
     {
-        TableDto? result = await _service.UpdateTableAsync(id, sectionId, tableId, req.Name, req.Seats);
+        TableDto? result = await _service.UpdateTableAsync(id, sectionId, tableId, req.Name, req.Seats, req.WalkInOnly);
         return result == null ? NotFound() : Ok(result);
     }
 

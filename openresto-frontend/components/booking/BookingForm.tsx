@@ -74,6 +74,7 @@ export default function BookingForm({
   onSeatsChange,
   date: controlledDate,
   onDateChange,
+  onJoinWaitlist,
 }: {
   restaurant: RestaurantDto;
   onSubmit: (data: BookingFormData) => Promise<void> | void;
@@ -87,6 +88,8 @@ export default function BookingForm({
   /** When set, the date is owned by the caller — changing it here reports back up. */
   date?: string;
   onDateChange?: (date: string) => void;
+  /** Offered on the walk-in notice when today is a walk-in day. */
+  onJoinWaitlist?: () => void;
 }) {
   const { t } = useTranslation();
   const { colors, primaryColor: PRIMARY } = useAppTheme();
@@ -433,7 +436,7 @@ export default function BookingForm({
     <WalkInNotice
       scope="day"
       daysLabel={walkInDaysLabel(restaurant) ?? undefined}
-      waitlistRestaurantId={date === getRestaurantDate(timezone) ? restaurant.id : undefined}
+      onJoinWaitlist={date === getRestaurantDate(timezone) ? onJoinWaitlist : undefined}
     />
   ) : (
     <PopularTimesPicker

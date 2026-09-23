@@ -396,6 +396,17 @@ public class WaitlistServiceTests
     }
 
     [Fact]
+    public async Task SeatAsync_UsesAWalkInOnlyTable()
+    {
+        _restaurant.Sections.Single().Tables.First(t => t.Id == 1).WalkInOnly = true;
+        WaitlistEntry entry = Seed(2);
+
+        await CreateService().SeatAsync(entry.Id, new SeatWaitlistEntryRequest());
+
+        _bookings.Verify(b => b.AddAsync(It.Is<Booking>(bk => bk.TableId == 1)));
+    }
+
+    [Fact]
     public async Task SeatAsync_RecordsTheBookingAsSeated()
     {
         WaitlistEntry entry = Seed(2);

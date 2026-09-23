@@ -79,6 +79,7 @@ public class RestaurantManagementService(
             DefaultBookingDurationMinutes = dto.DefaultBookingDurationMinutes,
             BookingSlotIntervalMinutes = dto.BookingSlotIntervalMinutes,
             MaxTableOversizeSeats = dto.MaxTableOversizeSeats,
+            MaxCoversPerSlot = dto.MaxCoversPerSlot,
             BookingRefFormat = string.IsNullOrWhiteSpace(dto.BookingRefFormat)
                 ? BookingRefFormat.AlphaNumeric
                 : ParseBookingRefFormat(dto.BookingRefFormat),
@@ -86,7 +87,7 @@ public class RestaurantManagementService(
             {
                 Name = s.Name,
                 SortOrder = index,
-                Tables = s.Tables.Select(t => new Table { Name = t.Name, Seats = t.Seats }).ToList()
+                Tables = s.Tables.Select(t => new Table { Name = t.Name, Seats = t.Seats, WalkInOnly = t.WalkInOnly }).ToList()
             }).ToList()
         };
 
@@ -228,6 +229,14 @@ public class RestaurantManagementService(
 
         r.MaxTableOversizeSeats = req.MaxTableOversizeSeats;
 
+        // Same unconditional write as the oversize cap: null is "no cap".
+        if (req.MaxCoversPerSlot is < 1)
+        {
+            throw new ValidationException("MaxCoversPerSlot must be 1 or more, or null for no cap.") { Code = ErrorCodes.RestaurantMaxCoversInvalid };
+        }
+
+        r.MaxCoversPerSlot = req.MaxCoversPerSlot;
+
         if (req.BookingRefFormat != null)
         {
             r.BookingRefFormat = ParseBookingRefFormat(req.BookingRefFormat);
@@ -272,6 +281,7 @@ public class RestaurantManagementService(
             TurnTimes = TurnTimesHelper.Parse(r.TurnTimesJson),
             BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
             MaxTableOversizeSeats = r.MaxTableOversizeSeats,
+            MaxCoversPerSlot = r.MaxCoversPerSlot,
             BookingRefFormat = r.BookingRefFormat.ToString(),
             Sections = []
         };
@@ -295,6 +305,7 @@ public class RestaurantManagementService(
         string? TurnTimesJson,
         int BookingSlotIntervalMinutes,
         int? MaxTableOversizeSeats,
+        int? MaxCoversPerSlot,
         BookingRefFormat BookingRefFormat,
         bool WalkInOnly,
         string? WalkInDays)
@@ -303,7 +314,7 @@ public class RestaurantManagementService(
             r.Name, r.Address, r.Description, r.MenuUrl, r.PhoneNumber, r.EmailAddress, r.OpenTime,
             r.CloseTime, r.OpenHoursJson, r.OpenDays, r.Timezone, r.Tags,
             r.DefaultBookingDurationMinutes, r.TurnTimesJson, r.BookingSlotIntervalMinutes, r.MaxTableOversizeSeats,
-            r.BookingRefFormat, r.WalkInOnly, r.WalkInDays);
+            r.MaxCoversPerSlot, r.BookingRefFormat, r.WalkInOnly, r.WalkInDays);
     }
 
     private void RecordRestaurantChanges(RestaurantFields before, RestaurantFields after)
@@ -327,6 +338,7 @@ public class RestaurantManagementService(
             before.BookingSlotIntervalMinutes, after.BookingSlotIntervalMinutes);
         _audit.RecordChange("maxTableOversizeSeats",
             before.MaxTableOversizeSeats, after.MaxTableOversizeSeats);
+        _audit.RecordChange("maxCoversPerSlot", before.MaxCoversPerSlot, after.MaxCoversPerSlot);
         _audit.RecordChange("bookingRefFormat", before.BookingRefFormat, after.BookingRefFormat);
         _audit.RecordChange("walkInOnly", before.WalkInOnly, after.WalkInOnly);
         _audit.RecordChange("walkInDays", before.WalkInDays, after.WalkInDays);
@@ -409,7 +421,7 @@ public class RestaurantManagementService(
 
     // ── Tables ──────────────────────────────────────────────────────────────
 
-    public async Task<TableDto?> AddTableAsync(int restaurantId, int sectionId, string? name, int seats)
+    public async Task<TableDto?> AddTableAsync(int restaurantId, int sectionId, string? name, int seats, bool walkInOnly = false)
     {
         Section? section = await _sectionRepository.FindForRestaurantAsync(sectionId, restaurantId);
 
@@ -420,15 +432,15 @@ public class RestaurantManagementService(
 
         ValidateSeats(seats);
 
-        var table = new Table { Name = name, Seats = seats, SectionId = sectionId };
+        var table = new Table { Name = name, Seats = seats, SectionId = sectionId, WalkInOnly = walkInOnly };
         await _tableRepository.AddAsync(table);
 
         DescribeTable(AuditActions.TableCreate, table, restaurantId,
             $"Added {TableLabel(table)} ({seats} seats) to \"{section.Name}\"");
-        return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
+        return ToTableDto(table);
     }
 
-    public async Task<TableDto?> UpdateTableAsync(int restaurantId, int sectionId, int tableId, string? name, int seats)
+    public async Task<TableDto?> UpdateTableAsync(int restaurantId, int sectionId, int tableId, string? name, int seats, bool walkInOnly = false)
     {
         Table? table = await _tableRepository.GetForRestaurantAsync(tableId, sectionId, restaurantId);
 
@@ -441,9 +453,11 @@ public class RestaurantManagementService(
 
         _audit.RecordChange("name", table.Name, name);
         _audit.RecordChange("seats", table.Seats, seats);
+        _audit.RecordChange("walkInOnly", table.WalkInOnly, walkInOnly);
 
         table.Name = name;
         table.Seats = seats;
+        table.WalkInOnly = walkInOnly;
         await _tableRepository.SaveChangesAsync();
 
         // After the save, so the reconcile reads the new capacity rather than the pre-edit one.
@@ -452,7 +466,7 @@ public class RestaurantManagementService(
 
         DescribeTable(AuditActions.TableUpdate, table, restaurantId,
             $"Updated {TableLabel(table)} ({table.Seats} seats)");
-        return new TableDto { Id = table.Id, Name = table.Name, Seats = table.Seats };
+        return ToTableDto(table);
     }
 
     /// <summary>
@@ -847,11 +861,14 @@ public class RestaurantManagementService(
             .OrderBy(m => m.TableId)
             .Select(m => m.Table ?? throw new InvalidOperationException(
                 $"TableGroupMembership {m.TableGroupId}/{m.TableId} has no Table loaded."))
-            .Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats })
+            .Select(ToTableDto)
             .ToList()
     };
 
     // ── Mapping ─────────────────────────────────────────────────────────────
+
+    private static TableDto ToTableDto(Table t)
+        => new() { Id = t.Id, Name = t.Name, Seats = t.Seats, WalkInOnly = t.WalkInOnly };
 
     private static RestaurantDto ToDto(Restaurant r) => new()
     {
@@ -878,6 +895,7 @@ public class RestaurantManagementService(
         TurnTimes = TurnTimesHelper.Parse(r.TurnTimesJson),
         BookingSlotIntervalMinutes = r.BookingSlotIntervalMinutes,
         MaxTableOversizeSeats = r.MaxTableOversizeSeats,
+        MaxCoversPerSlot = r.MaxCoversPerSlot,
         BookingRefFormat = r.BookingRefFormat.ToString(),
         Sections = r.Sections
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
@@ -886,7 +904,7 @@ public class RestaurantManagementService(
                 Id = s.Id,
                 Name = s.Name,
                 SortOrder = s.SortOrder,
-                Tables = s.Tables.Select(t => new TableDto { Id = t.Id, Name = t.Name, Seats = t.Seats }).ToList()
+                Tables = s.Tables.Select(ToTableDto).ToList()
             }).ToList(),
         Groups = (r.Groups ?? Enumerable.Empty<TableGroup>())
             .OrderBy(g => g.Id)
@@ -897,7 +915,7 @@ public class RestaurantManagementService(
                 CombinedSeats = g.CombinedSeats,
                 Members = (g.Members ?? Enumerable.Empty<TableGroupMembership>())
                     .OrderBy(m => m.TableId)
-                    .Select(m => new TableDto { Id = m.Table!.Id, Name = m.Table.Name, Seats = m.Table.Seats })
+                    .Select(m => ToTableDto(m.Table!))
                     .ToList()
             }).ToList()
     };

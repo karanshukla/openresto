@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import JoinWaitlistScreen from "@/components/waitlist/JoinWaitlistScreen";
+import JoinWaitlistForm from "@/components/waitlist/JoinWaitlistForm";
 import { getWaitlistQuote, joinWaitlist } from "@/api/waitlist";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
@@ -10,8 +10,15 @@ jest.mock("@/context/BrandContext", () => ({
 }));
 jest.mock("@/context/LocaleContext", () => ({ useLocale: () => ({ locale: "fr" }) }));
 
-const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({ useRouter: () => ({ replace: mockReplace }) }));
+const onJoined = jest.fn();
+
+/** The page owns party size, as LocationsScreen does. */
+function Form() {
+  const [seats, setSeats] = useState(2);
+  return (
+    <JoinWaitlistForm restaurantId={3} seats={seats} onSeatsChange={setSeats} onJoined={onJoined} />
+  );
+}
 
 jest.mock("@/api/waitlist", () => ({
   getWaitlistQuote: jest.fn(),
@@ -33,9 +40,9 @@ beforeEach(() => {
   mockQuote.mockResolvedValue(open);
 });
 
-describe("JoinWaitlistScreen", () => {
+describe("JoinWaitlistForm", () => {
   it("quotes the wait before the guest commits", async () => {
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
 
     expect(await screen.findByText("About 25 min wait")).toBeTruthy();
     expect(screen.getByText("2 parties waiting")).toBeTruthy();
@@ -44,7 +51,7 @@ describe("JoinWaitlistScreen", () => {
 
   it("says a table is free now at a zero wait", async () => {
     mockQuote.mockResolvedValue({ ...open, estimatedWaitMinutes: 0, partiesWaiting: 1 });
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
 
     expect(await screen.findByText("A table is free now")).toBeTruthy();
     expect(screen.getByText("1 party waiting")).toBeTruthy();
@@ -52,7 +59,7 @@ describe("JoinWaitlistScreen", () => {
 
   it("holds the join back for a party no table can seat", async () => {
     mockQuote.mockResolvedValue({ ...open, estimatedWaitMinutes: null });
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
 
     expect(await screen.findByText("No table here seats a party that size")).toBeTruthy();
     fireEvent.changeText(screen.getByLabelText("Full name"), "Ada");
@@ -61,7 +68,7 @@ describe("JoinWaitlistScreen", () => {
 
   it("says the queue is closed instead of offering the form", async () => {
     mockQuote.mockResolvedValue({ ...open, acceptingGuests: false });
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
 
     expect(await screen.findByTestId("waitlist-closed")).toBeTruthy();
     expect(screen.queryByTestId("waitlist-join-submit")).toBeNull();
@@ -69,13 +76,13 @@ describe("JoinWaitlistScreen", () => {
 
   it("reports a quote that couldn't load", async () => {
     mockQuote.mockResolvedValue(null);
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
 
     expect(await screen.findByText("Couldn't load the waitlist. Please try again.")).toBeTruthy();
   });
 
   it("requotes when the party size changes", async () => {
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
     await screen.findByTestId("waitlist-quote");
 
     fireEvent.press(screen.getByLabelText("One more guest"));
@@ -88,18 +95,18 @@ describe("JoinWaitlistScreen", () => {
     mockQuote
       .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
       .mockResolvedValueOnce({ ...open, estimatedWaitMinutes: 40 });
-    const view = render(<JoinWaitlistScreen restaurantId={3} />);
+    const view = render(<Form />);
 
     view.unmount();
     resolveFirst({ ...open, estimatedWaitMinutes: 5 });
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
 
     expect(await screen.findByText("About 40 min wait")).toBeTruthy();
     expect(screen.queryByText("About 5 min wait")).toBeNull();
   });
 
   it("needs a name, and a valid email only if one is given", async () => {
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
     await screen.findByTestId("waitlist-quote");
     const submit = () => screen.getByTestId("waitlist-join-submit");
 
@@ -112,15 +119,15 @@ describe("JoinWaitlistScreen", () => {
     expect(submit()).not.toBeDisabled();
   });
 
-  it("joins and moves to the guest's status page", async () => {
+  it("joins and hands back the guest's ticket", async () => {
     mockJoin.mockResolvedValue({ ok: true, value: { ref: "abc234" } });
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
     await screen.findByTestId("waitlist-quote");
 
     fireEvent.changeText(screen.getByLabelText("Full name"), "  Ada ");
     fireEvent.press(screen.getByTestId("waitlist-join-submit"));
 
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/waitlist/abc234"));
+    await waitFor(() => expect(onJoined).toHaveBeenCalledWith("abc234"));
     expect(mockJoin).toHaveBeenCalledWith(3, {
       name: "Ada",
       seats: 2,
@@ -131,7 +138,7 @@ describe("JoinWaitlistScreen", () => {
 
   it("shows the server's reason when the join is refused", async () => {
     mockJoin.mockResolvedValue({ ok: false, message: "This location is closed right now." });
-    render(<JoinWaitlistScreen restaurantId={3} />);
+    render(<Form />);
     await screen.findByTestId("waitlist-quote");
 
     fireEvent.changeText(screen.getByLabelText("Full name"), "Ada");
@@ -142,6 +149,6 @@ describe("JoinWaitlistScreen", () => {
       "This location is closed right now."
     );
     expect(mockJoin).toHaveBeenCalledWith(3, expect.objectContaining({ email: "ada@example.com" }));
-    expect(mockReplace).not.toHaveBeenCalled();
+    expect(onJoined).not.toHaveBeenCalled();
   });
 });

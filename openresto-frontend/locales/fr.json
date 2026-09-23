@@ -24,7 +24,10 @@
       "summaryLine_one": "{{count}} convive · {{when}} · {{time}}",
       "summaryLine_other": "{{count}} convives · {{when}} · {{time}}",
       "today": "Aujourd'hui",
-      "yourDetailsHeading": "Vos coordonnées"
+      "yourDetailsHeading": "Vos coordonnées",
+      "waitlistSummary_one": "Liste d'attente · {{count}} convive",
+      "waitlistSummary_other": "Liste d'attente · {{count}} convives",
+      "waitlistLocationLabel": "Rejoindre la liste d'attente de {{name}}"
     },
     "factsBand": {
       "dateKey": "Date",
@@ -181,7 +184,6 @@
     },
     "waitlist": {
       "joinCta": "Rejoindre la liste d'attente",
-      "routeTitle": "Rejoindre la liste d'attente",
       "intro": "Laissez votre nom, nous vous préviendrons quand votre table sera prête.",
       "partySizeLabel": "Nombre de convives",
       "emailHint": "Facultatif. Nous vous écrirons quand votre table sera prête.",
@@ -192,7 +194,9 @@
       "waitMinutes": "Environ {{minutes}} min d'attente",
       "waitUnknown": "Aucune table ne peut accueillir un groupe de cette taille",
       "notAccepting": "La liste d'attente n'est pas ouverte pour le moment. Elle fonctionne quand l'établissement accueille sans réservation et est ouvert.",
-      "loadFailed": "Impossible de charger la liste d'attente. Veuillez réessayer."
+      "loadFailed": "Impossible de charger la liste d'attente. Veuillez réessayer.",
+      "joinAgain": "Rejoindre à nouveau",
+      "openTicket": "Ouvrir votre ticket sur sa propre page"
     },
     "waitlistStatus": {
       "routeTitle": "Votre place dans la file",
@@ -361,7 +365,8 @@
       "table_id_required_for_section_change": "Indiquez tableId lors d'un changement de salle.",
       "table_not_in_section": "Table introuvable dans la salle indiquée.",
       "walk_in_only": "Cet établissement accepte uniquement les visites sans réservation et ne prend pas de réservations en ligne.",
-      "walk_in_only_today": "Cet établissement accepte uniquement les visites sans réservation le jour sélectionné. Choisissez un autre jour ou présentez-vous sur place."
+      "walk_in_only_today": "Cet établissement accepte uniquement les visites sans réservation le jour sélectionné. Choisissez un autre jour ou présentez-vous sur place.",
+      "pacing_full": "Seulement {{remaining}} convives de plus peuvent arriver à {{time}}. Veuillez choisir un autre horaire."
     },
     "brand": {
       "accent_color_invalid": "Code hexadécimal de couleur d'accentuation invalide.",
@@ -425,7 +430,8 @@
       "turn_time_duplicate_seats": "Il y a plus d'une durée de table pour les groupes de {{seats}}.",
       "turn_time_minutes_invalid": "Les minutes d'une durée de table doivent être l'une des valeurs suivantes : {{allowed}}.",
       "turn_time_seats_out_of_range": "La taille de groupe d'une durée de table doit être comprise entre {{min}} et {{max}}.",
-      "walk_in_days_invalid": "WalkInDays doit être une liste de numéros de jour ISO de 1 (lundi) à 7 (dimanche), séparés par des virgules."
+      "walk_in_days_invalid": "WalkInDays doit être une liste de numéros de jour ISO de 1 (lundi) à 7 (dimanche), séparés par des virgules.",
+      "max_covers_invalid": "Le nombre maximal de convives par créneau doit être d'au moins 1, ou vide pour aucune limite."
     },
     "social_link": {
       "label_required": "Le libellé du lien social ne peut pas être vide.",
@@ -436,7 +442,8 @@
     "table": {
       "oversize_cap": "Cette table compte {{seats}} places, ce qui est trop grand pour un groupe de {{partySize}} personnes.",
       "seats_exceeded": "Cette table ne compte que {{seats}} places, mais {{requested}} convives ont été demandés.",
-      "seats_out_of_range": "Le nombre de places doit être compris entre {{min}} et {{max}}."
+      "seats_out_of_range": "Le nombre de places doit être compris entre {{min}} et {{max}}.",
+      "walk_in_only": "Cette table est réservée aux clients sans réservation et ne peut pas être réservée en ligne."
     },
     "table_group": {
       "booking_conflict": "L'une des tables combinées est déjà réservée pour cet horaire.",
@@ -584,7 +591,9 @@
       "showDetails": "Afficher les détails",
       "showDetailsFor": "Afficher les détails de {{name}}",
       "today": "aujourd'hui",
-      "viewMenu": "Voir le menu"
+      "viewMenu": "Voir le menu",
+      "joinWaitlist": "Liste d'attente",
+      "joinWaitlistAt": "Rejoindre la liste d'attente de {{name}}"
     },
     "locationsScreen": {
       "availabilitySummary_one": "{{withTables}} établissement sur {{count}} a des tables disponibles",
@@ -617,7 +626,8 @@
       "seatsCount_one": "{{count}} place",
       "seatsCount_other": "{{count}} places",
       "seatsUpTo": "Jusqu'à {{count}} places une fois rapprochées",
-      "tableFallbackName": "Table {{id}}"
+      "tableFallbackName": "Table {{id}}",
+      "walkInOnly": "Sans réservation uniquement"
     },
     "slotRow": {
       "bookAt": "Réserver {{name}} à {{time}}",
@@ -1045,6 +1055,13 @@
         "subtitle": "Elles ont été prises avant les horaires actuels et sont toujours dans le carnet. Les clients n'ont pas été informés du changement. Consultez les établissements.",
         "accessibilityLabel_one": "{{count}} réservation à venir ne correspond plus à l'horaire de son établissement. Consultez les établissements.",
         "accessibilityLabel_other": "{{count}} réservations à venir ne correspondent plus à l'horaire de leur établissement. Consultez les établissements."
+      },
+      "pacing": {
+        "title": "Arrivées par créneau aujourd'hui",
+        "cap_one": "Limite {{count}} convive",
+        "cap_other": "Limite {{count}} convives",
+        "empty": "Aucune arrivée aujourd'hui pour l'instant.",
+        "slotLabel": "{{time}} : {{covers}} convives sur {{cap}}"
       }
     },
     "layout": {
@@ -1645,7 +1662,10 @@
         "seatsPlaceholder": "Places",
         "cancelEditLabel": "Annuler la modification de {{name}}",
         "saveLabel": "Enregistrer {{name}}",
-        "save": "Enregistrer"
+        "save": "Enregistrer",
+        "walkInOnlyChip": "Sans réservation",
+        "walkInOnlyLabel": "Sans réservation uniquement",
+        "walkInOnlyHint": "Jamais proposée en ligne. L'équipe et la liste d'attente peuvent toujours y installer des clients."
       },
       "sectionBlock": {
         "namedGroupLabel": "{{name}} ({{seats}} places)",
@@ -1915,7 +1935,11 @@
         "oversizeLabel": "Dépassement maximal de table",
         "oversizeHint": "Ne proposez pas de tables avec plus de ce nombre de places que la taille du groupe.",
         "refFormatLabel": "Format de référence de réservation",
-        "refFormatHint": "À quoi ressemblent les nouvelles références de réservation. Les réservations existantes conservent la leur."
+        "refFormatHint": "À quoi ressemblent les nouvelles références de réservation. Les réservations existantes conservent la leur.",
+        "maxCoversLabel": "Convives max. par créneau",
+        "maxCoversPlaceholder": "Aucune limite",
+        "maxCoversHint": "Limite les convives dont la réservation en ligne commence dans chaque créneau de {{minutes}} minutes. Les réservations de l'équipe et la liste d'attente ne sont pas limitées.",
+        "blockedInvalidMaxCovers": "Le nombre maximal de convives par créneau doit être un nombre entier d'au moins 1, ou vide."
       },
       "accountRoute": {
         "title": "Compte",

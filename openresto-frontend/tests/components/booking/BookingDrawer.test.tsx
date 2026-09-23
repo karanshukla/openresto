@@ -43,6 +43,16 @@ jest.mock("@/utils/webAnimation", () => ({
 }));
 const mockAnimateNode = jest.requireMock("@/utils/webAnimation").animateNode as jest.Mock;
 
+jest.mock("@/components/waitlist/WaitlistPanel", () => {
+  const { Text } = require("react-native");
+  return {
+    __esModule: true,
+    default: ({ restaurantId, entryRef }: any) => (
+      <Text testID="waitlist-panel">{`${restaurantId}:${entryRef}`}</Text>
+    ),
+  };
+});
+
 jest.mock("@/components/booking/BookingForm", () => {
   const { Pressable, Text } = require("react-native");
   return {
@@ -186,6 +196,25 @@ describe("BookingDrawer", () => {
     fireEvent.press(screen.getByLabelText("Ottawa Resto"));
 
     expect(onRestaurantChange).toHaveBeenCalledWith(otherRestaurant);
+  });
+
+  it("shows the location's waitlist in place of the booking form", () => {
+    const otherRestaurant = { ...mockRestaurant, id: 2, name: "Ottawa Resto" };
+    renderWithProviders(
+      <BookingDrawer
+        {...baseProps}
+        restaurants={[mockRestaurant as any, otherRestaurant as any]}
+        onRestaurantChange={jest.fn()}
+        waitlist={{ entryRef: "abc234", onJoined: jest.fn(), onReset: jest.fn() }}
+      />
+    );
+
+    expect(screen.getByTestId("waitlist-panel")).toHaveTextContent("1:abc234");
+    expect(screen.queryByTestId("form-layout")).toBeNull();
+    expect(screen.getByText("Walk-in waitlist · 2 guests")).toBeTruthy();
+    // One location's queue: no switching to another from here.
+    expect(screen.queryByLabelText("Location, Toronto Resto")).toBeNull();
+    expect(screen.getByLabelText("Join the waitlist at Toronto Resto")).toBeTruthy();
   });
 
   it("names the day when booking a date other than today", () => {

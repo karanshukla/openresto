@@ -1,6 +1,7 @@
 import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import WaitlistStatusScreen, { WAITLIST_POLL_MS } from "@/components/waitlist/WaitlistStatusScreen";
+import WaitlistStatusScreen from "@/components/waitlist/WaitlistStatusScreen";
+import { WAITLIST_POLL_MS } from "@/components/waitlist/useWaitlistEntry";
 import { getWaitlistStatus, leaveWaitlist, type WaitlistEntryStatus } from "@/api/waitlist";
 import haptics from "@/utils/haptics";
 import { confirm } from "@/utils/confirm";

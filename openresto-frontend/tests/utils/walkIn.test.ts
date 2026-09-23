@@ -4,6 +4,8 @@ import {
   isWalkInOnlyOnDate,
   walkInDaysLabel,
   walkInBadgeLabel,
+  onlineSections,
+  onlineGroups,
 } from "@/utils/walkIn";
 
 describe("parseWalkInDays", () => {
@@ -92,5 +94,30 @@ describe("walkInBadgeLabel", () => {
   it("names the specific walk-in days for a conditional location", () => {
     expect(walkInBadgeLabel({ walkInDays: "5" })).toBe("Walk-ins on Fridays");
     expect(walkInBadgeLabel({ walkInDays: "6,7" })).toBe("Walk-ins on Saturdays and Sundays");
+  });
+});
+
+describe("online tables", () => {
+  const door = { id: 1, seats: 2, walkInOnly: true };
+  const window = { id: 2, seats: 4 };
+  const booth = { id: 3, seats: 4 };
+  const restaurant = {
+    sections: [{ id: 1, name: "Main", sortOrder: 0, tables: [door, window, booth] }],
+    groups: [
+      { id: 1, combinedSeats: 6, members: [door, window] },
+      { id: 2, combinedSeats: 8, members: [window, booth] },
+    ],
+  };
+
+  it("leaves a walk-in-only table out of its section", () => {
+    expect(onlineSections(restaurant)[0].tables.map((t) => t.id)).toEqual([2, 3]);
+  });
+
+  it("leaves out a group that would take a walk-in-only table with it", () => {
+    expect(onlineGroups(restaurant).map((g) => g.id)).toEqual([2]);
+  });
+
+  it("treats a location without groups as having none", () => {
+    expect(onlineGroups({})).toEqual([]);
   });
 });

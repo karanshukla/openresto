@@ -75,6 +75,7 @@ const mockStats: AdminDashboardStats = {
   noShowCount: 0,
   scheduleConflictsCount: 0,
   scheduleConflictLocationIds: [],
+  pacing: [],
   totalCovers: 100,
   occupancyData: [10, 20, 30, 40, 50, 60, 70],
   occupancyCounts: [1, 2, 3, 4, 5, 6, 12],

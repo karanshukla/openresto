@@ -80,6 +80,40 @@ public class TableAutoAssignerTests
     }
 
     [Fact]
+    public async Task BuildCandidates_SkipsWalkInOnlyTablesAndGroups_Online()
+    {
+        // T1 is walk-in only, and so is T3, which takes its whole group (T3 + T4) with it.
+        var (restaurant, db) = SeedWithGroup(nameof(BuildCandidates_SkipsWalkInOnlyTablesAndGroups_Online));
+        using (db)
+        {
+            restaurant.Sections.Single().Tables.Where(t => t.Id is 1 or 3).ToList().ForEach(t => t.WalkInOnly = true);
+            TableAutoAssigner assigner = CreateAssigner(db);
+
+            IReadOnlyList<TableCandidate> candidates = await assigner.BuildCandidatesAsync(restaurant, seats: 2, DateTime.UtcNow.AddDays(10));
+
+            Assert.Equal([2, 4], candidates.Select(c => c.TableId));
+            Assert.DoesNotContain(candidates, c => c.IsGroup);
+        }
+    }
+
+    [Fact]
+    public async Task BuildCandidates_OffersWalkInOnlyTablesAndGroups_ToTheWaitlist()
+    {
+        var (restaurant, db) = SeedWithGroup(nameof(BuildCandidates_OffersWalkInOnlyTablesAndGroups_ToTheWaitlist));
+        using (db)
+        {
+            restaurant.Sections.Single().Tables.Where(t => t.Id is 1 or 3).ToList().ForEach(t => t.WalkInOnly = true);
+            TableAutoAssigner assigner = CreateAssigner(db);
+
+            IReadOnlyList<TableCandidate> candidates = await assigner.BuildCandidatesAsync(
+                restaurant, seats: 2, DateTime.UtcNow.AddDays(10), includeWalkInOnly: true);
+
+            Assert.Contains(candidates, c => !c.IsGroup && c.TableId == 1);
+            Assert.Contains(candidates, c => c.IsGroup && c.TableGroupId == 1);
+        }
+    }
+
+    [Fact]
     public async Task BuildCandidates_PrefersStandaloneTable_WhenPartyFitsBoth()
     {
         // Party of 4 fits both a standalone table and the group; the first candidate must be a

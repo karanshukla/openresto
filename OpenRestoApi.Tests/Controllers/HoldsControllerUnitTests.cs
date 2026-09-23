@@ -4,6 +4,7 @@ using OpenRestoApi.Controllers;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Tests.Controllers;
@@ -121,6 +122,32 @@ public class HoldsControllerUnitTests
         var result = await _controller.PlaceHold(request);
 
         Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task PlaceHold_ReturnsConflict_ForAGroupHoldingAWalkInOnlyTable()
+    {
+        var restaurant = new Restaurant { Id = 1, DefaultBookingDurationMinutes = 60 };
+        var date = DateTime.UtcNow.AddDays(1);
+        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(1, date))
+            .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, date));
+        _mockTableGroupRepository.Setup(r => r.GetByIdWithMembersAsync(7, 1)).ReturnsAsync(new TableGroup
+        {
+            Id = 7, RestaurantId = 1, CombinedSeats = 6,
+            Members =
+            [
+                new() { TableId = 1, Table = new Table { Id = 1, Seats = 2 } },
+                new() { TableId = 2, Table = new Table { Id = 2, Seats = 4, WalkInOnly = true } },
+            ],
+        });
+
+        var result = await _controller.PlaceHold(new PlaceHoldRequest { RestaurantId = 1, TableGroupId = 7, Seats = 5, Date = date });
+
+        ConflictObjectResult conflict = Assert.IsType<ConflictObjectResult>(result);
+        Assert.Equal(ErrorCodes.TableWalkInOnly, Assert.IsType<MessageResponse>(conflict.Value).Code);
+        _mockHoldService.Verify(
+            s => s.PlaceGroupHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()),
+            Times.Never);
     }
 
     [Fact]

@@ -109,6 +109,32 @@ public partial class AdminServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetOverviewAsync_ReportsTodaysCoversPerSlot_ForACappedLocation()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Capped", Timezone = "UTC", OpenTime = "00:00", CloseTime = "23:59", MaxCoversPerSlot = 8,
+        });
+        _db.Restaurants.Add(new Restaurant { Id = 2, Name = "Uncapped", Timezone = "UTC" });
+        DateTime today = DateTime.UtcNow.Date;
+        _db.Bookings.AddRange(
+            new Booking { RestaurantId = 1, Date = today.AddHours(19), Seats = 4, BookingRef = "c1" },
+            new Booking { RestaurantId = 1, Date = today.AddHours(19).AddMinutes(20), Seats = 3, BookingRef = "c2" },
+            new Booking { RestaurantId = 1, Date = today.AddHours(20), Seats = 2, BookingRef = "c3" },
+            new Booking { RestaurantId = 1, Date = today.AddHours(20), Seats = 6, BookingRef = "c4", IsCancelled = true },
+            new Booking { RestaurantId = 2, Date = today.AddHours(19), Seats = 4, BookingRef = "u1" });
+        await _db.SaveChangesAsync();
+
+        AdminOverviewDto overview = await svc.GetOverviewAsync();
+
+        LocationPacingDto pacing = Assert.Single(overview.TodayPacing);
+        Assert.Equal(8, pacing.MaxCoversPerSlot);
+        Assert.Equal(["19:00", "20:00"], pacing.Slots.Select(s => s.Time));
+        Assert.Equal([7, 2], pacing.Slots.Select(s => s.Covers));
+    }
+
+    [Fact]
     public async Task GetOverviewAsync_CountsNoConflicts_WhenEveryBookingStillFits()
     {
         AdminService svc = CreateService();
@@ -580,6 +606,28 @@ public partial class AdminServiceTests : IDisposable
 
         var req = new AdminCreateBookingRequest { RestaurantId = 1, SectionId = 1, TableId = 1, Date = date, Seats = 2 };
         await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(req));
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_SeatsAWalkIn_AtAWalkInOnlyTableInAFullSlot()
+    {
+        // Staff decide at the door: neither the held-back table nor the cover cap stops them.
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+        Restaurant restaurant = _db.Restaurants.Single();
+        restaurant.MaxCoversPerSlot = 2;
+        _db.Tables.Single().WalkInOnly = true;
+        DateTime date = DateTime.UtcNow.Date.AddDays(2).AddHours(19);
+        _db.Bookings.Add(new Booking { RestaurantId = 1, Seats = 2, Date = date, EndTime = date.AddHours(1), BookingRef = "FULL" });
+        await _db.SaveChangesAsync();
+
+        BookingDetailDto result = await svc.CreateBookingAsync(new AdminCreateBookingRequest
+        {
+            RestaurantId = 1, SectionId = 1, TableId = 1, Seats = 4, Date = date, CustomerEmail = "door@example.com",
+        });
+
+        Assert.Equal(1, result.TableId);
     }
 
     [Fact]

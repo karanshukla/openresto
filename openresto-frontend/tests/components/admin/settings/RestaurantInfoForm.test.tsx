@@ -399,6 +399,47 @@ describe("RestaurantInfoForm", () => {
     );
   });
 
+  // ── Cover pacing (#455) ─────────────────────────────────────────────────
+
+  it("saves a typed cover cap as a number", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      maxCoversPerSlot: 12,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("max-covers-input"), "12");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ maxCoversPerSlot: 12 })
+    );
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ maxCoversPerSlot: 12 }));
+  });
+
+  it("clears the cover cap when the field is emptied", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, maxCoversPerSlot: 12 }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.changeText(screen.getByTestId("max-covers-input"), "");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ maxCoversPerSlot: null })
+    );
+  });
+
+  it.each(["0", "2.5", "abc"])("holds back a cover cap of %s and says why", async (typed) => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("max-covers-input"), typed);
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+    expect(screen.getByText(/Max guests per slot must be a whole number/)).toBeTruthy();
+  });
+
   // ── Booking reference format (#179) ─────────────────────────────────────
   // Option values are the backend BookingRefFormat member names, sent verbatim.
   const WORDS_FORMAT = "Words (crispy-basil-saffron)";

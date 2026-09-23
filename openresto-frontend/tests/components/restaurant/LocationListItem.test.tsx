@@ -73,6 +73,7 @@ const actualGetRestaurantNow = jest.requireActual("@/utils/restaurantTime").getR
 const registerRef = jest.fn();
 const onExpand = jest.fn();
 const onBook = jest.fn();
+const onJoinWaitlist = jest.fn();
 
 /** Everything the page-level filter bar supplies, so tests only state what they vary. */
 const baseProps = {
@@ -83,6 +84,7 @@ const baseProps = {
   registerRef,
   onExpand,
   onBook,
+  onJoinWaitlist,
 };
 
 jest.setTimeout(15000);
@@ -113,6 +115,26 @@ describe("LocationListItem", () => {
     await waitFor(() => expect(screen.getByText("Seating & tables")).toBeTruthy());
     expect(screen.queryByText("Confirm Booking")).toBeNull();
     expect(screen.queryByPlaceholderText("your@email.com")).toBeNull();
+  });
+
+  it("tells a guest which tables are kept for walk-ins", async () => {
+    const withDoorTable = {
+      ...mockRestaurant,
+      sections: [
+        {
+          ...mockRestaurant.sections[0],
+          tables: [
+            ...mockRestaurant.sections[0].tables,
+            { id: 102, name: "D3", seats: 2, sectionId: 1, walkInOnly: true },
+          ],
+        },
+      ],
+    };
+    renderWithProviders(
+      <LocationListItem {...baseProps} restaurant={withDoorTable as any} defaultExpanded />
+    );
+    await waitFor(() => expect(screen.getByText("D3")).toBeTruthy());
+    expect(screen.getAllByText("Walk-ins only")).toHaveLength(1);
   });
 
   it("registers its view ref with the parent for scroll anchoring", async () => {
@@ -553,6 +575,27 @@ describe("LocationListItem", () => {
         expect(screen.getByText("No reservations required, first come first served")).toBeTruthy()
       );
       expect(screen.getByText("Walk-ins on Thursdays")).toBeTruthy();
+    });
+
+    it("offers the waitlist in place of Book now at a walk-in-only location", async () => {
+      const restaurant = { ...mockRestaurant, walkInOnly: true };
+      renderWithProviders(<LocationListItem {...baseProps} restaurant={restaurant as any} />);
+
+      fireEvent.press(await screen.findByTestId("location-join-waitlist-1"));
+      expect(onJoinWaitlist).toHaveBeenCalledWith(restaurant);
+      expect(screen.queryByTestId("location-book-now-1")).toBeNull();
+    });
+
+    it("opens the waitlist from the walk-in notice inside Details", async () => {
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          defaultExpanded
+          restaurant={{ ...mockRestaurant, walkInOnly: true } as any}
+        />
+      );
+      fireEvent.press(await screen.findByTestId("walk-in-join-waitlist"));
+      expect(onJoinWaitlist).toHaveBeenCalled();
     });
 
     it("still shows the walk-in notice inside Details for walk-in-only locations", async () => {

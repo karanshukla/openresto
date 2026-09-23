@@ -4331,6 +4331,8 @@ export interface components {
             name?: null | string;
             /** Format: int32 */
             seats?: number | string;
+            /** @description Keep the table for walk-ins: never offered or bookable online. */
+            walkInOnly?: boolean;
         };
         CreateUserRequest: {
             email?: string;
@@ -4501,6 +4503,11 @@ export interface components {
              * @description Max allowed spare seats over party size, or null for unrestricted (off).
              */
             maxTableOversizeSeats?: null | number | string;
+            /**
+             * Format: int32
+             * @description Most guests whose online bookings may start in one slot, or null for no cap.
+             */
+            maxCoversPerSlot?: null | number | string;
             /** @description Format of references minted for new bookings: "AlphaNumeric" or "Numeric". */
             bookingRefFormat?: string;
             sections?: components["schemas"]["SectionDto"][];
@@ -4543,6 +4550,8 @@ export interface components {
             name?: null | string;
             /** Format: int32 */
             seats?: number | string;
+            /** @description Kept for walk-ins: never offered online, still seatable by staff. */
+            walkInOnly?: boolean;
         };
         /**
          * @description A combinable-table group (#271): physical tables an admin flagged as combinable, bookable as one
@@ -4627,6 +4636,12 @@ export interface components {
              */
             maxTableOversizeSeats?: null | number | string;
             /**
+             * Format: int32
+             * @description Most guests whose online bookings may start in one slot. Null clears the cap. Always
+             *     assigned from the settings form, like int? UpdateRestaurantRequest.MaxTableOversizeSeats; validated as 1 or more.
+             */
+            maxCoversPerSlot?: null | number | string;
+            /**
              * @description Booking reference format for new bookings — "AlphaNumeric" (three words) or "Numeric"
              *     (digits only), case-insensitive. Null leaves the stored value untouched (PATCH-style).
              *     Sent as a string rather than the enum because the API has no string-enum converter
@@ -4658,6 +4673,8 @@ export interface components {
             name?: null | string;
             /** Format: int32 */
             seats?: number | string;
+            /** @description Keep the table for walk-ins: never offered or bookable online. */
+            walkInOnly?: boolean;
         };
         UpdateUserRoleRequest: {
             role?: string;

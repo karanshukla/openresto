@@ -4410,6 +4410,10 @@
               "string"
             ],
             "format": "int32"
+          },
+          "walkInOnly": {
+            "type": "boolean",
+            "description": "Keep the table for walk-ins: never offered or bookable online."
           }
         }
       },
@@ -4907,6 +4911,16 @@
             "description": "Max allowed spare seats over party size, or null for unrestricted (off).",
             "format": "int32"
           },
+          "maxCoversPerSlot": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Most guests whose online bookings may start in one slot, or null for no cap.",
+            "format": "int32"
+          },
           "bookingRefFormat": {
             "type": "string",
             "description": "Format of references minted for new bookings: \u0022AlphaNumeric\u0022 or \u0022Numeric\u0022."
@@ -5043,6 +5057,10 @@
               "string"
             ],
             "format": "int32"
+          },
+          "walkInOnly": {
+            "type": "boolean",
+            "description": "Kept for walk-ins: never offered online, still seatable by staff."
           }
         }
       },
@@ -5249,6 +5267,16 @@
             "description": "Max allowed \u0060table.Seats - partySize\u0060 before a table is considered too large to\noffer/book. Null clears the setting (unrestricted). Always assigned from the settings\nform so \u0022Off\u0022 can be re-saved; validated server-side as non-negative.",
             "format": "int32"
           },
+          "maxCoversPerSlot": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Most guests whose online bookings may start in one slot. Null clears the cap. Always\nassigned from the settings form, like int? UpdateRestaurantRequest.MaxTableOversizeSeats; validated as 1 or more.",
+            "format": "int32"
+          },
           "bookingRefFormat": {
             "type": [
               "null",
@@ -5352,6 +5380,10 @@
               "string"
             ],
             "format": "int32"
+          },
+          "walkInOnly": {
+            "type": "boolean",
+            "description": "Keep the table for walk-ins: never offered or bookable online."
           }
         }
       },

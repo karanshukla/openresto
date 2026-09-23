@@ -4,6 +4,7 @@ import type { RestaurantDto, TableDto } from "@/api/restaurants";
 import type { TimeSlotDto } from "@/api/availability";
 import { groupDropdownLabel, groupedTableIds } from "@/utils/tableGroups";
 import { seatsAtLeast } from "@/utils/seating";
+import { onlineGroups, onlineSections } from "@/utils/walkIn";
 
 export const ANY_SECTION_ID = 0;
 
@@ -39,8 +40,9 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
   /** Mutually exclusive with `tableId` in the submit payload: a booking reserves one or the other. */
   const [tableGroupId, setTableGroupId] = useState<number | undefined>();
 
-  const allTables = restaurant.sections.flatMap((s) => s.tables);
-  const allGroups = restaurant.groups ?? [];
+  const sections = onlineSections(restaurant);
+  const allTables = sections.flatMap((s) => s.tables);
+  const allGroups = onlineGroups(restaurant);
   const groupedTableIdSet = groupedTableIds(allGroups);
 
   // Parties above the best single table *or* the best combinable group can't be seated even with
@@ -53,10 +55,10 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
 
   const sectionOptions = [
     { label: t("booking.seating.anySectionLabel"), value: ANY_SECTION_ID },
-    ...restaurant.sections.map((s) => ({ label: s.name, value: s.id })),
+    ...sections.map((s) => ({ label: s.name, value: s.id })),
   ];
   const isAutoAssign = sectionId === ANY_SECTION_ID;
-  const tablesInSection = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
+  const tablesInSection = sections.find((s) => s.id === sectionId)?.tables ?? allTables;
   // A group belongs to the picked section only when *every* member sits in it: booking a group
   // books all its tables, so one member elsewhere would split the party across sections. TableDto
   // carries no sectionId, hence resolving membership through the section's own table ids.
@@ -92,7 +94,7 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
       if (tableGroupId !== undefined) setTableGroupId(undefined);
       return;
     }
-    const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
+    const candidates = sections.find((s) => s.id === sectionId)?.tables ?? allTables;
     if (availableTableIds.length > 0) {
       if (!tableId || !availableTableIds.includes(tableId)) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -111,7 +113,7 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
       setTableGroupId(undefined);
       return;
     }
-    const candidates = restaurant.sections.find((s) => s.id === sectionId)?.tables ?? allTables;
+    const candidates = sections.find((s) => s.id === sectionId)?.tables ?? allTables;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTableId(
       bestTableFor(seats, availableTableIds.length > 0 ? availableTableIds : undefined, candidates)
