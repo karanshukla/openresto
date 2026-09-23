@@ -215,19 +215,22 @@ LOCATIONS = [
     {
         # Fully walk-in only (WalkInOnly): stays publicly listed, but the
         # booking CTA is replaced by a walk-in notice and /api/availability
-        # returns no slots.
+        # returns no slots. Also the walk-in waitlist's home: guests can only
+        # join from the site while a walk-in location is open, so it is open
+        # around the clock, or a visitor outside New York's evening would only
+        # ever see "the waitlist isn't open right now".
         "name": "Paddy's Pub Shore House",
         "address": "Boardwalk, Ocean City, NJ",
         "timezone": "America/New_York",
-        "open_days": "4,5,6,7",
-        "open_time": "12:00",
-        "close_time": "23:00",
+        "open_days": "1,2,3,4,5,6,7",
+        "open_time": "00:00",
+        "close_time": "00:00",
         "walk_in_only": True,
         "duration": 60,
         "slot_interval": 30,
         "ref_format": 0,
         "tags": "seasonal,sand",
-        "description": "Summer only. We don't take bookings — turn up and shout your name at Frank.",
+        "description": "We don't take bookings. Join the waitlist and Frank will shout your name.",
         "menu_url": None,
         "phone": None,
         "email": "shore@paddyspub.example",
@@ -851,8 +854,11 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
         # Explicit for the same reason the accounts wipe is: foreign_keys=OFF means the
         # Bookings cascade never reaches a visitor's push address.
         "DELETE FROM GuestPushSubscriptions;",
+        # Visitors join the demo's waitlist with a name and often an email, and the
+        # restaurants it points at are rebuilt with the config.
+        "DELETE FROM WaitlistEntries;",
         "DELETE FROM Bookings;",
-        "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','AdminNotifications','EmailFailures','GuestPushSubscriptions');",
+        "DELETE FROM sqlite_sequence WHERE name IN ('Bookings','AdminNotifications','EmailFailures','GuestPushSubscriptions','WaitlistEntries');",
         "",
     ]
 
@@ -1041,6 +1047,10 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
             )
         )
 
+    door = next(r for r in ds["restaurants"] if r["spec"].get("walk_in_only"))
+    door_bookings, queue = build_door_queue(door, now_utc, ledger, mint, rng)
+    bookings.extend(door_bookings)
+
     # Insert in chronological order so Bookings.Id correlates with time, the
     # way it would on a live system.
     bookings.sort(key=lambda b: b[2])
@@ -1110,9 +1120,111 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
             )
         )
 
-    out.extend(emit_audit_entries(ds, bookings, now_utc))
+    booking_ids = {id(row): i for i, (row, _, _) in enumerate(bookings, start=1)}
+    out.append("")
+    out.append(f"-- Walk-in waitlist at {door['row']['Name']}: parties already seated, one called, the rest waiting")
+    for entry_id, entry in enumerate(queue, start=1):
+        seated_row = entry.pop("_booking", None)
+        entry["BookingId"] = booking_ids[id(seated_row)] if seated_row else None
+        entry["Id"] = entry_id
+        out.append(insert("WaitlistEntries", entry))
+
+    out.extend(emit_audit_entries(ds, bookings, queue, now_utc))
 
     return out, len(bookings)
+
+
+# ─── Walk-in waitlist ────────────────────────────────────────────────────────
+# The admin board and the guest's quoted wait are driven entirely by state: who is
+# queued, and which tables are mid-sitting. Without both, the board is empty and every
+# quote reads "a table is free now", so the seed puts two parties at tables and four
+# in line. Everything is relative to now; the reset reruns every two hours and the
+# app expires a party six hours after it joins.
+
+WAITLIST_REF_ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"
+
+# (minutes since joining, party size, status, minutes since called)
+DOOR_QUEUE = [
+    (32, 2, "Notified", 3),
+    (26, 4, "Waiting", None),
+    (14, 2, "Waiting", None),
+    (6, 6, "Waiting", None),
+]
+
+# (minutes since seated, party size), for the parties the waitlist already seated.
+DOOR_SEATED = [(40, 6), (15, 4)]
+
+
+def build_door_queue(r, now_utc, ledger, mint, rng):
+    """Seated walk-ins (as bookings, each linked from its closed entry) plus the live queue.
+
+    Seated parties take the smallest free table that fits for a whole sitting starting when
+    they were seated, the way WaitlistService.SeatAsync picks one, so they stay inside the
+    never-conflict rule the rest of the bookings keep.
+    """
+    spec = r["spec"]
+    duration = spec["duration"]
+    tables = sorted((u for u in bookable_units(r) if u[0] == "table"), key=lambda u: u[2])
+    guests = iter(GUESTS[-8:])
+
+    def ref():
+        return "".join(rng.choice(WAITLIST_REF_ALPHABET) for _ in range(20))
+
+    def entry(minutes_ago, seats, status, **fields):
+        name, email, _ = next(guests)
+        return {
+            "RestaurantId": r["id"],
+            "Ref": ref(),
+            "Name": name,
+            "Seats": seats,
+            "Email": email if rng.random() < 0.5 else None,
+            "Locale": "en",
+            "Status": status,
+            "CreatedAt": utc_str(now_utc - timedelta(minutes=minutes_ago)),
+            "NotifiedAt": None,
+            "ClosedAt": None,
+            **fields,
+        }
+
+    bookings, entries = [], []
+    for seated_ago, seats in DOOR_SEATED:
+        start_utc = (now_utc - timedelta(minutes=seated_ago)).replace(second=0, microsecond=0)
+        end_utc = start_utc + timedelta(minutes=duration)
+        unit = next((u for u in tables if u[2] >= seats and ledger.is_free(u[4], start_utc, end_utc)), None)
+        if unit is None:
+            continue
+        _, table_id, _, section_id, keys = unit
+        ledger.reserve(keys, start_utc, end_utc)
+
+        seated = entry(seated_ago + 20, seats, "Seated", ClosedAt=utc_str(start_utc))
+        row = {
+            "BookingRef": mint(spec["ref_format"]),
+            "CustomerName": seated["Name"],
+            "CustomerEmail": seated["Email"],
+            "Date": utc_str(start_utc),
+            "EndTime": utc_str(end_utc),
+            "Seats": seats,
+            "SectionId": section_id,
+            "TableId": table_id,
+            "TableGroupId": None,
+            "RestaurantId": r["id"],
+            "IsCancelled": False,
+            "CancelledAt": None,
+            "SpecialRequests": "Seated from the waitlist",
+        }
+        seated["_booking"] = row
+        bookings.append((row, r["row"]["Name"], start_utc))
+        entries.append(seated)
+
+    for joined_ago, seats, status, called_ago in DOOR_QUEUE:
+        notified = utc_str(now_utc - timedelta(minutes=called_ago)) if called_ago is not None else None
+        entries.append(entry(joined_ago, seats, status, NotifiedAt=notified))
+
+    # Ticket numbers count up in joining order, as CountCreatedSinceAsync + 1 would have issued them.
+    entries.sort(key=lambda e: e["CreatedAt"])
+    for number, e in enumerate(entries, start=1):
+        e["Number"] = number
+    return bookings, entries
 
 
 # ─── Activity log ────────────────────────────────────────────────────────────
@@ -1126,7 +1238,7 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
 # the denormalized actor columns exist for.
 
 
-def emit_audit_entries(ds, bookings, now_utc):
+def emit_audit_entries(ds, bookings, queue, now_utc):
     def entry(minutes_ago, action, **fields):
         row = {
             "OccurredAt": utc_str(now_utc - timedelta(minutes=minutes_ago)),
@@ -1152,6 +1264,8 @@ def emit_audit_entries(ds, bookings, now_utc):
 
     first = ds["restaurants"][0]
     cancelled = [(i, row) for i, (row, _, _) in enumerate(bookings, start=1) if row["IsCancelled"]][-3:]
+    seated = [e for e in queue if e["Status"] == "Seated"][-1:]
+    booking_refs = {i: row["BookingRef"] for i, (row, _, _) in enumerate(bookings, start=1)}
 
     rows = [
         entry(
@@ -1221,6 +1335,22 @@ def emit_audit_entries(ds, bookings, now_utc):
                 Summary=f"Cancelled booking {row['BookingRef']}",
             )
             for index, (booking_id, row) in enumerate(cancelled)
+        ],
+        # Named by ticket number only, as WaitlistService.Describe does: the entry's name
+        # and email are deleted after seven days, and the trail outlives them.
+        *[
+            entry(
+                15,
+                "waitlist.seat",
+                TargetType="WaitlistEntry",
+                TargetId=str(e["Id"]),
+                TargetLabel=f"#{e['Number']}",
+                RestaurantId=e["RestaurantId"],
+                Path=f"/api/admin/waitlist/{e['Id']}/seat",
+                StatusCode=200,
+                Summary=f"Seated ticket #{e['Number']} as booking {booking_refs[e['BookingId']]}",
+            )
+            for e in seated
         ],
     ]
 

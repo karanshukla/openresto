@@ -169,6 +169,6 @@ if [[ $SEED_ACCOUNTS -eq 1 ]]; then apply_sql "$DB" < "$ACCOUNTS_SQL_FILE"; fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 log "Done. Row counts:"
-for t in Restaurants Sections Tables TableGroups Highlights SocialLinks BrandSettings Bookings AdminNotifications AdminCredentials; do
+for t in Restaurants Sections Tables TableGroups Highlights SocialLinks BrandSettings Bookings WaitlistEntries AdminNotifications AdminCredentials; do
   log "  $t: $(query "$DB" "SELECT COUNT(*) FROM $t;")"
 done
