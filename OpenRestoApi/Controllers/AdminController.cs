@@ -13,7 +13,7 @@ namespace OpenRestoApi.Controllers;
 [Authorize(Policy = AuthPolicies.RequireAdmin)]
 public class AdminController(AdminService adminService) : ControllerBase
 {
-    public enum bookingStatus { active, cancelled, all, past, upcoming }
+    public enum bookingStatus { active, cancelled, all, past, upcoming, noshow }
     private readonly AdminService _adminService = adminService;
 
     // Aggregates counts/lists across restaurants and bookings; gated on the dominant resource
@@ -66,6 +66,14 @@ public class AdminController(AdminService adminService) : ControllerBase
     {
         DateTime? endTime = await _adminService.ExtendBookingAsync(id, req.Minutes);
         return endTime == null ? NotFound() : Ok(new { endTime });
+    }
+
+    [HttpPost("bookings/{id}/status")]
+    [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Write)]
+    public async Task<IActionResult> SetBookingStatus(int id, [FromBody] SetBookingStatusRequest req)
+    {
+        BookingDetailDto? result = await _adminService.SetBookingStatusAsync(id, req.Status);
+        return result == null ? NotFound() : Ok(result);
     }
 
     [HttpPost("bookings/{id}/cancel")]

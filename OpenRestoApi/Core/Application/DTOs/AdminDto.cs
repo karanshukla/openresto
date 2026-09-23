@@ -23,6 +23,9 @@ public class AdminOverviewDto
     public int ActiveHoldsCount { get; set; }
     public int PausedRestaurantsCount { get; set; }
 
+    /// <summary>Bookings marked as no-shows today, each location's day in its own timezone.</summary>
+    public int TodayNoShowsCount { get; set; }
+
     /// <summary>
     /// Upcoming bookings across every active location that its current schedule would no longer
     /// accept. The locations screen reports these per location, but an admin who narrows hours
@@ -81,6 +84,27 @@ public class BookingDetailDto
     public string? BookingRef { get; set; }
     public bool IsCancelled { get; set; }
     public DateTime? CancelledAt { get; set; }
+
+    /// <summary>What has happened at the sitting: Booked, Arrived, Seated, Finished or NoShow.</summary>
+    public string Status { get; set; } = nameof(Domain.BookingStatus.Booked);
+
+    /// <summary>The statuses staff can move the booking to now. Empty once it has ended or when cancelled.</summary>
+    public List<string> NextStatuses { get; set; } = [];
+
+    /// <summary>The status the last change can still be undone to, or null.</summary>
+    public string? UndoStatus { get; set; }
+
+    /// <summary>
+    /// Other bookings under the same email, at any location, marked as no-shows. Null where the
+    /// list was not counted (the dashboard's today list) or the booking has no email.
+    /// </summary>
+    public int? PreviousNoShows { get; set; }
+}
+
+public class SetBookingStatusRequest
+{
+    /// <summary>Booked, Arrived, Seated, Finished or NoShow, case-insensitive.</summary>
+    public string Status { get; set; } = string.Empty;
 }
 
 public class ExtendBookingRequest

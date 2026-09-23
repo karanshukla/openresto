@@ -95,6 +95,23 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories
             }
         }
 
+        public async Task<Dictionary<string, int>> CountNoShowsByEmailAsync(IEnumerable<string> emails)
+        {
+            List<string> lowered = emails.Select(e => e.Trim().ToLowerInvariant()).Distinct().ToList();
+            if (lowered.Count == 0)
+            {
+                return [];
+            }
+
+#pragma warning disable CA1862, CA1311, CA1304 // ToLower in LINQ-to-EF is intentional (ToLowerInvariant is not translatable)
+            return await _db.Bookings
+                .Where(b => b.Status == BookingStatus.NoShow && !b.IsCancelled && b.CustomerEmail != null
+                    && lowered.Contains(b.CustomerEmail.Trim().ToLower()))
+                .GroupBy(b => b.CustomerEmail!.Trim().ToLower())
+                .ToDictionaryAsync(g => g.Key, g => g.Count());
+#pragma warning restore CA1862, CA1311, CA1304
+        }
+
         public async Task<bool> IsTableBookedOnDateAsync(int tableId, DateTime bookingDate, int durationMinutes = 60)
         {
             DateTime newStart = bookingDate.ToUniversalTime();

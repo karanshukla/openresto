@@ -26,8 +26,27 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
         "cancelled" => "cancelled",
         "active" => "active",
         "all" => "all",
+        "noshow" => "noshow",
         _ => "active",
     };
+
+    /// <summary>
+    /// The EF-translatable form of <see cref="Booking.IsPastForGrid"/>: a sitting is past once it
+    /// started more than <see cref="Booking.GridGraceMinutes"/> ago or has been finished or
+    /// no-showed, and "active" is everything else that is not cancelled.
+    /// </summary>
+    /// <seealso>AdminServiceTests.GetBookingsAsync_ListsAFinishedSittingAsPast_InsideTheGridGrace</seealso>
+    private static IQueryable<Booking> WhereStatus(IQueryable<Booking> q, string normalized, DateTime cutoff)
+        => normalized switch
+        {
+            "cancelled" => q.Where(b => b.IsCancelled),
+            "past" => q.Where(b => !b.IsCancelled
+                && (b.Date < cutoff || b.Status == BookingStatus.Finished || b.Status == BookingStatus.NoShow)),
+            "noshow" => q.Where(b => !b.IsCancelled && b.Status == BookingStatus.NoShow),
+            "all" => q,
+            _ => q.Where(b => !b.IsCancelled
+                && b.Date >= cutoff && b.Status != BookingStatus.Finished && b.Status != BookingStatus.NoShow),
+        };
 
     public async Task<List<Booking>> QueryAsync(BookingFilter filter)
     {
@@ -51,9 +70,6 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             Restaurant? restaurant = await _db.Restaurants.FindAsync(filter.RestaurantId.Value);
             string tz = restaurant?.Timezone ?? "UTC";
 
-            // Grid "active" window — bookings started within this many minutes are still
-            // "active" in the admin grid. Mirrors Booking.IsPastForGrid; kept inline because
-            // EF must translate the Where expression (an instance method would break translation).
             DateTime cutoff = nowUtc.AddMinutes(-Booking.GridGraceMinutes);
 
             if (isGridMode)
@@ -63,16 +79,7 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             }
             else
             {
-                // The `_` arm is unreachable: NormalizeStatus only ever returns "active", "past",
-                // "cancelled", or "all", all of which are already handled above.
-                q = normalized switch
-                {
-                    "cancelled" => q.Where(b => b.IsCancelled),
-                    "past" => q.Where(b => !b.IsCancelled && b.Date < cutoff),
-                    "all" => q,
-                    "active" => q.Where(b => !b.IsCancelled && b.Date >= cutoff),
-                    _ => q.Where(b => !b.IsCancelled && b.Date >= cutoff),
-                };
+                q = WhereStatus(q, normalized, cutoff);
             }
 
             if (filter.BookingDate.HasValue)
@@ -90,18 +97,7 @@ internal class BookingFilterRepository(AppDbContext db) : IBookingFilterReposito
             }
             else
             {
-                DateTime globalCutoff = nowUtc.AddMinutes(-Booking.GridGraceMinutes);
-
-                // The `_` arm is unreachable: NormalizeStatus only ever returns "active", "past",
-                // "cancelled", or "all", all of which are already handled above.
-                q = normalized switch
-                {
-                    "cancelled" => q.Where(b => b.IsCancelled),
-                    "past" => q.Where(b => !b.IsCancelled && b.Date < globalCutoff),
-                    "all" => q,
-                    "active" => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
-                    _ => q.Where(b => !b.IsCancelled && b.Date >= globalCutoff),
-                };
+                q = WhereStatus(q, normalized, nowUtc.AddMinutes(-Booking.GridGraceMinutes));
             }
 
             if (filter.BookingDate.HasValue)

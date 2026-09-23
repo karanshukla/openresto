@@ -82,6 +82,27 @@ describe("bookings list status column", () => {
     assert.match(output, /cancelled/);
   });
 
+  test("the table view shows the floor status the server recorded", async () => {
+    globalThis.fetch = fakeFetch([
+      {
+        id: 3,
+        restaurantName: "Pasta Place",
+        seats: 2,
+        isCancelled: false,
+        status: "NoShow",
+      },
+    ]);
+    const { lines, restore } = captureLogs();
+
+    try {
+      await buildProgram().parseAsync(["bookings", "list"], { from: "user" });
+    } finally {
+      restore();
+    }
+
+    assert.match(lines.join("\n"), /NoShow/);
+  });
+
   test("the --json output stays the raw DTO with no injected status field", async () => {
     globalThis.fetch = fakeFetch(ROWS);
     const { lines, restore } = captureLogs();

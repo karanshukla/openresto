@@ -867,6 +867,33 @@ def party_size_for(rng, capacity, max_oversize):
     return rng.choices(choices, weights=weights, k=1)[0]
 
 
+NO_SHOW_RATE = 0.08
+NO_SHOW_MARKED_AFTER = timedelta(minutes=15)
+
+
+def assign_floor_statuses(bookings, now_utc, rng):
+    """What happened at each sitting, the way staff would have recorded it.
+
+    Past sittings mostly finished and a few never showed; a no-show was marked a
+    quarter of an hour in, which is when its table came free. Sittings under way
+    now are seated. Cancelled and upcoming bookings stay Booked, and a status the
+    row already carries (the waitlist's seated parties) is kept.
+    """
+    for row, _, start_utc in bookings:
+        if "Status" in row:
+            continue
+        end_utc = datetime.strptime(row["EndTime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        if row["IsCancelled"] or start_utc > now_utc:
+            row["Status"] = "Booked"
+        elif end_utc > now_utc:
+            row["Status"] = "Seated"
+        elif rng.random() < NO_SHOW_RATE:
+            row["Status"] = "NoShow"
+            row["EndTime"] = utc_str(start_utc + NO_SHOW_MARKED_AFTER)
+        else:
+            row["Status"] = "Finished"
+
+
 def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
     out = [
         "-- ── Bookings + admin notifications ──",
@@ -1074,6 +1101,7 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
     # Insert in chronological order so Bookings.Id correlates with time, the
     # way it would on a live system.
     bookings.sort(key=lambda b: b[2])
+    assign_floor_statuses(bookings, now_utc, rng)
 
     out.append(f"-- {len(bookings)} bookings across {len(ds['restaurants'])} locations")
     notifications = []
@@ -1230,6 +1258,7 @@ def build_door_queue(r, now_utc, ledger, mint, rng):
             "IsCancelled": False,
             "CancelledAt": None,
             "SpecialRequests": "Seated from the waitlist",
+            "Status": "Seated",
         }
         seated["_booking"] = row
         bookings.append((row, r["row"]["Name"], start_utc))

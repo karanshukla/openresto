@@ -10,7 +10,7 @@ public sealed class BookingFilter
 {
     public int? RestaurantId { get; init; }
     public DateTime? BookingDate { get; init; }
-    /// <summary>Raw status string from the API ("active"|"past"|"cancelled"|"all"|"upcoming").</summary>
+    /// <summary>Raw status string from the API ("active"|"past"|"cancelled"|"noshow"|"all"|"upcoming").</summary>
     public string Status { get; init; } = "active";
     public string? Email { get; init; }
     public string? BookingRef { get; init; }

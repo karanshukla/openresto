@@ -254,6 +254,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/Admin/bookings/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number | string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SetBookingStatusRequest"];
+                    "text/json": components["schemas"]["SetBookingStatusRequest"];
+                    "application/*+json": components["schemas"]["SetBookingStatusRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/Admin/bookings/{id}/cancel": {
         parameters: {
             query?: never;
@@ -4484,6 +4525,10 @@ export interface components {
         SendBookingEmailRequest: {
             subject?: string;
             body?: string;
+        };
+        SetBookingStatusRequest: {
+            /** @description Booked, Arrived, Seated, Finished or NoShow, case-insensitive. */
+            status?: string;
         };
         SetupPvqRequest: {
             question?: string;

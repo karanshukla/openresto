@@ -189,6 +189,7 @@ public class WaitlistService(
     /// Seats the party at a unit free for a whole sitting from now, recording it as a booking.
     /// </summary>
     /// <seealso>WaitlistServiceTests.SeatAsync_CreatesABookingOnTheSmallestFreeTable</seealso>
+    /// <seealso>WaitlistServiceTests.SeatAsync_RecordsTheBookingAsSeated</seealso>
     /// <seealso>WaitlistServiceTests.SeatAsync_Rejects_WhenNoTableIsFree</seealso>
     /// <seealso>WaitlistServiceTests.SeatAsync_Rejects_ATableThatIsNotFree</seealso>
     public async Task<SeatWaitlistEntryResponse> SeatAsync(int entryId, SeatWaitlistEntryRequest req)
@@ -213,6 +214,7 @@ public class WaitlistService(
             CustomerEmail = entry.Email,
             Seats = entry.Seats,
             BookingRef = BookingRefFactory.GenerateFor(restaurant),
+            Status = BookingStatus.Seated,
         };
         await _bookings.AddAsync(booking);
 

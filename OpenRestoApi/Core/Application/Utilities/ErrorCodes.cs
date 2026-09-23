@@ -47,6 +47,10 @@ public static class ErrorCodes
     public const string BookingLookupEmailRequired = "booking.lookup_email_required";
     public const string BookingLookupNotFound = "booking.lookup_not_found";
     public const string BookingCancelEmailRequired = "booking.cancel_email_required";
+    public const string BookingStatusInvalid = "booking.status_invalid";
+    public const string BookingStatusCancelled = "booking.status_cancelled";
+    public const string BookingStatusTransitionInvalid = "booking.status_transition_invalid";
+    public const string BookingNoShowBeforeStart = "booking.no_show_before_start";
 
     public const string TableSeatsExceeded = "table.seats_exceeded";
     public const string TableOversizeCap = "table.oversize_cap";
