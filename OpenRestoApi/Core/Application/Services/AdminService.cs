@@ -200,7 +200,7 @@ public class AdminService(
 
         DateTime newStart = TimeZoneHelper.ConvertLocalToUtc(req.Date, table.Section.Restaurant!.Timezone);
 
-        int durationMinutes = table.Section!.Restaurant!.DefaultBookingDurationMinutes;
+        int durationMinutes = BookingDuration.For(table.Section.Restaurant, req.Seats);
         DateTime newEnd = newStart.AddMinutes(durationMinutes);
 
         bool conflict = await _bookingRepository.HasConflictAsync(req.TableId, newStart, newEnd, durationMinutes);
@@ -359,7 +359,9 @@ public class AdminService(
             restaurant = newRestaurant;
         }
 
-        int durationMinutes = restaurant?.DefaultBookingDurationMinutes ?? 60;
+        int durationMinutes = restaurant is null
+            ? BookingDuration.FallbackMinutes
+            : BookingDuration.For(restaurant, req.Seats ?? booking.Seats);
 
         if (req.TableId.HasValue && req.TableId.Value != booking.TableId)
         {

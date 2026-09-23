@@ -96,7 +96,8 @@ BRAND = {
 # past-midnight wrap), both booking-reference formats, all three contact
 # fallback states, every slot interval (15/30/60), walk-in-only both globally
 # and per-day, a live booking pause, an archived location, the table-oversize
-# cap, and combinable table groups both named and unnamed.
+# cap, turn times by party size, and combinable table groups both named and
+# unnamed.
 
 LOCATIONS = [
     {
@@ -109,6 +110,9 @@ LOCATIONS = [
         "open_time": "09:00",
         "close_time": "23:45",
         "duration": 90,
+        # Turn times by party size (TurnTimesJson): a two-top turns in an hour, a
+        # party of five or more holds its table for two.
+        "turn_times": [(1, 60), (3, 90), (5, 120)],
         "slot_interval": 30,
         "ref_format": 0,  # AlphaNumeric
         "tags": "mac and cheese,fight milk",
@@ -422,6 +426,13 @@ def build_dataset(now_utc):
         if spec.get("paused_days"):
             paused_until = utc_str(now_utc + timedelta(days=spec["paused_days"]))
 
+        turn_times_json = None
+        if spec.get("turn_times"):
+            turn_times_json = json.dumps(
+                [{"minSeats": seats, "minutes": minutes} for seats, minutes in spec["turn_times"]],
+                separators=(",", ":"),
+            )
+
         open_hours_json = None
         if spec.get("open_hours"):
             open_hours_json = json.dumps(
@@ -446,6 +457,7 @@ def build_dataset(now_utc):
                     "ImageUrl": spec.get("image"),
                     "IsArchived": bool(spec.get("archived")),
                     "DefaultBookingDurationMinutes": spec["duration"],
+                    "TurnTimesJson": turn_times_json,
                     "BookingSlotIntervalMinutes": spec["slot_interval"],
                     "OpenHoursJson": open_hours_json,
                     "WalkInOnly": bool(spec.get("walk_in_only")),
@@ -751,6 +763,16 @@ def hours_for_day(spec, iso_day):
     return spec["open_time"], spec["close_time"]
 
 
+def duration_for(spec, seats):
+    """The sitting length a party of `seats` gets, the way BookingDuration.For resolves it."""
+    rules = [minutes for min_seats, minutes in sorted(spec.get("turn_times") or []) if min_seats <= seats]
+    return rules[-1] if rules else spec["duration"]
+
+
+def longest_duration(spec):
+    return max([spec["duration"]] + [minutes for _, minutes in spec.get("turn_times") or []])
+
+
 def day_slot_grid(spec, iso_day):
     """Local minutes-from-midnight for every bookable start on this ISO day.
 
@@ -765,8 +787,7 @@ def day_slot_grid(spec, iso_day):
         end += 24 * 60
 
     step = spec["slot_interval"]
-    duration = spec["duration"]
-    return list(range(start, end - duration + 1, step))
+    return list(range(start, end - longest_duration(spec) + 1, step))
 
 
 class UnitLedger:
@@ -873,7 +894,6 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
         tz = ZoneInfo(spec["timezone"])
         open_days = {int(d) for d in spec["open_days"].split(",") if d.strip()}
         walk_in_days = {int(d) for d in (spec.get("walk_in_days") or "").split(",") if d.strip()}
-        duration = spec["duration"]
         units = bookable_units(r)
 
         for offset in range(-days_back, days_forward + 1):
@@ -910,9 +930,10 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
                 unit_kind, unit_id, capacity, section_id, keys = rng.choice(units)
                 minutes = rng.choice(candidates)
 
+                seats = party_size_for(rng, capacity, spec.get("max_oversize"))
                 local_start = datetime.combine(local_day, datetime.min.time()) + timedelta(minutes=minutes)
                 start_utc = local_start.replace(tzinfo=tz).astimezone(timezone.utc)
-                end_utc = start_utc + timedelta(minutes=duration)
+                end_utc = start_utc + timedelta(minutes=duration_for(spec, seats))
 
                 if not ledger.is_free(keys, start_utc, end_utc):
                     continue
@@ -921,7 +942,6 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
 
                 name, email, special = GUESTS[guest_idx % len(GUESTS)]
                 guest_idx += 1
-                seats = party_size_for(rng, capacity, spec.get("max_oversize"))
                 if walk_in:
                     special = "Walk-in, recorded at the door"
 
@@ -969,7 +989,7 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
                     "CustomerName": "Rex the Bouncer",
                     "CustomerEmail": "rex@paddyspub.com",
                     "Date": utc_str(start_utc),
-                    "EndTime": utc_str(start_utc + timedelta(minutes=first["spec"]["duration"])),
+                    "EndTime": utc_str(start_utc + timedelta(minutes=duration_for(first["spec"], 2))),
                     "Seats": 2,
                     "SectionId": None,
                     "TableId": None,
@@ -1020,7 +1040,7 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
         _, unit_id, capacity, section_id, keys = strand_units[i % len(strand_units)]
         local_start = datetime.combine(local_day, datetime.min.time()) + timedelta(minutes=minutes)
         start_utc = local_start.replace(tzinfo=strand_tz).astimezone(timezone.utc)
-        end_utc = start_utc + timedelta(minutes=strand_spec["duration"])
+        end_utc = start_utc + timedelta(minutes=duration_for(strand_spec, min(2, capacity)))
         ledger.reserve(keys, start_utc, end_utc)
 
         name, email, _ = GUESTS[guest_idx % len(GUESTS)]
@@ -1163,7 +1183,6 @@ def build_door_queue(r, now_utc, ledger, mint, rng):
     never-conflict rule the rest of the bookings keep.
     """
     spec = r["spec"]
-    duration = spec["duration"]
     tables = sorted((u for u in bookable_units(r) if u[0] == "table"), key=lambda u: u[2])
     guests = iter(GUESTS[-8:])
 
@@ -1189,7 +1208,7 @@ def build_door_queue(r, now_utc, ledger, mint, rng):
     bookings, entries = [], []
     for seated_ago, seats in DOOR_SEATED:
         start_utc = (now_utc - timedelta(minutes=seated_ago)).replace(second=0, microsecond=0)
-        end_utc = start_utc + timedelta(minutes=duration)
+        end_utc = start_utc + timedelta(minutes=duration_for(spec, seats))
         unit = next((u for u in tables if u[2] >= seats and ledger.is_free(u[4], start_utc, end_utc)), None)
         if unit is None:
             continue

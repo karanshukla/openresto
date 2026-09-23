@@ -208,7 +208,7 @@ public class WaitlistService(
             TableId = unit.IsGroup ? null : unit.TableId,
             TableGroupId = unit.TableGroupId,
             Date = now,
-            EndTime = now.AddMinutes(restaurant.DefaultBookingDurationMinutes),
+            EndTime = now.AddMinutes(BookingDuration.For(restaurant, entry.Seats)),
             CustomerName = entry.Name,
             CustomerEmail = entry.Email,
             Seats = entry.Seats,

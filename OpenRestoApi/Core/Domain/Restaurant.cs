@@ -92,6 +92,14 @@ public class Restaurant
     public int DefaultBookingDurationMinutes { get; set; } = 60;
 
     /// <summary>
+    /// Optional sitting lengths by party size as a JSON array, e.g.
+    /// [{"minSeats":1,"minutes":60},{"minSeats":5,"minutes":120}]. A party gets the rule with the
+    /// largest minSeats at or below its size; null, or a party below every rule, gets
+    /// <see cref="DefaultBookingDurationMinutes"/>. Resolve with <c>BookingDuration.For</c>.
+    /// </summary>
+    public string? TurnTimesJson { get; set; }
+
+    /// <summary>
     /// Step, in minutes, between selectable booking start times. Deliberately independent of
     /// <see cref="DefaultBookingDurationMinutes"/>, so a restaurant can offer 90-minute
     /// sittings that still start every 15 minutes. Constrained to 15/30/60 server-side.

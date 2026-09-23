@@ -94,6 +94,36 @@ public class AvailabilityServiceTests
         Assert.False(slot1200.IsAvailable);
     }
 
+    [Fact]
+    public async Task GetAvailabilityAsync_RefusesALargePartyAGapThatOnlyFitsTheSmallerTurnTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_RefusesALargePartyAGapThatOnlyFitsTheSmallerTurnTime));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", OpenTime = "11:00", CloseTime = "14:00", Timezone = "UTC",
+            TurnTimesJson = """[{"minSeats":1,"minutes":60},{"minSeats":5,"minutes":120}]""",
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 6, SectionId = 1 });
+        var nextSitting = new DateTime(2026, 10, 10, 13, 0, 0, DateTimeKind.Utc);
+        db.Bookings.Add(new Booking
+        {
+            Id = 1, RestaurantId = 1, TableId = 1, SectionId = 1, Seats = 2,
+            Date = nextSitting, EndTime = nextSitting.AddMinutes(60), BookingRef = "B1",
+        });
+        db.SaveChanges();
+
+        var svc = new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+        var day = new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc);
+
+        AvailabilityResponseDto twoTop = await svc.GetAvailabilityAsync(1, day, 2);
+        AvailabilityResponseDto fiveTop = await svc.GetAvailabilityAsync(1, day, 5);
+
+        Assert.True(twoTop.Slots.First(s => s.Time == "12:00").IsAvailable);
+        Assert.False(fiveTop.Slots.First(s => s.Time == "12:00").IsAvailable);
+        Assert.True(fiveTop.Slots.First(s => s.Time == "11:00").IsAvailable);
+    }
+
     // ── BookingSlotIntervalMinutes (#245) ────────────────────────────────────
     // The interval controls the step between selectable start times, decoupled from the
     // booking duration. A 15-min interval must produce slots at every quarter hour, and

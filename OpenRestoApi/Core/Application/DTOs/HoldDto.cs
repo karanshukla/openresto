@@ -23,8 +23,9 @@ public class PlaceHoldRequest
     public int? TableGroupId { get; set; }
 
     /// <summary>
-    /// Party size. Required for auto-assign and group holds (so the server can validate capacity);
-    /// ignored for explicit-table holds (the capacity check happens at booking time).
+    /// Party size. Required for auto-assign and group holds (so the server can validate capacity).
+    /// Optional for explicit-table holds, whose capacity is checked at booking time, but it sets
+    /// how long the hold blocks the table: without it the hold uses the default duration.
     /// </summary>
     public int Seats { get; set; }
 

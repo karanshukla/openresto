@@ -33,6 +33,22 @@ public class HoldServiceTests
     }
 
     [Fact]
+    public void IsTableHeld_MeasuresAnExistingHold_ByItsOwnSitting()
+    {
+        _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, durationMinutes: 120);
+
+        Assert.True(_svc.IsTableHeld(_tableId, _bookingDate.AddMinutes(90), durationMinutes: 60));
+    }
+
+    [Fact]
+    public void IsTableHeld_False_OnceTheHoldsOwnSittingHasEnded()
+    {
+        _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, durationMinutes: 60);
+
+        Assert.False(_svc.IsTableHeld(_tableId, _bookingDate.AddMinutes(60), durationMinutes: 120));
+    }
+
+    [Fact]
     public void PlaceHold_ReturnsNull_WhenTableAlreadyHeld()
     {
         _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate);

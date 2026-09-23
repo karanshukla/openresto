@@ -323,6 +323,32 @@ public partial class BookingServiceTests
     }
 
     [Fact]
+    public async Task CreateBookingAsync_EndTime_UsesThePartysTurnTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_EndTime_UsesThePartysTurnTime));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 60,
+            TurnTimesJson = """[{"minSeats":1,"minutes":60},{"minSeats":5,"minutes":120}]""",
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 6, SectionId = 1 });
+        db.SaveChanges();
+
+        BookingDto result = await CreateService(db).CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 5,
+            Date = DateTime.UtcNow.AddDays(7)
+        });
+
+        Assert.Equal(result.Date.AddMinutes(120), result.EndTime);
+    }
+
+    [Fact]
     public async Task CreateBookingAsync_EndTime_DefaultsToOneHour_WhenRestaurantDurationNotSet()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_EndTime_DefaultsToOneHour_WhenRestaurantDurationNotSet));

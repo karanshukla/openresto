@@ -49,6 +49,12 @@ public class UpdateRestaurantRequest
     public int? DefaultBookingDurationMinutes { get; set; }
 
     /// <summary>
+    /// Sitting lengths by party size. Null leaves the stored rules untouched; an empty list
+    /// clears them so every party gets the default duration.
+    /// </summary>
+    public List<TurnTimeDto>? TurnTimes { get; set; }
+
+    /// <summary>
     /// Step, in minutes, between selectable booking start times. Null leaves the stored
     /// value untouched (PATCH-style); validated server-side against the allowed set (15/30/60).
     /// </summary>
@@ -214,6 +220,13 @@ public class DayHoursDto
     public string Close { get; set; } = OpeningHourDefaults.Close;
 }
 
+/// <summary>A party of <see cref="MinSeats"/> or more holds its table for <see cref="Minutes"/>, up to the next rule.</summary>
+public class TurnTimeDto
+{
+    public int MinSeats { get; set; }
+    public int Minutes { get; set; }
+}
+
 public class RestaurantDto
 {
     public int Id { get; set; }
@@ -251,6 +264,9 @@ public class RestaurantDto
     public string WalkInDays { get; set; } = "";
 
     public int DefaultBookingDurationMinutes { get; set; } = 60;
+
+    /// <summary>Sitting lengths by party size, smallest party first. Empty when every party gets the default.</summary>
+    public List<TurnTimeDto> TurnTimes { get; set; } = new();
 
     /// <summary>Step (minutes) between selectable booking start times (default 30).</summary>
     public int BookingSlotIntervalMinutes { get; set; } = 30;

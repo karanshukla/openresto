@@ -18,7 +18,7 @@ public sealed class HoldPolicyService(
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly IBookingRepository _bookingRepository = bookingRepository;
 
-    public async Task<HoldPolicyResult> ValidateAsync(int restaurantId, int tableId, DateTime requestedDate)
+    public async Task<HoldPolicyResult> ValidateAsync(int restaurantId, int tableId, DateTime requestedDate, int seats)
     {
         HoldPolicyResult restaurantPolicy = await ValidateRestaurantPolicyAsync(restaurantId, requestedDate);
         if (restaurantPolicy.Status != HoldPolicyStatus.Eligible)
@@ -30,7 +30,7 @@ public sealed class HoldPolicyService(
         DateTime bookingDate = restaurantPolicy.BookingDate;
         Restaurant restaurant = restaurantPolicy.Restaurant!;
         bool alreadyBooked = await _bookingRepository.IsTableBookedOnDateAsync(
-            tableId, bookingDate, restaurant.DefaultBookingDurationMinutes);
+            tableId, bookingDate, BookingDuration.For(restaurant, seats));
         if (alreadyBooked)
         {
             return HoldPolicyResult.Booked("This table is already booked for that time.", ErrorCodes.BookingTableConflict);

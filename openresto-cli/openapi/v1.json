@@ -4658,7 +4658,7 @@
               "integer",
               "string"
             ],
-            "description": "Party size. Required for auto-assign and group holds (so the server can validate capacity);\nignored for explicit-table holds (the capacity check happens at booking time).",
+            "description": "Party size. Required for auto-assign and group holds (so the server can validate capacity).\nOptional for explicit-table holds, whose capacity is checked at booking time, but it sets\nhow long the hold blocks the table: without it the hold uses the default duration.",
             "format": "int32"
           },
           "date": {
@@ -4833,6 +4833,13 @@
               "string"
             ],
             "format": "int32"
+          },
+          "turnTimes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TurnTimeDto"
+            },
+            "description": "Sitting lengths by party size, smallest party first. Empty when every party gets the default."
           },
           "bookingSlotIntervalMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -5017,6 +5024,28 @@
         },
         "description": "A combinable-table group (#271): physical tables an admin flagged as combinable, bookable as one\nunit for larger parties. \u0060CombinedSeats\u0060 is the stored capacity; \u0060Members\u0060 are the\nphysical tables pushed together."
       },
+      "TurnTimeDto": {
+        "type": "object",
+        "properties": {
+          "minSeats": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "minutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "A party of int TurnTimeDto.MinSeats or more holds its table for int TurnTimeDto.Minutes, up to the next rule."
+      },
       "UpdateHighlightRequest": {
         "type": "object",
         "properties": {
@@ -5133,6 +5162,16 @@
               "string"
             ],
             "format": "int32"
+          },
+          "turnTimes": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TurnTimeDto"
+            },
+            "description": "Sitting lengths by party size. Null leaves the stored rules untouched; an empty list\nclears them so every party gets the default duration."
           },
           "bookingSlotIntervalMinutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",

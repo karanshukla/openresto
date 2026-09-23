@@ -87,6 +87,9 @@ public static class ErrorCodes
     public const string RestaurantOpenHoursDuplicateDay = "restaurant.open_hours_duplicate_day";
     public const string RestaurantOpenHoursTimeInvalid = "restaurant.open_hours_time_invalid";
     public const string RestaurantSectionIdsMismatch = "restaurant.section_ids_mismatch";
+    public const string RestaurantTurnTimeDuplicateSeats = "restaurant.turn_time_duplicate_seats";
+    public const string RestaurantTurnTimeMinutesInvalid = "restaurant.turn_time_minutes_invalid";
+    public const string RestaurantTurnTimeSeatsOutOfRange = "restaurant.turn_time_seats_out_of_range";
 
     // ── Waitlist ─────────────────────────────────────────────────────────────
     public const string WaitlistNotFound = "waitlist.not_found";

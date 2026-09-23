@@ -28,7 +28,7 @@ public class HoldPolicyServiceTests
         using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsNotFound_WhenRestaurantMissing));
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAsync(999, 1, DateTime.UtcNow.AddDays(1));
+        HoldPolicyResult result = await svc.ValidateAsync(999, 1, DateTime.UtcNow.AddDays(1), seats: 2);
 
         Assert.Equal(HoldPolicyStatus.NotFound, result.Status);
         Assert.Null(result.Restaurant);
@@ -41,7 +41,7 @@ public class HoldPolicyServiceTests
         SeedRestaurant(db);
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.AddDays(-1));
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.AddDays(-1), seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Equal("Cannot hold a table for a past time.", result.FailureMessage);
@@ -60,7 +60,7 @@ public class HoldPolicyServiceTests
         HoldPolicyService svc = NewService(db);
 
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("paused until", result.FailureMessage);
@@ -78,7 +78,7 @@ public class HoldPolicyServiceTests
         db.SaveChanges();
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.Date.AddDays(1).AddHours(12));
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.Date.AddDays(1).AddHours(12), seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
@@ -96,7 +96,7 @@ public class HoldPolicyServiceTests
         HoldPolicyService svc = NewService(db);
 
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("walk-ins only", result.FailureMessage);
@@ -117,7 +117,7 @@ public class HoldPolicyServiceTests
         db.SaveChanges();
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("walk-ins only on the selected day", result.FailureMessage);
@@ -137,7 +137,7 @@ public class HoldPolicyServiceTests
 
         // 10:00 is inside the uniform 09:00–17:00 but outside the per-day 12:00–14:00
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Equal("The restaurant is closed at the requested time.", result.FailureMessage);
@@ -156,7 +156,7 @@ public class HoldPolicyServiceTests
         HoldPolicyService svc = NewService(db);
 
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(12).AddMinutes(30);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
         Assert.NotNull(result.Restaurant);
@@ -178,7 +178,7 @@ public class HoldPolicyServiceTests
         db.SaveChanges();
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
     }
@@ -196,7 +196,7 @@ public class HoldPolicyServiceTests
 
         // Falls back to the default 09:00-22:00 window, so noon is within hours.
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
@@ -214,7 +214,7 @@ public class HoldPolicyServiceTests
         HoldPolicyService svc = NewService(db);
 
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(23);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
@@ -232,7 +232,7 @@ public class HoldPolicyServiceTests
         HoldPolicyService svc = NewService(db);
 
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
     }
@@ -249,7 +249,7 @@ public class HoldPolicyServiceTests
         HoldPolicyService svc = NewService(db);
 
         DateTime testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(3);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
@@ -267,7 +267,7 @@ public class HoldPolicyServiceTests
 
         // Unspecified-kind date forces the timezone-conversion branch.
         var testDate = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(1).AddHours(12), DateTimeKind.Unspecified);
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
@@ -285,7 +285,7 @@ public class HoldPolicyServiceTests
         db.SaveChanges();
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAsync(1, 1, date);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, date, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Booked, result.Status);
         Assert.Equal("This table is already booked for that time.", result.FailureMessage);
@@ -309,7 +309,7 @@ public class HoldPolicyServiceTests
         var svc = new HoldPolicyService(new RestaurantRepository(db), mockBookingRepo.Object);
 
         var testDate = DateTime.UtcNow.Date.AddDays(1).AddHours(12);
-        await svc.ValidateAsync(1, 1, testDate);
+        await svc.ValidateAsync(1, 1, testDate, seats: 2);
 
         mockBookingRepo.Verify(
             b => b.IsTableBookedOnDateAsync(It.IsAny<int>(), It.IsAny<DateTime>(), 90), Times.Once);
