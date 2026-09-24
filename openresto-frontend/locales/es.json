@@ -184,7 +184,7 @@
     },
     "waitlist": {
       "joinCta": "Unirse a la lista de espera",
-      "intro": "Déjenos su nombre y le avisaremos cuando su mesa esté lista.",
+      "intro": "Le avisaremos cuando su mesa esté lista.",
       "partySizeLabel": "Número de comensales",
       "emailLabel": "Correo electrónico (opcional)",
       "push": {
@@ -200,7 +200,7 @@
       "waitNow": "Hay una mesa libre",
       "waitMinutes": "Unos {{minutes}} min de espera",
       "waitUnknown": "Ninguna mesa admite un grupo de ese tamaño",
-      "notAccepting": "La lista de espera no está abierta ahora. Funciona mientras el local atiende sin reserva y está abierto.",
+      "notAccepting": "La lista de espera no está abierta ahora.",
       "loadFailed": "No se pudo cargar la lista de espera. Inténtelo de nuevo.",
       "joinAgain": "Volver a unirse",
       "openTicket": "Verlo en Mis reservas"
@@ -1941,7 +1941,7 @@
         "turnTimesHint": "Da más tiempo a los grupos grandes. Un grupo más pequeño que todas las reglas recibe la duración predeterminada, y las reservas existentes conservan su duración.",
         "turnTimesAdd": "Añadir una regla",
         "turnTimesSeatsLabel": "Tamaño del grupo desde",
-        "turnTimesMinutesLabel": "Duración en la mesa",
+        "turnTimesMinutesLabel": "Duración en la mesa desde {{seats}}",
         "turnTimesFrom_one": "Desde {{count}} persona",
         "turnTimesFrom_other": "Desde {{count}} personas",
         "turnTimesRange": "Grupos de {{min}} a {{max}}",
@@ -2111,7 +2111,8 @@
       "noLocations": "Añada un local para empezar una lista de espera.",
       "accepting": "Los clientes pueden apuntarse desde la web ahora mismo.",
       "notAccepting": "Los clientes solo pueden apuntarse desde la web mientras el local atiende sin reserva y está abierto. Aquí puede seguir añadiendo grupos.",
-      "empty": "No hay nadie esperando.",
+      "empty": "No hay nadie esperando",
+      "emptyBody": "Los grupos aparecen aquí en cuanto se apuntan, desde la web o desde esta página.",
       "addTitle": "Añadir un grupo",
       "nameLabel": "Nombre",
       "emailLabel": "Correo electrónico (opcional)",
@@ -2129,6 +2130,13 @@
       "joined": "Llegó {{time}}",
       "called": "Avisado {{time}}",
       "hiddenGuest": "Datos del cliente ocultos",
+      "ticketName": "número {{number}}",
+      "callLabel": "Avisar a {{name}}",
+      "callAgainLabel": "Volver a avisar a {{name}}",
+      "seatLabel": "Sentar a {{name}}",
+      "removeLabel": "Quitar a {{name}}",
+      "removeTitle": "Quitar grupo",
+      "removeConfirm": "¿Quitar a {{name}} de la lista de espera?",
       "loadFailed": "No se pudo cargar la lista de espera."
     }
   }

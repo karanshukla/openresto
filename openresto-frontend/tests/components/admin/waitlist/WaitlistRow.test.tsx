@@ -25,7 +25,9 @@ const entry = (over: Partial<WaitlistEntry> = {}): WaitlistEntry => ({
 
 describe("WaitlistRow", () => {
   it("shows the ticket, party and quoted wait", () => {
-    renderWithProviders(<WaitlistRow entry={entry()} busy={false} onAction={jest.fn()} />);
+    renderWithProviders(
+      <WaitlistRow entry={entry()} busy={false} isLast={false} onAction={jest.fn()} />
+    );
 
     expect(screen.getByText("#7")).toBeTruthy();
     expect(screen.getByText("Ada")).toBeTruthy();
@@ -36,7 +38,7 @@ describe("WaitlistRow", () => {
   it("offers Seat only when a table can take the party now", () => {
     const onAction = jest.fn();
     const first = renderWithProviders(
-      <WaitlistRow entry={entry()} busy={false} onAction={onAction} />
+      <WaitlistRow entry={entry()} busy={false} isLast={false} onAction={onAction} />
     );
     expect(screen.getByTestId("waitlist-seat-4")).toBeDisabled();
     first.unmount();
@@ -45,6 +47,7 @@ describe("WaitlistRow", () => {
       <WaitlistRow
         entry={entry({ canSeatNow: true, estimatedWaitMinutes: 0 })}
         busy={false}
+        isLast={false}
         onAction={onAction}
       />
     );
@@ -56,7 +59,7 @@ describe("WaitlistRow", () => {
   it("calls, and offers to call again once called", () => {
     const onAction = jest.fn();
     const first = renderWithProviders(
-      <WaitlistRow entry={entry()} busy={false} onAction={onAction} />
+      <WaitlistRow entry={entry()} busy={false} isLast={false} onAction={onAction} />
     );
     fireEvent.press(screen.getByText("Call"));
     expect(onAction).toHaveBeenCalledWith("notify");
@@ -66,6 +69,7 @@ describe("WaitlistRow", () => {
       <WaitlistRow
         entry={entry({ status: "notified", notifiedAt: new Date().toISOString() })}
         busy={false}
+        isLast={false}
         onAction={onAction}
       />
     );
@@ -75,7 +79,9 @@ describe("WaitlistRow", () => {
 
   it("removes a party", () => {
     const onAction = jest.fn();
-    renderWithProviders(<WaitlistRow entry={entry()} busy={false} onAction={onAction} />);
+    renderWithProviders(
+      <WaitlistRow entry={entry()} busy={false} isLast={false} onAction={onAction} />
+    );
 
     fireEvent.press(screen.getByTestId("waitlist-remove-4"));
 
@@ -84,7 +90,7 @@ describe("WaitlistRow", () => {
 
   it("disables every action while one is in flight", () => {
     renderWithProviders(
-      <WaitlistRow entry={entry({ canSeatNow: true })} busy onAction={jest.fn()} />
+      <WaitlistRow entry={entry({ canSeatNow: true })} busy isLast={false} onAction={jest.fn()} />
     );
 
     expect(screen.getByTestId("waitlist-remove-4")).toBeDisabled();
@@ -92,11 +98,43 @@ describe("WaitlistRow", () => {
     expect(screen.getByTestId("waitlist-seat-4")).toBeDisabled();
   });
 
+  it("names the party in each action's label, by ticket when the name is hidden", () => {
+    const first = renderWithProviders(
+      <WaitlistRow entry={entry()} busy={false} isLast={false} onAction={jest.fn()} />
+    );
+    expect(screen.getByLabelText("Call Ada")).toBeTruthy();
+    expect(screen.getByLabelText("Seat Ada")).toBeTruthy();
+    expect(screen.getByLabelText("Remove Ada")).toBeTruthy();
+    first.unmount();
+
+    renderWithProviders(
+      <WaitlistRow
+        entry={entry({ name: null, status: "notified", notifiedAt: new Date().toISOString() })}
+        busy={false}
+        isLast={false}
+        onAction={jest.fn()}
+      />
+    );
+    expect(screen.getByLabelText("Call ticket #7 again")).toBeTruthy();
+  });
+
+  it("drops the divider under the last row", () => {
+    const first = renderWithProviders(
+      <WaitlistRow entry={entry()} busy={false} isLast={false} onAction={jest.fn()} />
+    );
+    expect(screen.getByTestId("waitlist-row-4")).toHaveStyle({ borderBottomWidth: 1 });
+    first.unmount();
+
+    renderWithProviders(<WaitlistRow entry={entry()} busy={false} isLast onAction={jest.fn()} />);
+    expect(screen.getByTestId("waitlist-row-4")).not.toHaveStyle({ borderBottomWidth: 1 });
+  });
+
   it("stands in for guest details a key may not read, and shows an email when present", () => {
     const first = renderWithProviders(
       <WaitlistRow
         entry={entry({ name: null, estimatedWaitMinutes: null })}
         busy={false}
+        isLast={false}
         onAction={jest.fn()}
       />
     );
@@ -105,7 +143,12 @@ describe("WaitlistRow", () => {
     first.unmount();
 
     renderWithProviders(
-      <WaitlistRow entry={entry({ email: "ada@example.com" })} busy={false} onAction={jest.fn()} />
+      <WaitlistRow
+        entry={entry({ email: "ada@example.com" })}
+        busy={false}
+        isLast={false}
+        onAction={jest.fn()}
+      />
     );
     expect(screen.getByText(/ada@example.com/)).toBeTruthy();
   });

@@ -77,7 +77,9 @@ export function TurnTimesField({
           </View>
           <View style={styles.minutesSelect}>
             <Select
-              accessibilityLabel={t("admin.settings.restaurantInfo.turnTimesMinutesLabel")}
+              accessibilityLabel={t("admin.settings.restaurantInfo.turnTimesMinutesLabel", {
+                seats: range.minSeats,
+              })}
               options={durationOptions}
               selectedValue={range.minutes}
               onSelect={(value) => update(index, { minutes: Number(value) })}
@@ -103,7 +105,7 @@ export function TurnTimesField({
           />
         </View>
       ))}
-      <ThemedText style={[styles.hint, { color: mutedColor }]}>
+      <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
         {t("admin.settings.restaurantInfo.turnTimesHint")}
       </ThemedText>
       <ButtonRow align="start">

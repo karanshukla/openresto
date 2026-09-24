@@ -83,24 +83,26 @@ export default function Button({
   accessibilityState,
   ...props
 }: ButtonProps) {
-  const { colors, primaryColor } = useAppTheme();
+  const { colors, isDark, primaryColor } = useAppTheme();
   const sizeStyles = theme.buttonSizes[size];
   const isInert = Boolean(disabled) || loading;
 
   const weight = variant === "danger" ? "primary" : variant;
   const resolvedTone = tone ?? (variant === "danger" ? "danger" : "brand");
+  const filled = weight === "primary";
 
   const toneColors: Record<ButtonTone, string> = {
     brand: primaryColor,
     danger: theme.colors.error,
     warning: theme.colors.warning,
-    success: theme.colors.success,
+    // The success green is 3.3:1 against white either way round, so a filled pill and any
+    // label on a light card take the arrived green; on a dark card the lighter one reads.
+    success: filled || !isDark ? theme.status.arrived.text : theme.colors.success,
     neutral: colors.muted,
   };
   const toneColor = toneColors[resolvedTone];
   const accent = isInert ? null : accentColor;
 
-  const filled = weight === "primary";
   const contentColor = isInert ? colors.muted : filled ? theme.colors.white : toneColor;
   const glyphColor = accent ?? contentColor;
   const labelColor = accent ? colors.text : contentColor;

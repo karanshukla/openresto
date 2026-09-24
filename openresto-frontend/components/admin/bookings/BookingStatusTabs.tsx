@@ -37,7 +37,7 @@ export function BookingStatusTabs({
           {
             key: "noshow",
             label: t("admin.bookings.tabs.noShow"),
-            color: theme.status.cancelled.text,
+            color: theme.status.noShow.text.light,
           },
           {
             key: "cancelled",

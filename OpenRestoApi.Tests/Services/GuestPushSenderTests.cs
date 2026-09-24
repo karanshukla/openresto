@@ -78,6 +78,19 @@ public class GuestPushSenderTests
     }
 
     [Fact]
+    public async Task SendAsync_WebPush_ReportsAnUnreachableAddressAsAFailure()
+    {
+        _webPush
+            .Setup(c => c.SendNotificationAsync(It.IsAny<PushSubscription>(), It.IsAny<string>(), It.IsAny<VapidDetails>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("the push endpoint resolves to a private network"));
+
+        GuestPushResult result = await CreateSender(ConfiguredVapid()).SendAsync(WebPushSubscription(), Message);
+
+        Assert.Equal(GuestPushOutcome.Failed, result.Outcome);
+        Assert.Equal("HttpRequestException: the push endpoint resolves to a private network", result.Error);
+    }
+
+    [Fact]
     public async Task SendAsync_WebPush_ReportsFailureWithoutVapid()
     {
         GuestPushResult result = await CreateSender().SendAsync(WebPushSubscription(), Message);

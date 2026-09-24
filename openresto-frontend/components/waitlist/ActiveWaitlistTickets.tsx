@@ -8,17 +8,23 @@ import WaitlistTicket from "./WaitlistTicket";
  * still in the queue shows: one that has closed, or that the server no longer knows, renders
  * nothing and is handed to `onClosed` so the device forgets it. `onLoaded` hands back each live
  * ticket's location, so one opened from the "table ready" link is kept like one joined here.
+ * That linked ticket also shows while it loads and when it fails or is not found, as a booking
+ * link does, so the page the link opens is never silently blank.
  *
  * @see [ActiveWaitlistTickets.test.tsx](../../tests/components/waitlist/ActiveWaitlistTickets.test.tsx)
- * — pins that a closed or unknown ticket shows nothing and is forgotten.
+ * — pins that a closed or unknown ticket shows nothing and is forgotten, unless it is the
+ * linked one.
  */
 export default function ActiveWaitlistTickets({
   entryRefs,
+  linkedRef,
   onLoaded,
   onClosed,
   style,
 }: {
   entryRefs: string[];
+  /** The ticket the page was opened for, from the "table ready" link. */
+  linkedRef?: string;
   onLoaded: (restaurantId: number, entryRef: string) => void;
   onClosed: (entryRef: string) => void;
   /** Applied to each ticket, so no space is left behind when none is live. */
@@ -28,6 +34,7 @@ export default function ActiveWaitlistTickets({
     <ActiveTicket
       key={entryRef}
       entryRef={entryRef}
+      linked={entryRef === linkedRef}
       onLoaded={onLoaded}
       onClosed={onClosed}
       style={style}
@@ -37,11 +44,13 @@ export default function ActiveWaitlistTickets({
 
 function ActiveTicket({
   entryRef,
+  linked,
   onLoaded,
   onClosed,
   style,
 }: {
   entryRef: string;
+  linked: boolean;
   onLoaded: (restaurantId: number, entryRef: string) => void;
   onClosed: (entryRef: string) => void;
   style?: StyleProp<ViewStyle>;
@@ -55,7 +64,7 @@ function ActiveTicket({
     else if (restaurantId !== undefined) onLoaded(restaurantId, entryRef);
   }, [closed, restaurantId, entryRef, onLoaded, onClosed]);
 
-  if (!state.queued) return null;
+  if (!state.queued && !(linked && !state.entry)) return null;
   return (
     <View style={style}>
       <WaitlistTicket state={state} />

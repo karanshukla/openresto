@@ -8,7 +8,9 @@ import { usePersistedState } from "@/hooks/use-persisted-state";
 import Select from "@/components/common/Select";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
-import WaitlistRow from "@/components/admin/waitlist/WaitlistRow";
+import ConfirmModal from "@/components/common/ConfirmModal";
+import { Icon } from "@/components/common/Icon";
+import WaitlistRow, { waitlistPartyName } from "@/components/admin/waitlist/WaitlistRow";
 import { LocationPills } from "@/components/admin/locations/LocationPills";
 import { fetchRestaurants } from "@/api/restaurants";
 import {
@@ -16,9 +18,11 @@ import {
   addWaitlistParty,
   getWaitlistBoard,
   type WaitlistBoard,
+  type WaitlistEntry,
 } from "@/api/waitlist";
 import { isValidEmail } from "@/utils/validation";
 import { styles } from "@/styles/admin/waitlist.styles";
+import { styles as stateStyles } from "@/styles/admin/activity.styles";
 
 /** How often the board re-reads the queue, so guests joining from the site appear without a reload. */
 export const BOARD_POLL_MS = 15_000;
@@ -35,7 +39,7 @@ const PARTY_SIZES = 12;
  */
 export default function WaitlistScreen() {
   const { t } = useTranslation();
-  const { colors } = useAppTheme();
+  const { colors, primaryColor } = useAppTheme();
 
   const [restaurants, setRestaurants] = useState<{ id: number; name: string }[] | null>(null);
   const [restaurantId, setRestaurantId] = usePersistedState<number | null>(
@@ -45,6 +49,7 @@ export default function WaitlistScreen() {
   const [board, setBoard] = useState<WaitlistBoard | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<WaitlistEntry | null>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -126,7 +131,9 @@ export default function WaitlistScreen() {
       </View>
 
       {restaurants === null ? (
-        <ActivityIndicator />
+        <View style={stateStyles.center}>
+          <ActivityIndicator size="large" color={primaryColor} />
+        </View>
       ) : restaurants.length === 0 ? (
         <ThemedText style={{ color: colors.muted }}>{t("admin.waitlist.noLocations")}</ThemedText>
       ) : (
@@ -140,9 +147,9 @@ export default function WaitlistScreen() {
           <View style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <ThemedText style={styles.cardTitle}>{t("admin.waitlist.addTitle")}</ThemedText>
             <View style={styles.addFields}>
-              <View style={styles.addField}>
+              <View style={[styles.addField, styles.field]}>
+                <ThemedText style={styles.label}>{t("admin.waitlist.nameLabel")}</ThemedText>
                 <Input
-                  placeholder={t("admin.waitlist.nameLabel")}
                   accessibilityLabel={t("admin.waitlist.nameLabel")}
                   value={name}
                   onChangeText={setName}
@@ -159,9 +166,9 @@ export default function WaitlistScreen() {
                   onSelect={(value) => setSeats(Number(value))}
                 />
               </View>
-              <View style={styles.addField}>
+              <View style={[styles.addField, styles.field]}>
+                <ThemedText style={styles.label}>{t("admin.waitlist.emailLabel")}</ThemedText>
                 <Input
-                  placeholder={t("admin.waitlist.emailLabel")}
                   accessibilityLabel={t("admin.waitlist.emailLabel")}
                   value={email}
                   onChangeText={setEmail}
@@ -184,41 +191,85 @@ export default function WaitlistScreen() {
           </View>
 
           {error && (
-            <ThemedText testID="waitlist-error" style={[styles.error, { color: colors.error }]}>
+            <ThemedText
+              testID="waitlist-error"
+              style={[styles.error, { color: colors.error }]}
+              role="alert"
+              accessibilityLiveRegion="assertive"
+            >
               {error}
             </ThemedText>
           )}
 
           {board === undefined ? (
-            <ActivityIndicator testID="waitlist-board-loading" />
+            <View style={stateStyles.center}>
+              <ActivityIndicator
+                testID="waitlist-board-loading"
+                size="large"
+                color={primaryColor}
+              />
+            </View>
           ) : board === null ? (
-            <ThemedText style={[styles.error, { color: colors.error }]}>
-              {t("admin.waitlist.loadFailed")}
-            </ThemedText>
+            <View style={stateStyles.center} role="alert" accessibilityLiveRegion="assertive">
+              <View style={[stateStyles.emptyIconRing, { borderColor: colors.border }]}>
+                <Icon name="warning-outline" size={28} color={colors.muted} />
+              </View>
+              <ThemedText style={[stateStyles.emptyTitle, { color: colors.text }]}>
+                {t("errors.generic")}
+              </ThemedText>
+              <ThemedText style={[stateStyles.emptyBody, { color: colors.muted }]}>
+                {t("admin.waitlist.loadFailed")}
+              </ThemedText>
+            </View>
+          ) : board.entries.length === 0 ? (
+            <View style={stateStyles.center}>
+              <View style={[stateStyles.emptyIconRing, { borderColor: colors.border }]}>
+                <Icon name="people-outline" size={28} color={colors.muted} />
+              </View>
+              <ThemedText style={[stateStyles.emptyTitle, { color: colors.text }]}>
+                {t("admin.waitlist.empty")}
+              </ThemedText>
+              <ThemedText style={[stateStyles.emptyBody, { color: colors.muted }]}>
+                {t("admin.waitlist.emptyBody")}
+              </ThemedText>
+            </View>
           ) : (
             <View
               style={[styles.list, { borderColor: colors.border, backgroundColor: colors.card }]}
             >
-              {board.entries.length === 0 ? (
-                <View style={styles.empty}>
-                  <ThemedText style={{ color: colors.muted }}>
-                    {t("admin.waitlist.empty")}
-                  </ThemedText>
-                </View>
-              ) : (
-                board.entries.map((entry) => (
-                  <WaitlistRow
-                    key={entry.id}
-                    entry={entry}
-                    busy={busyId === entry.id}
-                    onAction={(action) => act(entry.id, action)}
-                  />
-                ))
-              )}
+              {board.entries.map((entry, index) => (
+                <WaitlistRow
+                  key={entry.id}
+                  entry={entry}
+                  busy={busyId === entry.id}
+                  isLast={index === board.entries.length - 1}
+                  onAction={(action) =>
+                    action === "remove" ? setRemoveTarget(entry) : act(entry.id, action)
+                  }
+                />
+              ))}
             </View>
           )}
         </>
       )}
+
+      <ConfirmModal
+        visible={!!removeTarget}
+        title={t("admin.waitlist.removeTitle")}
+        message={
+          removeTarget
+            ? t("admin.waitlist.removeConfirm", { name: waitlistPartyName(removeTarget, t) })
+            : ""
+        }
+        confirmLabel={t("admin.waitlist.remove")}
+        destructive
+        onConfirm={() => {
+          if (!removeTarget) return;
+          setRemoveTarget(null);
+          act(removeTarget.id, "remove");
+        }}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </ScrollView>
   );
 }

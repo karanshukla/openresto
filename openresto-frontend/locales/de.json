@@ -184,7 +184,7 @@
     },
     "waitlist": {
       "joinCta": "Auf die Warteliste",
-      "intro": "Geben Sie Ihren Namen an, wir sagen Bescheid, sobald Ihr Tisch bereit ist.",
+      "intro": "Wir sagen Bescheid, sobald Ihr Tisch bereit ist.",
       "partySizeLabel": "Personenzahl",
       "emailLabel": "E-Mail (optional)",
       "push": {
@@ -200,7 +200,7 @@
       "waitNow": "Ein Tisch ist frei",
       "waitMinutes": "Etwa {{minutes}} Min. Wartezeit",
       "waitUnknown": "Kein Tisch hier passt für diese Gruppengröße",
-      "notAccepting": "Die Warteliste ist gerade nicht geöffnet. Sie läuft, solange das Lokal ohne Reservierung bedient und geöffnet ist.",
+      "notAccepting": "Die Warteliste ist gerade nicht geöffnet.",
       "loadFailed": "Die Warteliste konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
       "joinAgain": "Erneut anstellen",
       "openTicket": "In Meine Reservierungen ansehen"
@@ -1941,7 +1941,7 @@
         "turnTimesHint": "Größere Gruppen bekommen mehr Zeit am Tisch. Eine Gruppe, die kleiner ist als jede Regel, bekommt die Standarddauer, und bestehende Buchungen behalten ihre Länge.",
         "turnTimesAdd": "Regel hinzufügen",
         "turnTimesSeatsLabel": "Gruppengröße ab",
-        "turnTimesMinutesLabel": "Zeit am Tisch",
+        "turnTimesMinutesLabel": "Zeit am Tisch ab {{seats}}",
         "turnTimesFrom_one": "Ab {{count}} Gast",
         "turnTimesFrom_other": "Ab {{count}} Gästen",
         "turnTimesRange": "Gruppen von {{min}} bis {{max}}",
@@ -2111,7 +2111,8 @@
       "noLocations": "Legen Sie einen Standort an, um eine Warteliste zu führen.",
       "accepting": "Gäste können sich gerade über die Website eintragen.",
       "notAccepting": "Gäste können sich nur über die Website eintragen, solange der Standort ohne Reservierung bedient und geöffnet ist. Hier können Sie weiterhin Gruppen hinzufügen.",
-      "empty": "Niemand wartet.",
+      "empty": "Niemand wartet",
+      "emptyBody": "Gruppen erscheinen hier, sobald sie sich eintragen, über die Website oder auf dieser Seite.",
       "addTitle": "Gruppe hinzufügen",
       "nameLabel": "Name",
       "emailLabel": "E-Mail (optional)",
@@ -2129,6 +2130,13 @@
       "joined": "Eingetragen {{time}}",
       "called": "Aufgerufen {{time}}",
       "hiddenGuest": "Gästedaten ausgeblendet",
+      "ticketName": "Nummer {{number}}",
+      "callLabel": "{{name}} aufrufen",
+      "callAgainLabel": "{{name}} erneut aufrufen",
+      "seatLabel": "{{name}} platzieren",
+      "removeLabel": "{{name}} entfernen",
+      "removeTitle": "Gruppe entfernen",
+      "removeConfirm": "{{name}} von der Warteliste entfernen?",
       "loadFailed": "Die Warteliste konnte nicht geladen werden."
     }
   }

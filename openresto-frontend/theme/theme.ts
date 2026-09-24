@@ -110,6 +110,23 @@ export const theme = {
       bg: { light: "rgba(220,38,38,0.1)", dark: "rgba(220,38,38,0.15)" },
       text: "#dc2626",
     },
+    // A party that should be here and isn't checked in: orange, so it stands out from the
+    // yellow of one merely arriving soon.
+    due: {
+      bg: { light: "#ffedd5", dark: "#9a341233" },
+      text: { light: "#9a3412", dark: "#fdba74" },
+    },
+    // Rose rather than the cancelled red: both end a booking, but the two sit side by side in
+    // the status tabs and mean different things.
+    noShow: {
+      bg: { light: "#fce7f3", dark: "#9d174d33" },
+      text: { light: "#be185d", dark: "#f9a8d4" },
+    },
+    // A past sitting nobody recorded, in the Past tab's violet, so it doesn't read as finished.
+    unmarked: {
+      bg: { light: "#ede9fe", dark: "#5b21b633" },
+      text: { light: "#6d28d9", dark: "#c4b5fd" },
+    },
     past: {
       bg: { light: "#f1f5f9", dark: "#1a1c1e" },
       text: { light: "#475569", dark: "#94a3b8" },

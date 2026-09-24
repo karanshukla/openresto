@@ -397,7 +397,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailTemplateService, OpenRestoApi.Core.Application.Services.EmailTemplateService>();
         services.AddScoped<IBookingConfirmationService, OpenRestoApi.Core.Application.Services.BookingConfirmationService>();
         services.AddScoped<INotificationService, OpenRestoApi.Core.Application.Services.NotificationService>();
-        services.AddScoped<IWebPushClient, WebPushClient>();
+        // Endpoints come from browsers and guests, so the connection is only ever opened to a
+        // public address — see PublicOnlyConnector.
+        services.AddHttpClient(OpenRestoApi.Infrastructure.Notifications.PublicOnlyConnector.HttpClientName)
+            .ConfigurePrimaryHttpMessageHandler(() => new OpenRestoApi.Infrastructure.Notifications.PublicOnlyConnector().CreateHandler());
+        services.AddScoped<IWebPushClient>(sp => new WebPushClient(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(OpenRestoApi.Infrastructure.Notifications.PublicOnlyConnector.HttpClientName)));
         services.AddScoped<IBookingNotificationService, OpenRestoApi.Core.Application.Services.BookingNotificationService>();
         services.AddOptions<OpenRestoApi.Core.Application.Settings.VapidSettings>()
                 .BindConfiguration("Vapid");

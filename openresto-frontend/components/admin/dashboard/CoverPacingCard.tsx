@@ -50,6 +50,7 @@ export function CoverPacingCard({ pacing }: { pacing: LocationPacingDto[] }) {
                     key={slot.time}
                     testID={`pacing-slot-${location.restaurantId}-${slot.time}`}
                     accessible
+                    role="img"
                     accessibilityLabel={t("admin.dashboard.pacing.slotLabel", {
                       time: slot.time,
                       covers: slot.covers,

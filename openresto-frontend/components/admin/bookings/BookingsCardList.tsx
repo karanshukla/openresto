@@ -95,7 +95,10 @@ export function BookingsCardList({
                 ) : null}
                 {!!b.previousNoShows && (
                   <ThemedText
-                    style={[styles.tdNotes, { color: theme.colors.error }]}
+                    style={[
+                      styles.tdNotes,
+                      { color: theme.status.noShow.text[isDark ? "dark" : "light"] },
+                    ]}
                     numberOfLines={1}
                   >
                     {t("admin.bookings.previousNoShows", { count: b.previousNoShows })}

@@ -219,7 +219,9 @@ export default function BookingDrawer({
   }, [variant, dragY, nativeDriver]);
 
   // The side panel is a non-modal dialog spliced into the page, so it takes focus itself
-  // and offers Escape; the list beside it deliberately stays interactive.
+  // and offers Escape; the list beside it deliberately stays interactive. Swapping the form
+  // for the waitlist unmounts the button that had focus, so the panel takes it back then too.
+  const showingWaitlist = Boolean(waitlist);
   useEffect(() => {
     if (variant !== "side" || Platform.OS !== "web") return;
     (sideRef.current as unknown as HTMLElement | null)?.focus?.();
@@ -228,7 +230,7 @@ export default function BookingDrawer({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [variant, closeWithHaptic]);
+  }, [variant, closeWithHaptic, showingWaitlist]);
 
   /**
    * `dismissSheet` is the platform sheet's own dismissal, passed in by the native branch below.

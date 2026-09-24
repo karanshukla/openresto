@@ -65,12 +65,20 @@ export default function WaitlistPushOptIn({
           loading={pending === "busy"}
           disabled={pending === "denied"}
           onPress={() => void toggle()}
+          role="switch"
+          aria-checked={on}
           accessibilityState={{ checked: on }}
         >
           {on ? t("booking.waitlist.push.onButton") : t("booking.waitlist.push.offButton")}
         </Button>
       </ButtonRow>
-      <ThemedText style={[styles.note, { color: colors.muted }]}>{note}</ThemedText>
+      <ThemedText
+        style={[styles.note, { color: colors.muted }]}
+        role="status"
+        accessibilityLiveRegion="polite"
+      >
+        {note}
+      </ThemedText>
     </View>
   );
 }

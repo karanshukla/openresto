@@ -133,7 +133,7 @@ describe("WaitlistTicket", () => {
     mockStatus.mockResolvedValue(entry({ estimatedWaitMinutes: null }));
     render(<Ticket entryRef="abc" />);
 
-    expect(await screen.findByText("—")).toBeTruthy();
+    expect(await screen.findByText("No table here seats a party that size")).toBeTruthy();
   });
 
   it.each([

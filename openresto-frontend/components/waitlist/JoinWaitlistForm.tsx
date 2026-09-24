@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import Button from "@/components/common/Button";
 import { EmailField, GuestsField, NameField } from "@/components/booking/BookingFormFields";
+import { styles as drawerStyles } from "@/components/booking/BookingDrawer.styles";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useLocale } from "@/context/LocaleContext";
 import {
@@ -44,7 +46,7 @@ export default function JoinWaitlistForm({
   onJoined: (entryRef: string) => void;
 }) {
   const { t } = useTranslation();
-  const { colors } = useAppTheme();
+  const { colors, primaryColor } = useAppTheme();
   const { locale } = useLocale();
 
   const [name, setName] = useState("");
@@ -92,11 +94,16 @@ export default function JoinWaitlistForm({
     value: i + 1,
   }));
 
-  if (quote === undefined) return <ActivityIndicator testID="waitlist-quote-loading" />;
+  if (quote === undefined)
+    return <ActivityIndicator testID="waitlist-quote-loading" color={primaryColor} />;
 
   if (quote === null) {
     return (
-      <ThemedText style={[styles.error, { color: colors.error }]}>
+      <ThemedText
+        style={[styles.error, { color: colors.error }]}
+        role="alert"
+        accessibilityLiveRegion="assertive"
+      >
         {t("booking.waitlist.loadFailed")}
       </ThemedText>
     );
@@ -118,6 +125,8 @@ export default function JoinWaitlistForm({
       <View
         testID="waitlist-quote"
         style={[styles.quote, { borderColor: colors.border, backgroundColor: colors.card }]}
+        role="status"
+        accessibilityLiveRegion="polite"
       >
         <ThemedText style={styles.quoteLine}>
           <WaitEstimate minutes={quote.estimatedWaitMinutes} />
@@ -136,9 +145,14 @@ export default function JoinWaitlistForm({
       <EmailField label={t("booking.waitlist.emailLabel")} value={email} onChange={setEmail} />
       <WaitlistPushOptIn registration={push} onChange={setPush} />
       {error && (
-        <ThemedText testID="waitlist-join-error" style={[styles.error, { color: colors.error }]}>
-          {error}
-        </ThemedText>
+        <ThemedView
+          testID="waitlist-join-error"
+          style={drawerStyles.errorBanner}
+          role="alert"
+          accessibilityLiveRegion="assertive"
+        >
+          <ThemedText style={drawerStyles.errorText}>{error}</ThemedText>
+        </ThemedView>
       )}
       <Button
         size="lg"

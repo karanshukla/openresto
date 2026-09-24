@@ -35,6 +35,16 @@ public class WaitlistControllerTests(TestWebAppFactory factory) : IClassFixture<
         Assert.Equal("public", typeof(WaitlistController).GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName);
     }
 
+    [Theory]
+    [InlineData(nameof(WaitlistController.Leave))]
+    [InlineData(nameof(WaitlistController.SetPush))]
+    public void LeaveAndSetPush_CarryTheTightLookupPolicy(string action)
+    {
+        MethodInfo method = typeof(WaitlistController).GetMethod(action)!;
+
+        Assert.Equal("booking-lookup", method.GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName);
+    }
+
     [Fact]
     public async Task Join_Returns409_AtALocationThatTakesBookings()
     {
