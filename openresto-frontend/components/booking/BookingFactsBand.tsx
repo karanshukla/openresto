@@ -17,7 +17,7 @@ interface BookingFactsBandProps {
   negated?: boolean;
 }
 
-type Fact = { key: string; value: string; sub?: string };
+export type Fact = { key: string; value: string; sub?: string };
 
 const formatTime = (value: string): string | undefined => {
   const d = new Date(value);
@@ -74,8 +74,29 @@ export default function BookingFactsBand({
   negated = false,
 }: BookingFactsBandProps) {
   const { t } = useTranslation();
-  const facts = buildFacts(booking, compact, t);
 
+  return (
+    <FactsBand
+      facts={buildFacts(booking, compact, t)}
+      mutedColor={mutedColor}
+      borderColor={borderColor}
+      negated={negated}
+    />
+  );
+}
+
+/** The band itself, shared with the waitlist ticket so the two cards read alike. */
+export function FactsBand({
+  facts,
+  mutedColor,
+  borderColor,
+  negated = false,
+}: {
+  facts: Fact[];
+  mutedColor: string;
+  borderColor: string;
+  negated?: boolean;
+}) {
   return (
     <View style={styles.band}>
       {facts.map((fact, i) => (

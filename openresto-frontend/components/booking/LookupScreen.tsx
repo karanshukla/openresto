@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { useFocusEffect } from "expo-router";
 import { haptics } from "@/utils/haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -22,11 +23,17 @@ import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmatio
 import { KeyboardAvoider } from "@/components/common/KeyboardAvoider";
 import BookingResultPanel from "@/components/booking/BookingResultPanel";
 import RecentBookingsList from "@/components/booking/RecentBookingsList";
+import ActiveWaitlistTickets from "@/components/waitlist/ActiveWaitlistTickets";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
+import {
+  forgetWaitlistTicket,
+  readWaitlistTickets,
+  rememberWaitlistTicket,
+} from "@/utils/waitlistTickets";
 import { hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
 import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
@@ -42,12 +49,17 @@ import { pinnedColumns, styles } from "@/styles/user/lookup.styles";
  * ref/email prefilled instead of rendering an independent page. `justBooked` reaches only the
  * result panel's own wording and the arrival haptic — the page around it is the same page on
  * both routes, on web and off it, which is the point of there being one screen.
+ *
+ * A live waitlist ticket sits above the lookup, apart from it, and only while the party is still
+ * in the queue. /waitlist/[ref], the "table ready" email's link, mounts this with
+ * `initialTicketRef` so that ticket shows here rather than on a page of its own.
  */
 export default function LookupScreen({
   initialRef,
   initialEmail,
   legacyBookingId,
   justBooked = false,
+  initialTicketRef,
 }: {
   initialRef?: string;
   initialEmail?: string;
@@ -55,11 +67,13 @@ export default function LookupScreen({
    * ref+email lookup itself comes back not-found. */
   legacyBookingId?: number;
   justBooked?: boolean;
+  initialTicketRef?: string;
 }) {
   const { t } = useTranslation();
   const [refInput, setRefInput] = useState(initialRef ?? "");
   const [emailInput, setEmailInput] = useState(initialEmail ?? "");
   const [cached, setCached] = useState<CachedBooking[]>([]);
+  const [tickets, setTickets] = useState(readWaitlistTickets);
   const [viewportHeight, setViewportHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const fab = useScrollToTopFab();
@@ -103,6 +117,9 @@ export default function LookupScreen({
     return () => unregisterFocusTarget("user-lookup");
   }, []);
 
+  // A ticket joined on the Locations tab has to show here, and native keeps this tab mounted.
+  useFocusEffect(useCallback(() => setTickets(readWaitlistTickets()), []));
+
   useEffect(() => {
     fetchCachedBookings().then((list) => {
       setCached(list);
@@ -115,12 +132,19 @@ export default function LookupScreen({
       // entered. And a compact width, where the result is a sheet over the whole viewport
       // rather than a column beside the form — opening one on arrival would bury the
       // search this page exists for behind something to dismiss.
-      if (initialRef || !wideOnArrival.current || hasTyped.current || list.length === 0) return;
+      if (
+        initialRef ||
+        initialTicketRef ||
+        !wideOnArrival.current ||
+        hasTyped.current ||
+        list.length === 0
+      )
+        return;
       setRefInput(list[0].bookingRef);
       setEmailInput(list[0].email);
       lookup(list[0].bookingRef, list[0].email);
     });
-  }, [initialRef, lookup]);
+  }, [initialRef, initialTicketRef, lookup]);
 
   useEffect(() => {
     if (didDeepLink.current || !initialRef) return;
@@ -160,6 +184,19 @@ export default function LookupScreen({
     setEmailInput(c.email);
     lookup(c.bookingRef, c.email);
   };
+
+  const ticketRefs = Object.values(tickets);
+  if (initialTicketRef && !ticketRefs.includes(initialTicketRef)) ticketRefs.push(initialTicketRef);
+
+  const handleTicketLoaded = useCallback(
+    (restaurantId: number, entryRef: string) =>
+      setTickets(rememberWaitlistTicket(restaurantId, entryRef)),
+    []
+  );
+  const handleTicketClosed = useCallback(
+    (entryRef: string) => setTickets(forgetWaitlistTicket(entryRef)),
+    []
+  );
 
   let panelContent: React.ReactNode = null;
   if (status === "loading") {
@@ -246,6 +283,13 @@ export default function LookupScreen({
               title={t("lookup.title")}
               subtitle={t("lookup.subtitle")}
               style={styles.header}
+            />
+
+            <ActiveWaitlistTickets
+              entryRefs={ticketRefs}
+              onLoaded={handleTicketLoaded}
+              onClosed={handleTicketClosed}
+              style={styles.waitlistTicket}
             />
 
             <View

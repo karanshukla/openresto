@@ -39,7 +39,8 @@ export default function Navbar({ onScrollToTop, onOpenShortcuts }: NavbarProps) 
     {
       label: t("common.navbar.myBookingsLink"),
       href: "/(user)/lookup" as const,
-      match: (p: string) => p === "/lookup" || p.startsWith("/booking-confirmation"),
+      match: (p: string) =>
+        p === "/lookup" || p.startsWith("/booking-confirmation") || p.startsWith("/waitlist/"),
     },
   ];
 

@@ -20,9 +20,13 @@ import PageLoader from "@/components/common/PageLoader";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
 import { useScrollToTopFab } from "@/hooks/use-scroll-to-top-fab";
-import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useTabBarClearance } from "@/hooks/use-tab-bar-clearance";
 import { scrollIntoView } from "@/utils/scrollIntoView";
+import {
+  forgetWaitlistTicket,
+  readWaitlistTickets,
+  rememberWaitlistTicket,
+} from "@/utils/waitlistTickets";
 import { getRestaurantDate } from "@/utils/restaurantTime";
 import { CONTENT_MAX_WIDTH, CONTENT_PADDING_H, isMobileWidth } from "@/constants/breakpoints";
 import { DRAWER_WIDTH } from "@/components/booking/BookingDrawer.styles";
@@ -44,9 +48,6 @@ interface DrawerTarget {
   time: string;
   waitlist?: boolean;
 }
-
-/** Each location's waitlist ticket, kept so the guest finds it again after closing the panel. */
-const WAITLIST_TICKETS_KEY = "openresto.waitlistTickets";
 
 export function availabilitySummary(
   counts: Record<number, number | null>,
@@ -134,10 +135,7 @@ export default function LocationsScreen({
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const [meal, setMeal] = useState<MealWindow>("All");
   const [drawer, setDrawer] = useState<DrawerTarget | null>(null);
-  const [waitlistTickets, setWaitlistTickets] = usePersistedState<Record<number, string>>(
-    WAITLIST_TICKETS_KEY,
-    {}
-  );
+  const [waitlistTickets, setWaitlistTickets] = useState(readWaitlistTickets);
   /**
    * Two panes rather than an overlay, so the drawer takes its width off everything in the
    * list column — the footer included, which is why the footer moves out from under the
@@ -248,17 +246,6 @@ export default function LocationsScreen({
   const handleJoinWaitlist = useCallback((restaurant: RestaurantDto) => {
     setDrawer({ restaurant, time: "", waitlist: true });
   }, []);
-
-  const rememberTicket = useCallback(
-    (restaurantId: number, entryRef: string | undefined) =>
-      setWaitlistTickets((tickets) => {
-        const next = { ...tickets };
-        if (entryRef) next[restaurantId] = entryRef;
-        else delete next[restaurantId];
-        return next;
-      }),
-    [setWaitlistTickets]
-  );
 
   // Deep link: scroll the highlighted location into view, and when the link carried a
   // time, open its booking drawer straight away — that link's intent is to book.
@@ -506,8 +493,12 @@ export default function LocationsScreen({
               drawer.waitlist
                 ? {
                     entryRef: waitlistTickets[drawer.restaurant.id],
-                    onJoined: (entryRef) => rememberTicket(drawer.restaurant.id, entryRef),
-                    onReset: () => rememberTicket(drawer.restaurant.id, undefined),
+                    onJoined: (entryRef) =>
+                      setWaitlistTickets(rememberWaitlistTicket(drawer.restaurant.id, entryRef)),
+                    onReset: () =>
+                      setWaitlistTickets(
+                        forgetWaitlistTicket(waitlistTickets[drawer.restaurant.id])
+                      ),
                   }
                 : undefined
             }
