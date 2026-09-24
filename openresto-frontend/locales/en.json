@@ -224,6 +224,13 @@
       "expiredTitle": "This waitlist entry has expired",
       "pushOn": "You'll get a notification when your table is ready.",
       "leave": "Leave the waitlist",
+      "leaveModal": {
+        "title": "Leave the Waitlist",
+        "message": "Are you sure you want to leave the waitlist? You'll lose your place in line.",
+        "confirm": "Leave Waitlist",
+        "confirming": "Leaving…",
+        "keep": "Stay in Line"
+      },
       "leaveFailed": "Couldn't leave the waitlist. Please try again.",
       "notFound": "We couldn't find that waitlist entry.",
       "loadFailed": "Couldn't refresh your place in line."

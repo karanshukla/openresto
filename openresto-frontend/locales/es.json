@@ -224,6 +224,13 @@
       "expiredTitle": "Esta inscripción ha caducado",
       "pushOn": "Recibirá una notificación cuando su mesa esté lista.",
       "leave": "Salir de la lista de espera",
+      "leaveModal": {
+        "title": "Salir de la lista de espera",
+        "message": "¿Seguro que quiere salir de la lista de espera? Perderá su lugar en la fila.",
+        "confirm": "Salir de la lista",
+        "confirming": "Saliendo…",
+        "keep": "Seguir en la fila"
+      },
       "leaveFailed": "No se pudo salir de la lista de espera. Inténtelo de nuevo.",
       "notFound": "No encontramos esa inscripción.",
       "loadFailed": "No se pudo actualizar su lugar en la fila."

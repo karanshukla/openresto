@@ -224,6 +224,13 @@
       "expiredTitle": "Cette inscription a expiré",
       "pushOn": "Vous recevrez une notification quand votre table sera prête.",
       "leave": "Quitter la liste d'attente",
+      "leaveModal": {
+        "title": "Quitter la liste d'attente",
+        "message": "Voulez-vous vraiment quitter la liste d'attente ? Vous perdrez votre place dans la file.",
+        "confirm": "Quitter la liste",
+        "confirming": "Départ…",
+        "keep": "Rester dans la file"
+      },
       "leaveFailed": "Impossible de quitter la liste d'attente. Veuillez réessayer.",
       "notFound": "Nous n'avons pas trouvé cette inscription.",
       "loadFailed": "Impossible d'actualiser votre place dans la file."

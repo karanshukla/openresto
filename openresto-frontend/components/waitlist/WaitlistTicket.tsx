@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
+import ConfirmModal from "@/components/common/ConfirmModal";
 import type { IconName } from "@/components/common/Icon";
 import { SummaryHeader } from "@/components/booking/BookingSummaryHeader";
 import { FactsBand, type Fact } from "@/components/booking/BookingFactsBand";
@@ -20,7 +21,16 @@ import { styles } from "./WaitlistTicket.styles";
 export default function WaitlistTicket({ state }: { state: WaitlistEntryState }) {
   const { t } = useTranslation();
   const { colors, primaryColor, isDark } = useAppTheme();
-  const { entry, queued, refreshFailed, leaving, leaveFailed, leave } = state;
+  const {
+    entry,
+    queued,
+    refreshFailed,
+    leaving,
+    leaveFailed,
+    leave,
+    showLeaveConfirm,
+    setShowLeaveConfirm,
+  } = state;
 
   if (entry === undefined) {
     return refreshFailed ? (
@@ -82,7 +92,7 @@ export default function WaitlistTicket({ state }: { state: WaitlistEntryState })
                   size="md"
                   icon="exit-outline"
                   loading={leaving}
-                  onPress={leave}
+                  onPress={() => setShowLeaveConfirm(true)}
                   testID="waitlist-leave"
                 >
                   {t("booking.waitlistStatus.leave")}
@@ -101,6 +111,23 @@ export default function WaitlistTicket({ state }: { state: WaitlistEntryState })
             )}
           </View>
         </>
+      )}
+
+      {showLeaveConfirm && (
+        <ConfirmModal
+          visible={showLeaveConfirm}
+          title={t("booking.waitlistStatus.leaveModal.title")}
+          message={t("booking.waitlistStatus.leaveModal.message")}
+          confirmLabel={
+            leaving
+              ? t("booking.waitlistStatus.leaveModal.confirming")
+              : t("booking.waitlistStatus.leaveModal.confirm")
+          }
+          cancelLabel={t("booking.waitlistStatus.leaveModal.keep")}
+          destructive
+          onConfirm={leave}
+          onCancel={() => !leaving && setShowLeaveConfirm(false)}
+        />
       )}
     </View>
   );
