@@ -84,8 +84,7 @@ describe("admin waitlist", () => {
     renderWithProviders(<WaitlistScreen />);
     await screen.findByTestId("waitlist-row-4");
 
-    fireEvent.press(screen.getByLabelText(/^Location, /));
-    fireEvent.press(screen.getByRole("option", { name: "Patio" }));
+    fireEvent.press(screen.getByRole("radio", { name: "Patio" }));
 
     await waitFor(() => expect(mockBoard).toHaveBeenLastCalledWith(2));
   });
