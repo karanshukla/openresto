@@ -203,7 +203,7 @@
       "notAccepting": "Die Warteliste ist gerade nicht geöffnet. Sie läuft, solange das Lokal ohne Reservierung bedient und geöffnet ist.",
       "loadFailed": "Die Warteliste konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
       "joinAgain": "Erneut anstellen",
-      "openTicket": "Ihr Ticket auf einer eigenen Seite öffnen"
+      "openTicket": "In Meine Reservierungen ansehen"
     },
     "waitlistStatus": {
       "routeTitle": "Ihr Platz in der Warteschlange",
@@ -528,6 +528,10 @@
       "showAll": "Alle {{count}} anzeigen",
       "showFewer": "Weniger anzeigen",
       "storageNote": "Letzte Reservierungen werden auf diesem Gerät gespeichert. Das Löschen von Cache und Cookies oder das Deinstallieren der App leert diese Liste."
+    },
+    "waitlist": {
+      "heading": "IHRE WARTELISTEN-TICKETS",
+      "itemA11y": "Wartelisten-Ticket bei {{name}} öffnen"
     },
     "resultPanelA11y": "Reservierungsergebnis",
     "subtitle": "Geben Sie Ihre Reservierungsnummer und E-Mail-Adresse ein, um Ihre Reservierung zu suchen.",

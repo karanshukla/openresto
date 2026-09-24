@@ -203,7 +203,7 @@
       "notAccepting": "La lista de espera no está abierta ahora. Funciona mientras el local atiende sin reserva y está abierto.",
       "loadFailed": "No se pudo cargar la lista de espera. Inténtelo de nuevo.",
       "joinAgain": "Volver a unirse",
-      "openTicket": "Abrir tu turno en su propia página"
+      "openTicket": "Verlo en Mis reservas"
     },
     "waitlistStatus": {
       "routeTitle": "Su lugar en la fila",
@@ -528,6 +528,10 @@
       "showAll": "Mostrar las {{count}}",
       "showFewer": "Mostrar menos",
       "storageNote": "Las reservas recientes se guardan en este dispositivo. Borrar la caché y las cookies, o desinstalar la aplicación, vaciará esta lista."
+    },
+    "waitlist": {
+      "heading": "TUS TURNOS EN LA LISTA DE ESPERA",
+      "itemA11y": "Abrir tu turno en {{name}}"
     },
     "resultPanelA11y": "Resultado de la reserva",
     "subtitle": "Introduce tu referencia de reserva y tu correo para buscar tu reserva.",

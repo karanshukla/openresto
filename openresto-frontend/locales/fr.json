@@ -203,7 +203,7 @@
       "notAccepting": "La liste d'attente n'est pas ouverte pour le moment. Elle fonctionne quand l'établissement accueille sans réservation et est ouvert.",
       "loadFailed": "Impossible de charger la liste d'attente. Veuillez réessayer.",
       "joinAgain": "Rejoindre à nouveau",
-      "openTicket": "Ouvrir votre ticket sur sa propre page"
+      "openTicket": "Le voir dans Mes réservations"
     },
     "waitlistStatus": {
       "routeTitle": "Votre place dans la file",
@@ -528,6 +528,10 @@
       "showAll": "Afficher les {{count}}",
       "showFewer": "Afficher moins",
       "storageNote": "Les réservations récentes sont stockées sur cet appareil. Effacer votre cache et vos cookies, ou désinstaller l'application, videra cette liste."
+    },
+    "waitlist": {
+      "heading": "VOS TICKETS DE LISTE D'ATTENTE",
+      "itemA11y": "Ouvrir le ticket de liste d'attente chez {{name}}"
     },
     "resultPanelA11y": "Résultat de la réservation",
     "subtitle": "Saisissez votre référence de réservation et votre e-mail pour retrouver votre réservation.",

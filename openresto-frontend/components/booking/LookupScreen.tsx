@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { useFocusEffect } from "expo-router";
 import { haptics } from "@/utils/haptics";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -22,11 +23,14 @@ import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmatio
 import { KeyboardAvoider } from "@/components/common/KeyboardAvoider";
 import BookingResultPanel from "@/components/booking/BookingResultPanel";
 import RecentBookingsList from "@/components/booking/RecentBookingsList";
+import WaitlistTicketPanel from "@/components/waitlist/WaitlistTicketPanel";
+import WaitlistTicketsList from "@/components/waitlist/WaitlistTicketsList";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
+import { readWaitlistTickets, rememberWaitlistTicket } from "@/utils/waitlistTickets";
 import { hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
 import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
@@ -42,12 +46,17 @@ import { pinnedColumns, styles } from "@/styles/user/lookup.styles";
  * ref/email prefilled instead of rendering an independent page. `justBooked` reaches only the
  * result panel's own wording and the arrival haptic — the page around it is the same page on
  * both routes, on web and off it, which is the point of there being one screen.
+ *
+ * Waitlist tickets are a third state of the same panel: the device's tickets are listed above
+ * the recent bookings, and /waitlist/[ref], the "table ready" email's link, mounts this with
+ * `initialTicketRef` so the ticket opens here rather than on a page of its own.
  */
 export default function LookupScreen({
   initialRef,
   initialEmail,
   legacyBookingId,
   justBooked = false,
+  initialTicketRef,
 }: {
   initialRef?: string;
   initialEmail?: string;
@@ -55,11 +64,14 @@ export default function LookupScreen({
    * ref+email lookup itself comes back not-found. */
   legacyBookingId?: number;
   justBooked?: boolean;
+  initialTicketRef?: string;
 }) {
   const { t } = useTranslation();
   const [refInput, setRefInput] = useState(initialRef ?? "");
   const [emailInput, setEmailInput] = useState(initialEmail ?? "");
   const [cached, setCached] = useState<CachedBooking[]>([]);
+  const [tickets, setTickets] = useState(readWaitlistTickets);
+  const [ticketRef, setTicketRef] = useState(initialTicketRef);
   const [viewportHeight, setViewportHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const fab = useScrollToTopFab();
@@ -90,7 +102,7 @@ export default function LookupScreen({
   const contact = resolveContact(restaurant, brand);
   const isCompact = isMobileWidth(width);
   const canSearch = Boolean(refInput.trim() && emailInput.trim());
-  const showPanel = status !== "idle";
+  const showPanel = status !== "idle" || ticketRef !== undefined;
   const twoColumn = !isCompact && showPanel;
   const pinned = pinnedColumns(twoColumn ? viewportHeight : 0);
 
@@ -102,6 +114,9 @@ export default function LookupScreen({
     registerFocusTarget("user-lookup", refInputRef);
     return () => unregisterFocusTarget("user-lookup");
   }, []);
+
+  // A ticket joined on the Locations tab has to show here, and native keeps this tab mounted.
+  useFocusEffect(useCallback(() => setTickets(readWaitlistTickets()), []));
 
   useEffect(() => {
     fetchCachedBookings().then((list) => {
@@ -115,12 +130,19 @@ export default function LookupScreen({
       // entered. And a compact width, where the result is a sheet over the whole viewport
       // rather than a column beside the form — opening one on arrival would bury the
       // search this page exists for behind something to dismiss.
-      if (initialRef || !wideOnArrival.current || hasTyped.current || list.length === 0) return;
+      if (
+        initialRef ||
+        initialTicketRef ||
+        !wideOnArrival.current ||
+        hasTyped.current ||
+        list.length === 0
+      )
+        return;
       setRefInput(list[0].bookingRef);
       setEmailInput(list[0].email);
       lookup(list[0].bookingRef, list[0].email);
     });
-  }, [initialRef, lookup]);
+  }, [initialRef, initialTicketRef, lookup]);
 
   useEffect(() => {
     if (didDeepLink.current || !initialRef) return;
@@ -147,6 +169,7 @@ export default function LookupScreen({
     const ref = refInput.trim();
     const email = emailInput.trim();
     if (!ref || !email) return;
+    setTicketRef(undefined);
     lookup(ref, email);
   };
 
@@ -158,11 +181,35 @@ export default function LookupScreen({
   const handleRecentSelect = (c: CachedBooking) => {
     setRefInput(c.bookingRef);
     setEmailInput(c.email);
+    setTicketRef(undefined);
     lookup(c.bookingRef, c.email);
   };
 
+  const handleTicketSelect = (entryRef: string) => {
+    reset();
+    setTicketRef(entryRef);
+  };
+
+  const dismissPanel = () => {
+    reset();
+    setTicketRef(undefined);
+  };
+
+  const handleTicketLoaded = useCallback(
+    (restaurantId: number) => {
+      if (ticketRef) setTickets(rememberWaitlistTicket(restaurantId, ticketRef));
+    },
+    [ticketRef]
+  );
+
   let panelContent: React.ReactNode = null;
-  if (status === "loading") {
+  if (ticketRef) {
+    panelContent = (
+      <View role="status" accessibilityLiveRegion="polite">
+        <WaitlistTicketPanel entryRef={ticketRef} onLoaded={handleTicketLoaded} />
+      </View>
+    );
+  } else if (status === "loading") {
     panelContent = <BookingConfirmationSkeleton inline />;
   } else if (status === "notFound") {
     panelContent = (
@@ -335,6 +382,12 @@ export default function LookupScreen({
                   top of this list, so the diner can switch between their bookings without
                   dismissing anything. The one on screen is marked rather than removed, so
                   the list doesn't reshuffle under the press that opened it. */}
+                <WaitlistTicketsList
+                  entryRefs={Object.values(tickets)}
+                  activeRef={ticketRef ?? null}
+                  onSelect={handleTicketSelect}
+                />
+
                 <RecentBookingsList
                   cached={cached}
                   colors={colors}
@@ -347,7 +400,7 @@ export default function LookupScreen({
                 <View testID="lookup-result-column" style={[styles.resultCol, pinned.result]}>
                   <SlidePanel
                     variant="side"
-                    onDismiss={reset}
+                    onDismiss={dismissPanel}
                     accessibilityLabel={t("lookup.resultPanelA11y")}
                   >
                     {panelContent}
@@ -367,7 +420,7 @@ export default function LookupScreen({
       {isCompact && showPanel && (
         <SlidePanel
           variant="sheet"
-          onDismiss={reset}
+          onDismiss={dismissPanel}
           accessibilityLabel={t("lookup.resultPanelA11y")}
         >
           {panelContent}

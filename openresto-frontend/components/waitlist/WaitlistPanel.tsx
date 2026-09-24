@@ -10,8 +10,8 @@ import { styles } from "./WaitlistPanel.styles";
 
 /**
  * The waitlist inside the Locations page's panel: the join form, then the guest's ticket in the
- * same place once they are in. The ticket's own page stays one press away, since the panel
- * closes and the email only arrives once the table is ready.
+ * same place once they are in. My bookings, which lists the ticket too, stays one press away,
+ * since the panel closes and the email only arrives once the table is ready.
  *
  * @see [WaitlistPanel.test.tsx](../../tests/components/waitlist/WaitlistPanel.test.tsx): pins
  * the swap to the ticket on joining and the way back to the form once the ticket has closed.
@@ -65,7 +65,7 @@ function JoinedTicket({ entryRef, onReset }: { entryRef: string; onReset: () => 
           <Button
             variant="ghost"
             size="md"
-            icon="open-outline"
+            icon="ticket-outline"
             onPress={() => router.push(`/waitlist/${entryRef}`)}
             testID="waitlist-open-ticket"
           >

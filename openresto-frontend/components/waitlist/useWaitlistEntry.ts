@@ -12,7 +12,7 @@ export const WAITLIST_POLL_MS = 20_000;
  * the entry is still queued and stops once it has left, and buzzes once when the party is
  * called, since the guest is usually not looking at the screen.
  *
- * @see [WaitlistStatusScreen.test.tsx](../../tests/components/waitlist/WaitlistStatusScreen.test.tsx):
+ * @see [WaitlistTicketPanel.test.tsx](../../tests/components/waitlist/WaitlistTicketPanel.test.tsx):
  * pins the polling stopping once the entry closes, the single buzz on being called, and leave.
  */
 export function useWaitlistEntry(entryRef: string) {

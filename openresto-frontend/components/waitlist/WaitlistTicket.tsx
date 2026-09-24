@@ -86,7 +86,7 @@ function StatusCard({ entry, highlight }: { entry: WaitlistEntryStatus; highligh
         {" · "}
         {t("booking.waitlistStatus.partySize", { count: entry.seats })}
       </ThemedText>
-      <ThemedText style={styles.title}>{t(TITLES[entry.status])}</ThemedText>
+      <ThemedText style={styles.title}>{t(STATUS_TITLES[entry.status])}</ThemedText>
       {ready && (
         <ThemedText style={styles.line}>{t("booking.waitlistStatus.readyBody")}</ThemedText>
       )}
@@ -106,7 +106,7 @@ function StatusCard({ entry, highlight }: { entry: WaitlistEntryStatus; highligh
   );
 }
 
-const TITLES = {
+export const STATUS_TITLES = {
   waiting: "booking.waitlistStatus.waitingTitle",
   notified: "booking.waitlistStatus.readyTitle",
   seated: "booking.waitlistStatus.seatedTitle",

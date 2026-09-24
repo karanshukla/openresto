@@ -9,8 +9,8 @@ import GuestTabStack, { tabRoot } from "@/components/layout/GuestTabStack";
 export const unstable_settings = { initialRouteName: "lookup" };
 
 /**
- * The My booking tab: the lookup form, and the confirmation, which is that form with a reference
- * prefilled rather than a screen of its own. Keeping the confirmation in this group is what keeps
+ * The My booking tab: the lookup form, and the confirmation and waitlist ticket, which are that
+ * form with a booking or a ticket open rather than screens of their own. Keeping the confirmation in this group is what keeps
  * the tab selected on it.
  */
 export default function BookingsTabLayout() {
@@ -25,7 +25,7 @@ export default function BookingsTabLayout() {
       />
       <Stack.Screen
         name="waitlist/[ref]"
-        options={{ title: t("booking.waitlistStatus.routeTitle") }}
+        options={{ ...tabRoot(), title: t("booking.waitlistStatus.routeTitle") }}
       />
     </GuestTabStack>
   );
