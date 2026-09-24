@@ -12,7 +12,6 @@ export const styles = StyleSheet.create({
   },
   pageHeader: { gap: 4 },
   pageSub: { ...theme.typography.body },
-  locationControl: { maxWidth: 320 },
   card: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,

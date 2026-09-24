@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import JoinWaitlistForm from "@/components/waitlist/JoinWaitlistForm";
-import { getWaitlistQuote, joinWaitlist } from "@/api/waitlist";
+import { getWaitlistQuote, joinWaitlist, setWaitlistPush } from "@/api/waitlist";
+import { canRegisterForReminders, registerForReminders } from "@/services/pushRegistration";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("@/hooks/use-color-scheme", () => ({ useColorScheme: () => "light" }));
@@ -23,10 +24,18 @@ function Form() {
 jest.mock("@/api/waitlist", () => ({
   getWaitlistQuote: jest.fn(),
   joinWaitlist: jest.fn(),
+  setWaitlistPush: jest.fn(),
+}));
+jest.mock("@/services/pushRegistration", () => ({
+  canRegisterForReminders: jest.fn(),
+  registerForReminders: jest.fn(),
 }));
 
 const mockQuote = getWaitlistQuote as jest.Mock;
 const mockJoin = joinWaitlist as jest.Mock;
+const mockSetPush = setWaitlistPush as jest.Mock;
+const mockCanPush = canRegisterForReminders as jest.Mock;
+const mockRegister = registerForReminders as jest.Mock;
 
 const open = {
   restaurantId: 3,
@@ -38,6 +47,7 @@ const open = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockQuote.mockResolvedValue(open);
+  mockCanPush.mockReturnValue(false);
 });
 
 describe("JoinWaitlistForm", () => {
@@ -134,6 +144,24 @@ describe("JoinWaitlistForm", () => {
       email: undefined,
       locale: "fr",
     });
+  });
+
+  it("attaches the opted-in device to the new ticket", async () => {
+    const device = { channel: "expo", endpoint: "ExponentPushToken[abc]" };
+    mockCanPush.mockReturnValue(true);
+    mockRegister.mockResolvedValue({ status: "registered", registration: device });
+    mockSetPush.mockResolvedValue(true);
+    mockJoin.mockResolvedValue({ ok: true, value: { ref: "abc234" } });
+    render(<Form />);
+    await screen.findByTestId("waitlist-quote");
+
+    fireEvent.changeText(screen.getByLabelText("Full name"), "Ada");
+    fireEvent.press(screen.getByTestId("waitlist-push-btn"));
+    await screen.findByText("Notifications on");
+    fireEvent.press(screen.getByTestId("waitlist-join-submit"));
+
+    await waitFor(() => expect(onJoined).toHaveBeenCalledWith("abc234"));
+    expect(mockSetPush).toHaveBeenCalledWith("abc234", device);
   });
 
   it("shows the server's reason when the join is refused", async () => {

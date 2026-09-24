@@ -186,7 +186,14 @@
       "joinCta": "Join the waitlist",
       "intro": "Add your name and we'll tell you when your table is ready.",
       "partySizeLabel": "Party size",
-      "emailHint": "Optional. We'll email you when your table is ready.",
+      "emailLabel": "Email (optional)",
+      "push": {
+        "offButton": "Notify me",
+        "onButton": "Notifications on",
+        "offHint": "Get a notification on this device when your table is ready.",
+        "onHint": "This device will be notified when your table is ready.",
+        "denied": "Notifications are turned off for this app. Allow them in your device settings to be notified."
+      },
       "submit": "Join the waitlist",
       "partiesWaiting_one": "1 party waiting",
       "partiesWaiting_other": "{{count}} parties waiting",
@@ -213,6 +220,7 @@
       "leftTitle": "You've left the waitlist",
       "expiredTitle": "This waitlist entry has expired",
       "keepOpen": "Keep this page open. It updates on its own.",
+      "pushOn": "You'll get a notification when your table is ready. This page also updates on its own.",
       "leave": "Leave the waitlist",
       "leaveFailed": "Couldn't leave the waitlist. Please try again.",
       "notFound": "We couldn't find that waitlist entry.",
@@ -482,7 +490,8 @@
       "email_invalid": "That email address doesn't look right.",
       "party_too_large": "No table here can seat a party of {{seats}}.",
       "not_active": "This party has already left the waitlist.",
-      "no_table_free": "No free table can seat this party right now."
+      "no_table_free": "No free table can seat this party right now.",
+      "push_invalid": "That device can't receive notifications from this site."
     }
   },
   "lookup": {
@@ -2090,7 +2099,6 @@
     },
     "waitlist": {
       "title": "Waitlist",
-      "locationLabel": "Location",
       "noLocations": "Add a location to start a waitlist.",
       "accepting": "Guests can join from the site right now.",
       "notAccepting": "Guests can join from the site only while this location takes walk-ins and is open. You can still add parties here.",

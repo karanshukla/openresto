@@ -209,15 +209,17 @@ export function NameField({
 }
 
 export function EmailField({
+  label,
   value,
   onChange,
 }: {
+  label?: string;
   value: string;
   onChange: (value: string) => void;
 }) {
   const { t } = useTranslation();
   return (
-    <Field label={t("booking.form.emailLabel")}>
+    <Field label={label ?? t("booking.form.emailLabel")}>
       <Input
         placeholder={t("booking.form.emailPlaceholder")}
         accessibilityLabel={t("booking.form.emailAccessibilityLabel")}

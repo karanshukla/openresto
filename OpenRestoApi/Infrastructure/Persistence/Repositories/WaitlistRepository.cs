@@ -61,7 +61,11 @@ internal class WaitlistRepository(AppDbContext db) : IWaitlistRepository
                         && (e.Status == WaitlistStatus.Waiting || e.Status == WaitlistStatus.Notified))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(e => e.Status, WaitlistStatus.Expired)
-                .SetProperty(e => e.ClosedAt, nowUtc));
+                .SetProperty(e => e.ClosedAt, nowUtc)
+                .SetProperty(e => e.PushChannel, (string?)null)
+                .SetProperty(e => e.PushEndpoint, (string?)null)
+                .SetProperty(e => e.PushP256dh, (string?)null)
+                .SetProperty(e => e.PushAuth, (string?)null));
     }
 
     public async Task<int> DeleteCreatedBeforeAsync(DateTime cutoffUtc)

@@ -197,7 +197,6 @@ export default function LocationListItem({
       <Button
         testID={`location-join-waitlist-${restaurant.id}`}
         size="sm"
-        icon="hourglass-outline"
         accessibilityLabel={t("restaurant.locationListItem.joinWaitlistAt", {
           name: restaurant.name,
         })}

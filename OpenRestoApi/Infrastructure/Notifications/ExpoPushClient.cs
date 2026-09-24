@@ -41,7 +41,7 @@ internal sealed class ExpoPushClient(IHttpClientFactory httpClientFactory, IOpti
             Sound = "default",
             Priority = "high",
             ChannelId = "booking-reminders",
-            Data = new { message.BookingRef, message.BookingId, message.Url },
+            Data = new { message.Url },
         };
 
         try

@@ -9,6 +9,7 @@ import Select from "@/components/common/Select";
 import Input from "@/components/common/Input";
 import Button from "@/components/common/Button";
 import WaitlistRow from "@/components/admin/waitlist/WaitlistRow";
+import { LocationPills } from "@/components/admin/locations/LocationPills";
 import { fetchRestaurants } from "@/api/restaurants";
 import {
   actOnWaitlistEntry,
@@ -130,15 +131,11 @@ export default function WaitlistScreen() {
         <ThemedText style={{ color: colors.muted }}>{t("admin.waitlist.noLocations")}</ThemedText>
       ) : (
         <>
-          <View style={styles.locationControl}>
-            <Select
-              icon="storefront-outline"
-              accessibilityLabel={t("admin.waitlist.locationLabel")}
-              options={restaurants.map((r) => ({ label: r.name, value: r.id }))}
-              selectedValue={selectedId!}
-              onSelect={(value) => setRestaurantId(Number(value))}
-            />
-          </View>
+          <LocationPills
+            restaurants={restaurants}
+            selectedId={selectedId}
+            onSelect={setRestaurantId}
+          />
 
           <View style={[styles.card, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <ThemedText style={styles.cardTitle}>{t("admin.waitlist.addTitle")}</ThemedText>

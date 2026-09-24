@@ -12,7 +12,7 @@ namespace OpenRestoApi.Core.Application.Services;
 /// Routes a guest reminder by channel: browsers through the same VAPID Web Push client the
 /// admin notifications use, the native app through Expo's push service. The Web Push payload
 /// carries the same <c>title</c>/<c>body</c> shape as the admin payload so <c>sw.js</c> shows
-/// both with one handler; <c>url</c> is what its click opens.
+/// both with one handler; <c>url</c> is what its click opens and <c>tag</c> what it replaces.
 /// </summary>
 /// <seealso>GuestPushSenderTests.SendAsync_WebPush_ReportsStaleOnGoneOrNotFound</seealso>
 /// <seealso>GuestPushSenderTests.SendAsync_WebPush_ReportsFailureWithoutVapid</seealso>
@@ -29,15 +29,15 @@ public sealed class GuestPushSender(
 
     private readonly VapidSettings _vapid = vapidOptions.Value;
 
-    public Task<GuestPushResult> SendAsync(GuestPushSubscription subscription, GuestPushMessage message) =>
-        subscription.Channel switch
+    public Task<GuestPushResult> SendAsync(GuestPushAddress address, GuestPushMessage message) =>
+        address.Channel switch
         {
-            GuestPushChannels.Expo => expoPushClient.SendAsync(subscription.Endpoint, message),
-            GuestPushChannels.WebPush => SendWebPushAsync(subscription, message),
-            _ => Task.FromResult(GuestPushResult.Failed($"Unknown channel '{subscription.Channel}'")),
+            GuestPushChannels.Expo => expoPushClient.SendAsync(address.Endpoint, message),
+            GuestPushChannels.WebPush => SendWebPushAsync(address, message),
+            _ => Task.FromResult(GuestPushResult.Failed($"Unknown channel '{address.Channel}'")),
         };
 
-    private async Task<GuestPushResult> SendWebPushAsync(GuestPushSubscription subscription, GuestPushMessage message)
+    private async Task<GuestPushResult> SendWebPushAsync(GuestPushAddress address, GuestPushMessage message)
     {
         if (!_vapid.IsConfigured)
         {
@@ -48,14 +48,12 @@ public sealed class GuestPushSender(
         {
             message.Title,
             message.Body,
-            Type = "BookingReminder",
-            message.BookingId,
-            message.BookingRef,
             message.Url,
+            message.Tag,
         };
         string json = JsonSerializer.Serialize(payload, JsonOptions);
         var vapidDetails = new VapidDetails(_vapid.Subject, _vapid.PublicKey, _vapid.PrivateKey);
-        var pushSub = new PushSubscription(subscription.Endpoint, subscription.P256dh, subscription.Auth);
+        var pushSub = new PushSubscription(address.Endpoint, address.P256dh, address.Auth);
 
         try
         {

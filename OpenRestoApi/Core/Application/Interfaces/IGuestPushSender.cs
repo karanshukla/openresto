@@ -2,8 +2,12 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Interfaces;
 
-/// <summary>What a reminder says. The channel decides how it is wrapped.</summary>
-public sealed record GuestPushMessage(string Title, string Body, string BookingRef, int BookingId, string Url);
+/// <summary>
+/// What a guest push says. The channel decides how it is wrapped. <paramref name="Url"/> is what
+/// a click opens; <paramref name="Tag"/> lets a newer message replace an older one about the same
+/// booking or ticket instead of stacking beside it.
+/// </summary>
+public sealed record GuestPushMessage(string Title, string Body, string Url, string Tag);
 
 public enum GuestPushOutcome
 {
@@ -20,10 +24,10 @@ public sealed record GuestPushResult(GuestPushOutcome Outcome, string? Error = n
     public static GuestPushResult Failed(string error) => new(GuestPushOutcome.Failed, error);
 }
 
-/// <summary>Delivers one message to one subscription over whichever channel it was registered on.</summary>
+/// <summary>Delivers one message to one address over whichever channel it was registered on.</summary>
 public interface IGuestPushSender
 {
-    Task<GuestPushResult> SendAsync(GuestPushSubscription subscription, GuestPushMessage message);
+    Task<GuestPushResult> SendAsync(GuestPushAddress address, GuestPushMessage message);
 }
 
 /// <summary>

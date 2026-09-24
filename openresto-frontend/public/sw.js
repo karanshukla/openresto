@@ -60,7 +60,10 @@ self.addEventListener("push", (event) => {
       body: data.body,
       icon: "/api/brand/pwa-icon-192.png",
       badge: "/api/brand/pwa-icon-192.png",
-      tag: data.bookingId ? `booking-${data.bookingId}` : `capacity-${data.restaurantId}`,
+      // Guest pushes name their own tag; admin ones are tagged by what they are about.
+      tag:
+        data.tag ??
+        (data.bookingId ? `booking-${data.bookingId}` : `capacity-${data.restaurantId}`),
       data: { url: data.url ?? "/admin/notifications" },
     })
   );

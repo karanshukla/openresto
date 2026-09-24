@@ -3978,6 +3978,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/waitlist/{entryRef}/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    entryRef: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["WaitlistPushRequest"];
+                    "text/json": components["schemas"]["WaitlistPushRequest"];
+                    "application/*+json": components["schemas"]["WaitlistPushRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/restaurants/{restaurantId}/waitlist": {
         parameters: {
             query?: never;
@@ -4682,6 +4723,15 @@ export interface components {
         VerifyPvqRequest: {
             email?: string;
             answer?: string;
+        };
+        /** @description The device a guest wants pushed when their table is ready. */
+        WaitlistPushRequest: {
+            /** @description "expo" from the native app, "webpush" from a browser. */
+            channel: string;
+            /** @description The Expo push token, or the Web Push subscription endpoint. */
+            endpoint: string;
+            p256dh?: null | string;
+            auth?: null | string;
         };
     };
     responses: never;

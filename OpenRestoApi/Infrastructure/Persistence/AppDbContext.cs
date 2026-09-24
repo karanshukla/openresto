@@ -221,6 +221,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             w.Property(x => x.Name).IsRequired().HasMaxLength(WaitlistFields.MaxNameLength);
             w.Property(x => x.Email).HasMaxLength(ContactLimits.MaxEmailLength);
             w.Property(x => x.Locale).IsRequired().HasMaxLength(GuestPushFields.MaxLocaleLength);
+            w.Property(x => x.PushChannel).HasMaxLength(GuestPushFields.MaxChannelLength);
+            w.Property(x => x.PushEndpoint).HasMaxLength(GuestPushFields.MaxEndpointLength);
+            w.Property(x => x.PushP256dh).HasMaxLength(GuestPushFields.MaxKeyLength);
+            w.Property(x => x.PushAuth).HasMaxLength(GuestPushFields.MaxKeyLength);
             w.Property(x => x.Status).HasConversion<string>().HasMaxLength(WaitlistFields.MaxStatusLength);
             w.HasIndex(x => x.Ref).IsUnique();
             w.HasIndex(x => new { x.RestaurantId, x.Status });

@@ -153,7 +153,7 @@ public class GuestReminderService(
 
             websiteUrl ??= brandService.GetWebsiteUrl(await brandService.GetAsync());
             GuestPushMessage message = Compose(sub, now, websiteUrl);
-            GuestPushResult result = await sender.SendAsync(sub, message);
+            GuestPushResult result = await sender.SendAsync(sub.Address(), message);
 
             switch (result.Outcome)
             {
@@ -203,7 +203,7 @@ public class GuestReminderService(
             booking.Seats,
             booking.BookingRef);
 
-        return new GuestPushMessage(title, body, booking.BookingRef, booking.Id, BookingLinks.Confirmation(websiteUrl, booking));
+        return new GuestPushMessage(title, body, BookingLinks.Confirmation(websiteUrl, booking), $"booking-{booking.Id}");
     }
 
     private async Task<Booking?> FindOwnedAsync(string bookingRef, string email)

@@ -3660,6 +3660,48 @@
         }
       }
     },
+    "/api/waitlist/{entryRef}/push": {
+      "put": {
+        "tags": [
+          "Waitlist"
+        ],
+        "parameters": [
+          {
+            "name": "entryRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistPushRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistPushRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistPushRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/restaurants/{restaurantId}/waitlist": {
       "get": {
         "tags": [
@@ -5405,6 +5447,44 @@
             "type": "string"
           }
         }
+      },
+      "WaitlistPushRequest": {
+        "required": [
+          "channel",
+          "endpoint"
+        ],
+        "type": "object",
+        "properties": {
+          "channel": {
+            "maxLength": 16,
+            "minLength": 0,
+            "type": "string",
+            "description": "\u0022expo\u0022 from the native app, \u0022webpush\u0022 from a browser."
+          },
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 0,
+            "type": "string",
+            "description": "The Expo push token, or the Web Push subscription endpoint."
+          },
+          "p256dh": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "auth": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "description": "The device a guest wants pushed when their table is ready."
       }
     }
   },

@@ -107,6 +107,7 @@ public static class ErrorCodes
     public const string WaitlistPartyTooLarge = "waitlist.party_too_large";
     public const string WaitlistNotActive = "waitlist.not_active";
     public const string WaitlistNoTableFree = "waitlist.no_table_free";
+    public const string WaitlistPushInvalid = "waitlist.push_invalid";
 
     // ── Accounts ─────────────────────────────────────────────────────────────
     public const string UserEmailAlreadyExists = "user.email_already_exists";

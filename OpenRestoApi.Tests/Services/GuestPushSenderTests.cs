@@ -24,9 +24,8 @@ public class GuestPushSenderTests
     private static readonly GuestPushMessage Message = new(
         Title: "Your table at Bistro",
         Body: "Tomorrow at 19:30 · 2 guests · Ref crispy-basil-truffle",
-        BookingRef: "crispy-basil-truffle",
-        BookingId: 7,
-        Url: "https://bookings.example.com/booking-confirmation/crispy-basil-truffle?email=guest%40example.com");
+        Url: "https://bookings.example.com/booking-confirmation/crispy-basil-truffle?email=guest%40example.com",
+        Tag: "booking-7");
 
     private readonly Mock<IWebPushClient> _webPush = new();
     private readonly Mock<IExpoPushClient> _expo = new();
@@ -41,13 +40,8 @@ public class GuestPushSenderTests
     private GuestPushSender CreateSender(VapidSettings? vapid = null) =>
         new(_webPush.Object, _expo.Object, Options.Create(vapid ?? new VapidSettings()));
 
-    private static GuestPushSubscription WebPushSubscription() => new()
-    {
-        Channel = GuestPushChannels.WebPush,
-        Endpoint = Endpoint,
-        P256dh = "p256dh-key",
-        Auth = "auth-secret",
-    };
+    private static GuestPushAddress WebPushSubscription() =>
+        new(GuestPushChannels.WebPush, Endpoint, "p256dh-key", "auth-secret");
 
     private static WebPushException MakeWebPushException(HttpStatusCode statusCode) =>
         new("push failed", new PushSubscription(Endpoint, "p256dh-key", "auth-secret"), new HttpResponseMessage(statusCode));
@@ -131,9 +125,7 @@ public class GuestPushSenderTests
         Assert.Equal(Message.Title, root.GetProperty("title").GetString());
         Assert.Equal(Message.Body, root.GetProperty("body").GetString());
         Assert.Equal(Message.Url, root.GetProperty("url").GetString());
-        Assert.Equal(Message.BookingRef, root.GetProperty("bookingRef").GetString());
-        Assert.Equal(Message.BookingId, root.GetProperty("bookingId").GetInt32());
-        Assert.Equal("BookingReminder", root.GetProperty("type").GetString());
+        Assert.Equal(Message.Tag, root.GetProperty("tag").GetString());
         Assert.False(root.TryGetProperty("Title", out _), "Payload keys must be camelCase, as sw.js reads them.");
     }
 
@@ -143,7 +135,7 @@ public class GuestPushSenderTests
         _expo
             .Setup(e => e.SendAsync(ExpoToken, Message, It.IsAny<CancellationToken>()))
             .ReturnsAsync(GuestPushResult.Stale);
-        var subscription = new GuestPushSubscription { Channel = GuestPushChannels.Expo, Endpoint = ExpoToken };
+        var subscription = new GuestPushAddress(GuestPushChannels.Expo, ExpoToken, null, null);
 
         GuestPushResult result = await CreateSender().SendAsync(subscription, Message);
 
@@ -157,7 +149,7 @@ public class GuestPushSenderTests
     [Fact]
     public async Task SendAsync_ReportsFailureForAnUnknownChannel()
     {
-        var subscription = new GuestPushSubscription { Channel = "sms", Endpoint = "+15550100" };
+        var subscription = new GuestPushAddress("sms", "+15550100", null, null);
 
         GuestPushResult result = await CreateSender(ConfiguredVapid()).SendAsync(subscription, Message);
 
