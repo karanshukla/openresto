@@ -10,7 +10,11 @@ import { getBookingByRef, getBookingById, cancelBookingByRef } from "@/api/booki
 import { fetchRestaurantById } from "@/api/restaurants";
 import { fetchCachedBookings } from "@/utils/bookingCache";
 import { getWaitlistStatus } from "@/api/waitlist";
-import { readWaitlistTickets, rememberWaitlistTicket } from "@/utils/waitlistTickets";
+import {
+  forgetWaitlistTicket,
+  readWaitlistTickets,
+  rememberWaitlistTicket,
+} from "@/utils/waitlistTickets";
 import { useOnline } from "@/hooks/use-online";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
@@ -54,6 +58,7 @@ jest.mock("@/api/waitlist", () => ({ getWaitlistStatus: jest.fn(), leaveWaitlist
 jest.mock("@/utils/waitlistTickets", () => ({
   readWaitlistTickets: jest.fn(),
   rememberWaitlistTicket: jest.fn(),
+  forgetWaitlistTicket: jest.fn(),
 }));
 
 jest.mock("expo-router", () => ({
@@ -669,49 +674,59 @@ describe("LookupScreen", () => {
       (rememberWaitlistTicket as jest.Mock).mockReturnValue({ 5: "tkt-shore" });
     });
 
-    it("lists the device's tickets and opens one in the result panel", async () => {
+    it("shows a live ticket apart from the lookup, and no panel for it", async () => {
       (readWaitlistTickets as jest.Mock).mockReturnValue({ 5: "tkt-shore" });
 
       renderWithProviders(<LookupScreen />);
 
-      const row = await screen.findByTestId("waitlist-ticket-row-tkt-shore");
-      expect(screen.getByText("YOUR WAITLIST TICKETS")).toBeTruthy();
+      expect(await screen.findByTestId("waitlist-status-waiting")).toBeTruthy();
+      expect(screen.getByText("Shore House")).toBeTruthy();
       expect(screen.queryByTestId("lookup-result-column")).toBeNull();
-
-      fireEvent.press(row);
-
-      const column = await screen.findByTestId("lookup-result-column");
-      expect(await within(column).findByText("You're on the list")).toBeTruthy();
-      expect(row.props.accessibilityState).toEqual({ selected: true });
+      expect(
+        within(screen.getByTestId("lookup-columns")).queryByTestId("waitlist-status-waiting")
+      ).toBeNull();
     });
 
-    it("opens the email link's ticket over a cached booking, and keeps it on the device", async () => {
+    it("shows no waitlist at all without a live ticket", async () => {
+      (readWaitlistTickets as jest.Mock).mockReturnValue({ 5: "tkt-shore" });
+      (getWaitlistStatus as jest.Mock).mockResolvedValue({ ...ticket, status: "seated" });
+      (forgetWaitlistTicket as jest.Mock).mockReturnValue({});
+
+      renderWithProviders(<LookupScreen />);
+
+      await waitFor(() => expect(forgetWaitlistTicket).toHaveBeenCalledWith("tkt-shore"));
+      expect(screen.queryByTestId(/^waitlist-status-/)).toBeNull();
+      expect(screen.queryByText("Shore House")).toBeNull();
+    });
+
+    it("shows the email link's ticket, and keeps it on the device", async () => {
       (fetchCachedBookings as jest.Mock).mockResolvedValue([
         { bookingRef: "REF123", email: "test@test.com", date: "2026-01-01", seats: 2 },
       ]);
 
       renderWithProviders(<LookupScreen initialTicketRef="tkt-shore" />);
 
-      const column = await screen.findByTestId("lookup-result-column");
-      expect(await within(column).findByText("Shore House")).toBeTruthy();
+      expect(await screen.findByTestId("waitlist-status-waiting")).toBeTruthy();
       await waitFor(() => expect(rememberWaitlistTicket).toHaveBeenCalledWith(5, "tkt-shore"));
       await waitFor(() => expect(screen.getByText("YOUR RECENT BOOKINGS")).toBeTruthy());
+      // Arriving for the ticket, the page doesn't open a cached booking beside it.
       expect(getBookingByRef).not.toHaveBeenCalled();
     });
 
-    it("swaps the ticket for a booking looked up from the form", async () => {
+    it("keeps the ticket up while a booking is looked up", async () => {
+      (readWaitlistTickets as jest.Mock).mockReturnValue({ 5: "tkt-shore" });
       (getBookingByRef as jest.Mock).mockResolvedValue(mockBooking);
       (fetchRestaurantById as jest.Mock).mockResolvedValue(mockRestaurant);
 
-      renderWithProviders(<LookupScreen initialTicketRef="tkt-shore" />);
-      await screen.findByText("You're on the list");
+      renderWithProviders(<LookupScreen />);
+      await screen.findByTestId("waitlist-status-waiting");
 
       fireEvent.changeText(screen.getByPlaceholderText("e.g. crispy-basil-thyme"), "REF123");
       fireEvent.changeText(screen.getByPlaceholderText("The email used when booking"), "t@t.com");
       fireEvent.press(screen.getByLabelText("Find my booking"));
 
       await waitFor(() => expect(screen.getByText("Booking Found")).toBeTruthy());
-      expect(screen.queryByText("You're on the list")).toBeNull();
+      expect(screen.getByTestId("waitlist-status-waiting")).toBeTruthy();
     });
   });
 

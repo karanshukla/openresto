@@ -531,10 +531,6 @@
       "showFewer": "Afficher moins",
       "storageNote": "Les réservations récentes sont stockées sur cet appareil. Effacer votre cache et vos cookies, ou désinstaller l'application, videra cette liste."
     },
-    "waitlist": {
-      "heading": "VOS TICKETS DE LISTE D'ATTENTE",
-      "itemA11y": "Ouvrir le ticket de liste d'attente chez {{name}}"
-    },
     "resultPanelA11y": "Résultat de la réservation",
     "subtitle": "Saisissez votre référence de réservation et votre e-mail pour retrouver votre réservation.",
     "title": "Retrouver ma réservation"

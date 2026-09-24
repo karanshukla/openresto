@@ -139,6 +139,17 @@ describe("Navbar", () => {
     expect(screen.getByText("Locations")).toBeTruthy();
   });
 
+  it.each(["/lookup", "/booking-confirmation/abc", "/waitlist/abc"])(
+    "selects My Bookings on %s",
+    (path) => {
+      (usePathname as jest.Mock).mockReturnValue(path);
+      render(<Navbar />);
+      let link = screen.getByText("My Bookings").parent;
+      while (link && !link.props.accessibilityState) link = link.parent;
+      expect(link?.props.accessibilityState).toEqual({ selected: true });
+    }
+  );
+
   it("forwards onOpenShortcuts to the overflow menu trigger", () => {
     const onOpenShortcuts = jest.fn();
     render(<Navbar onOpenShortcuts={onOpenShortcuts} />);

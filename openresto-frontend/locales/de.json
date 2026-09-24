@@ -531,10 +531,6 @@
       "showFewer": "Weniger anzeigen",
       "storageNote": "Letzte Reservierungen werden auf diesem Gerät gespeichert. Das Löschen von Cache und Cookies oder das Deinstallieren der App leert diese Liste."
     },
-    "waitlist": {
-      "heading": "IHRE WARTELISTEN-TICKETS",
-      "itemA11y": "Wartelisten-Ticket bei {{name}} öffnen"
-    },
     "resultPanelA11y": "Reservierungsergebnis",
     "subtitle": "Geben Sie Ihre Reservierungsnummer und E-Mail-Adresse ein, um Ihre Reservierung zu suchen.",
     "title": "Meine Reservierung suchen"

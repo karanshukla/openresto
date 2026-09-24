@@ -27,12 +27,17 @@ describe("waitlistTickets", () => {
     expect(readWaitlistTickets()).toEqual({ 3: "new", 5: "other" });
   });
 
-  it("forgets one location's ticket and keeps the rest", () => {
+  it("forgets a ticket by its ref and keeps the rest", () => {
     rememberWaitlistTicket(3, "a");
     rememberWaitlistTicket(5, "b");
 
-    expect(forgetWaitlistTicket(3)).toEqual({ 5: "b" });
+    expect(forgetWaitlistTicket("a")).toEqual({ 5: "b" });
     expect(readWaitlistTickets()).toEqual({ 5: "b" });
+  });
+
+  it("forgets nothing for a ref it does not hold", () => {
+    rememberWaitlistTicket(3, "a");
+    expect(forgetWaitlistTicket("other")).toEqual({ 3: "a" });
   });
 
   it.each(["not json", "[]", "null"])("reads %s as no tickets", (raw) => {

@@ -68,6 +68,7 @@ export const styles = StyleSheet.create({
   pageIdle: { maxWidth: FORM_COL_WIDTH },
   pageWide: { maxWidth: FORM_COL_WIDTH + COLUMN_GAP + RESULT_COL_MAX_WIDTH },
   header: { marginTop: theme.spacing.sm },
+  waitlistTicket: { width: "100%", maxWidth: FORM_COL_WIDTH, marginBottom: theme.spacing.lg },
   // Idle: a single column the width of the search card — no result column is reserved
   // before there's a result to put in it.
   singleCol: { width: "100%", gap: theme.spacing.md },

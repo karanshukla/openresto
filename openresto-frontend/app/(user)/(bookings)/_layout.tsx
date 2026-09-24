@@ -9,9 +9,9 @@ import GuestTabStack, { tabRoot } from "@/components/layout/GuestTabStack";
 export const unstable_settings = { initialRouteName: "lookup" };
 
 /**
- * The My booking tab: the lookup form, and the confirmation and waitlist ticket, which are that
- * form with a booking or a ticket open rather than screens of their own. Keeping the confirmation in this group is what keeps
- * the tab selected on it.
+ * The My booking tab: the lookup form, and the confirmation and waitlist links, which are that
+ * screen with a booking open or a ticket added rather than screens of their own. Keeping them in
+ * this group is what keeps the tab selected on them.
  */
 export default function BookingsTabLayout() {
   const { t } = useTranslation();

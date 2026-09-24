@@ -23,14 +23,17 @@ import BookingConfirmationSkeleton from "@/components/booking/BookingConfirmatio
 import { KeyboardAvoider } from "@/components/common/KeyboardAvoider";
 import BookingResultPanel from "@/components/booking/BookingResultPanel";
 import RecentBookingsList from "@/components/booking/RecentBookingsList";
-import WaitlistTicketPanel from "@/components/waitlist/WaitlistTicketPanel";
-import WaitlistTicketsList from "@/components/waitlist/WaitlistTicketsList";
+import ActiveWaitlistTickets from "@/components/waitlist/ActiveWaitlistTickets";
 import { theme } from "@/theme/theme";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { registerFocusTarget, unregisterFocusTarget } from "@/utils/focusRegistry";
 import { CachedBooking, fetchCachedBookings } from "@/utils/bookingCache";
-import { readWaitlistTickets, rememberWaitlistTicket } from "@/utils/waitlistTickets";
+import {
+  forgetWaitlistTicket,
+  readWaitlistTickets,
+  rememberWaitlistTicket,
+} from "@/utils/waitlistTickets";
 import { hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
 import { useBrand } from "@/context/BrandContext";
 import { useBookingLookup } from "@/hooks/useBookingLookup";
@@ -47,9 +50,9 @@ import { pinnedColumns, styles } from "@/styles/user/lookup.styles";
  * result panel's own wording and the arrival haptic — the page around it is the same page on
  * both routes, on web and off it, which is the point of there being one screen.
  *
- * Waitlist tickets are a third state of the same panel: the device's tickets are listed above
- * the recent bookings, and /waitlist/[ref], the "table ready" email's link, mounts this with
- * `initialTicketRef` so the ticket opens here rather than on a page of its own.
+ * A live waitlist ticket sits above the lookup, apart from it, and only while the party is still
+ * in the queue. /waitlist/[ref], the "table ready" email's link, mounts this with
+ * `initialTicketRef` so that ticket shows here rather than on a page of its own.
  */
 export default function LookupScreen({
   initialRef,
@@ -71,7 +74,6 @@ export default function LookupScreen({
   const [emailInput, setEmailInput] = useState(initialEmail ?? "");
   const [cached, setCached] = useState<CachedBooking[]>([]);
   const [tickets, setTickets] = useState(readWaitlistTickets);
-  const [ticketRef, setTicketRef] = useState(initialTicketRef);
   const [viewportHeight, setViewportHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const fab = useScrollToTopFab();
@@ -102,7 +104,7 @@ export default function LookupScreen({
   const contact = resolveContact(restaurant, brand);
   const isCompact = isMobileWidth(width);
   const canSearch = Boolean(refInput.trim() && emailInput.trim());
-  const showPanel = status !== "idle" || ticketRef !== undefined;
+  const showPanel = status !== "idle";
   const twoColumn = !isCompact && showPanel;
   const pinned = pinnedColumns(twoColumn ? viewportHeight : 0);
 
@@ -169,7 +171,6 @@ export default function LookupScreen({
     const ref = refInput.trim();
     const email = emailInput.trim();
     if (!ref || !email) return;
-    setTicketRef(undefined);
     lookup(ref, email);
   };
 
@@ -181,35 +182,24 @@ export default function LookupScreen({
   const handleRecentSelect = (c: CachedBooking) => {
     setRefInput(c.bookingRef);
     setEmailInput(c.email);
-    setTicketRef(undefined);
     lookup(c.bookingRef, c.email);
   };
 
-  const handleTicketSelect = (entryRef: string) => {
-    reset();
-    setTicketRef(entryRef);
-  };
-
-  const dismissPanel = () => {
-    reset();
-    setTicketRef(undefined);
-  };
+  const ticketRefs = Object.values(tickets);
+  if (initialTicketRef && !ticketRefs.includes(initialTicketRef)) ticketRefs.push(initialTicketRef);
 
   const handleTicketLoaded = useCallback(
-    (restaurantId: number) => {
-      if (ticketRef) setTickets(rememberWaitlistTicket(restaurantId, ticketRef));
-    },
-    [ticketRef]
+    (restaurantId: number, entryRef: string) =>
+      setTickets(rememberWaitlistTicket(restaurantId, entryRef)),
+    []
+  );
+  const handleTicketClosed = useCallback(
+    (entryRef: string) => setTickets(forgetWaitlistTicket(entryRef)),
+    []
   );
 
   let panelContent: React.ReactNode = null;
-  if (ticketRef) {
-    panelContent = (
-      <View role="status" accessibilityLiveRegion="polite">
-        <WaitlistTicketPanel entryRef={ticketRef} onLoaded={handleTicketLoaded} />
-      </View>
-    );
-  } else if (status === "loading") {
+  if (status === "loading") {
     panelContent = <BookingConfirmationSkeleton inline />;
   } else if (status === "notFound") {
     panelContent = (
@@ -293,6 +283,13 @@ export default function LookupScreen({
               title={t("lookup.title")}
               subtitle={t("lookup.subtitle")}
               style={styles.header}
+            />
+
+            <ActiveWaitlistTickets
+              entryRefs={ticketRefs}
+              onLoaded={handleTicketLoaded}
+              onClosed={handleTicketClosed}
+              style={styles.waitlistTicket}
             />
 
             <View
@@ -382,12 +379,6 @@ export default function LookupScreen({
                   top of this list, so the diner can switch between their bookings without
                   dismissing anything. The one on screen is marked rather than removed, so
                   the list doesn't reshuffle under the press that opened it. */}
-                <WaitlistTicketsList
-                  entryRefs={Object.values(tickets)}
-                  activeRef={ticketRef ?? null}
-                  onSelect={handleTicketSelect}
-                />
-
                 <RecentBookingsList
                   cached={cached}
                   colors={colors}
@@ -400,7 +391,7 @@ export default function LookupScreen({
                 <View testID="lookup-result-column" style={[styles.resultCol, pinned.result]}>
                   <SlidePanel
                     variant="side"
-                    onDismiss={dismissPanel}
+                    onDismiss={reset}
                     accessibilityLabel={t("lookup.resultPanelA11y")}
                   >
                     {panelContent}
@@ -420,7 +411,7 @@ export default function LookupScreen({
       {isCompact && showPanel && (
         <SlidePanel
           variant="sheet"
-          onDismiss={dismissPanel}
+          onDismiss={reset}
           accessibilityLabel={t("lookup.resultPanelA11y")}
         >
           {panelContent}

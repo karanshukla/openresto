@@ -531,10 +531,6 @@
       "showFewer": "Mostrar menos",
       "storageNote": "Las reservas recientes se guardan en este dispositivo. Borrar la caché y las cookies, o desinstalar la aplicación, vaciará esta lista."
     },
-    "waitlist": {
-      "heading": "TUS TURNOS EN LA LISTA DE ESPERA",
-      "itemA11y": "Abrir tu turno en {{name}}"
-    },
     "resultPanelA11y": "Resultado de la reserva",
     "subtitle": "Introduce tu referencia de reserva y tu correo para buscar tu reserva.",
     "title": "Buscar mi reserva"

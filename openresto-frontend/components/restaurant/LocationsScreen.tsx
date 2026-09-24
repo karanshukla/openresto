@@ -495,7 +495,10 @@ export default function LocationsScreen({
                     entryRef: waitlistTickets[drawer.restaurant.id],
                     onJoined: (entryRef) =>
                       setWaitlistTickets(rememberWaitlistTicket(drawer.restaurant.id, entryRef)),
-                    onReset: () => setWaitlistTickets(forgetWaitlistTicket(drawer.restaurant.id)),
+                    onReset: () =>
+                      setWaitlistTickets(
+                        forgetWaitlistTicket(waitlistTickets[drawer.restaurant.id])
+                      ),
                   }
                 : undefined
             }

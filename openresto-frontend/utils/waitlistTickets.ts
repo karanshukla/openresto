@@ -7,7 +7,7 @@ const STORAGE_KEY = "openresto.waitlistTickets";
 
 /**
  * The tickets this device holds. The Locations panel reopens a location's ticket from here and
- * My bookings lists them all, so both read storage rather than a copy either screen keeps:
+ * My Bookings shows the live ones, so both read storage rather than a copy either screen keeps:
  * native keeps every tab mounted, and a copy read at mount goes stale behind the other tab.
  *
  * @see [waitlistTickets.test.ts](../tests/utils/waitlistTickets.test.ts)
@@ -35,8 +35,11 @@ export function rememberWaitlistTicket(restaurantId: number, entryRef: string): 
   return write({ ...readWaitlistTickets(), [restaurantId]: entryRef });
 }
 
-export function forgetWaitlistTicket(restaurantId: number): WaitlistTickets {
+/** Drops a ticket wherever it is held. Returns the tickets now held. */
+export function forgetWaitlistTicket(entryRef: string): WaitlistTickets {
   const next = readWaitlistTickets();
-  delete next[restaurantId];
+  for (const [restaurantId, held] of Object.entries(next)) {
+    if (held === entryRef) delete next[Number(restaurantId)];
+  }
   return write(next);
 }

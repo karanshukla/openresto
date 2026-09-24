@@ -531,10 +531,6 @@
       "showFewer": "Show fewer",
       "storageNote": "Recent bookings are stored on this device. Clearing your cache and cookies, or uninstalling the app, will empty this list."
     },
-    "waitlist": {
-      "heading": "YOUR WAITLIST TICKETS",
-      "itemA11y": "Open waitlist ticket at {{name}}"
-    },
     "resultPanelA11y": "Booking result",
     "subtitle": "Enter your booking reference and email to look up your reservation.",
     "title": "Find my booking"

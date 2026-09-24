@@ -1,7 +1,7 @@
 import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import WaitlistTicketPanel from "@/components/waitlist/WaitlistTicketPanel";
-import { WAITLIST_POLL_MS } from "@/components/waitlist/useWaitlistEntry";
+import WaitlistTicket from "@/components/waitlist/WaitlistTicket";
+import { WAITLIST_POLL_MS, useWaitlistEntry } from "@/components/waitlist/useWaitlistEntry";
 import { getWaitlistStatus, leaveWaitlist, type WaitlistEntryStatus } from "@/api/waitlist";
 import haptics from "@/utils/haptics";
 import { confirm } from "@/utils/confirm";
@@ -55,28 +55,15 @@ async function advance(ms: number) {
   });
 }
 
-const onLoaded = jest.fn();
+/** The card as both the Locations drawer and My Bookings mount it: over the entry's own hook. */
+function Ticket({ entryRef }: { entryRef: string }) {
+  return <WaitlistTicket state={useWaitlistEntry(entryRef)} />;
+}
 
-describe("WaitlistTicketPanel", () => {
-  it("names the location and hands it back once the ticket loads", async () => {
-    mockStatus.mockResolvedValue(entry());
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
-
-    expect(await screen.findByText("Door")).toBeTruthy();
-    expect(onLoaded).toHaveBeenCalledWith(3);
-  });
-
-  it("hands nothing back for an unknown ref", async () => {
-    mockStatus.mockResolvedValue(null);
-    render(<WaitlistTicketPanel entryRef="nope" onLoaded={onLoaded} />);
-
-    await screen.findByTestId("waitlist-not-found");
-    expect(onLoaded).not.toHaveBeenCalled();
-  });
-
+describe("WaitlistTicket", () => {
   it("shows the guest's ticket, place and wait", async () => {
     mockStatus.mockResolvedValue(entry());
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
 
     expect(await screen.findByText("You're on the list")).toBeTruthy();
     expect(screen.getByText("Door")).toBeTruthy();
@@ -87,14 +74,14 @@ describe("WaitlistTicketPanel", () => {
 
   it("tells a guest who opted in to push that a notification is coming", async () => {
     mockStatus.mockResolvedValue(entry({ pushEnabled: true }));
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
 
     expect(await screen.findByText(/You'll get a notification/)).toBeTruthy();
   });
 
   it("gives a guest without push no line about notifications", async () => {
     mockStatus.mockResolvedValue(entry());
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("You're on the list");
 
     expect(screen.queryByText(/notification/)).toBeNull();
@@ -102,7 +89,7 @@ describe("WaitlistTicketPanel", () => {
 
   it("says the guest is next with nobody ahead", async () => {
     mockStatus.mockResolvedValue(entry({ partiesAhead: 0, estimatedWaitMinutes: 0 }));
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
 
     expect(await screen.findByText("You're next")).toBeTruthy();
     expect(screen.getByText("Now")).toBeTruthy();
@@ -113,7 +100,7 @@ describe("WaitlistTicketPanel", () => {
       .mockResolvedValueOnce(entry())
       .mockResolvedValueOnce(entry({ status: "notified" }))
       .mockResolvedValue(entry({ status: "notified" }));
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("You're on the list");
 
     await advance(WAITLIST_POLL_MS);
@@ -127,7 +114,7 @@ describe("WaitlistTicketPanel", () => {
 
   it("stops polling once the entry has left the queue", async () => {
     mockStatus.mockResolvedValue(entry({ status: "seated", partiesAhead: null }));
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("Enjoy your meal");
 
     await advance(WAITLIST_POLL_MS * 3);
@@ -138,7 +125,7 @@ describe("WaitlistTicketPanel", () => {
 
   it("shows when a closed ticket joined in place of the wait", async () => {
     mockStatus.mockResolvedValue(entry({ status: "seated", partiesAhead: null }));
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("Enjoy your meal");
 
     expect(screen.getByText("Joined")).toBeTruthy();
@@ -147,7 +134,7 @@ describe("WaitlistTicketPanel", () => {
 
   it("marks a wait no table can seat rather than guessing one", async () => {
     mockStatus.mockResolvedValue(entry({ estimatedWaitMinutes: null }));
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
 
     expect(await screen.findByText("—")).toBeTruthy();
   });
@@ -157,28 +144,28 @@ describe("WaitlistTicketPanel", () => {
     ["expired", "This waitlist entry has expired"],
   ] as const)("titles a %s entry", async (status, title) => {
     mockStatus.mockResolvedValue(entry({ status }));
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
 
     expect(await screen.findByText(title)).toBeTruthy();
   });
 
   it("says so for an unknown ref", async () => {
     mockStatus.mockResolvedValue(null);
-    render(<WaitlistTicketPanel entryRef="nope" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="nope" />);
 
     expect(await screen.findByTestId("waitlist-not-found")).toBeTruthy();
   });
 
   it("reports a first load that failed", async () => {
     mockStatus.mockResolvedValue(undefined);
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
 
     expect(await screen.findByText("Couldn't load the waitlist. Please try again.")).toBeTruthy();
   });
 
   it("keeps the last place shown when a refresh fails", async () => {
     mockStatus.mockResolvedValueOnce(entry()).mockResolvedValue(undefined);
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("You're on the list");
 
     await advance(WAITLIST_POLL_MS);
@@ -190,7 +177,7 @@ describe("WaitlistTicketPanel", () => {
   it("leaves the waitlist once confirmed", async () => {
     mockStatus.mockResolvedValueOnce(entry()).mockResolvedValue(entry({ status: "left" }));
     mockLeave.mockResolvedValue(true);
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("You're on the list");
 
     fireEvent.press(screen.getByTestId("waitlist-leave"));
@@ -202,7 +189,7 @@ describe("WaitlistTicketPanel", () => {
   it("stays put when the guest backs out of leaving", async () => {
     mockStatus.mockResolvedValue(entry());
     mockConfirm.mockResolvedValue(false);
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("You're on the list");
 
     fireEvent.press(screen.getByTestId("waitlist-leave"));
@@ -214,7 +201,7 @@ describe("WaitlistTicketPanel", () => {
   it("says so when leaving fails", async () => {
     mockStatus.mockResolvedValue(entry());
     mockLeave.mockResolvedValue(false);
-    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    render(<Ticket entryRef="abc" />);
     await screen.findByText("You're on the list");
 
     fireEvent.press(screen.getByTestId("waitlist-leave"));
