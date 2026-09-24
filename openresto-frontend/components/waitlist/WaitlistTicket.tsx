@@ -41,7 +41,9 @@ export default function WaitlistTicket({ state }: { state: WaitlistEntryState })
       {queued && (
         <>
           <ThemedText style={[styles.muted, { color: colors.muted }]}>
-            {t("booking.waitlistStatus.keepOpen")}
+            {entry?.pushEnabled
+              ? t("booking.waitlistStatus.pushOn")
+              : t("booking.waitlistStatus.keepOpen")}
           </ThemedText>
           {leaveFailed && (
             <ThemedText style={[styles.muted, { color: colors.error }]}>

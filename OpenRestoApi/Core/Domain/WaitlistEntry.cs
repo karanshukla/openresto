@@ -27,6 +27,18 @@ public class WaitlistEntry
     /// <summary>The UI locale the guest joined under, so the "table ready" email reads in their language.</summary>
     public string Locale { get; set; } = "en";
 
+    /// <summary>
+    /// The one device that asked to be pushed when the table is ready (one of
+    /// <see cref="GuestPushChannels"/>), or null. The device that turned it on last wins, and it is
+    /// cleared when the entry leaves the queue.
+    /// </summary>
+    public string? PushChannel { get; set; }
+    public string? PushEndpoint { get; set; }
+
+    // Web Push key material; null on the Expo channel.
+    public string? PushP256dh { get; set; }
+    public string? PushAuth { get; set; }
+
     public WaitlistStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? NotifiedAt { get; set; }
@@ -38,6 +50,19 @@ public class WaitlistEntry
     public Booking? Booking { get; set; }
 
     public bool IsActive => Status is WaitlistStatus.Waiting or WaitlistStatus.Notified;
+
+    public GuestPushAddress? PushAddress()
+        => PushChannel is null || PushEndpoint is null
+            ? null
+            : new GuestPushAddress(PushChannel, PushEndpoint, PushP256dh, PushAuth);
+
+    public void ClearPush()
+    {
+        PushChannel = null;
+        PushEndpoint = null;
+        PushP256dh = null;
+        PushAuth = null;
+    }
 }
 
 public enum WaitlistStatus

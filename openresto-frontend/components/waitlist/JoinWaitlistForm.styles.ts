@@ -18,10 +18,6 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  hint: {
-    fontSize: 13,
-    marginTop: -8,
-  },
   error: {
     fontSize: 14,
   },

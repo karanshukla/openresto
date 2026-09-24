@@ -6,6 +6,7 @@ import {
   getWaitlistStatus,
   joinWaitlist,
   leaveWaitlist,
+  setWaitlistPush,
 } from "@/api/waitlist";
 
 const mockFetch = jest.fn();
@@ -87,6 +88,26 @@ describe("getWaitlistStatus", () => {
     await expect(getWaitlistStatus("x")).resolves.toBeUndefined();
     mockFetch.mockRejectedValueOnce(new Error("offline"));
     await expect(getWaitlistStatus("x")).resolves.toBeUndefined();
+  });
+});
+
+describe("setWaitlistPush", () => {
+  it("puts the device's push address on the ticket", async () => {
+    mockFetch.mockResolvedValueOnce(json(null, 204));
+    const device = {
+      channel: "webpush" as const,
+      endpoint: "https://push.example/1",
+      p256dh: "k",
+      auth: "a",
+    };
+    await expect(setWaitlistPush("abc", device)).resolves.toBe(true);
+    expect(mockFetch.mock.calls[0][0]).toBe("/api/waitlist/abc/push");
+    expect(mockFetch.mock.calls[0][1]).toMatchObject({
+      method: "PUT",
+      body: JSON.stringify(device),
+    });
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    await expect(setWaitlistPush("abc", device)).resolves.toBe(false);
   });
 });
 

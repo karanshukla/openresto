@@ -6,21 +6,31 @@ import Button from "@/components/common/Button";
 import { EmailField, GuestsField, NameField } from "@/components/booking/BookingFormFields";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useLocale } from "@/context/LocaleContext";
-import { getWaitlistQuote, joinWaitlist, type WaitlistQuote } from "@/api/waitlist";
+import {
+  getWaitlistQuote,
+  joinWaitlist,
+  setWaitlistPush,
+  type WaitlistQuote,
+} from "@/api/waitlist";
+import type { ReminderRegistration } from "@/api/reminders";
 import { isValidEmail } from "@/utils/validation";
 import WaitEstimate from "./WaitEstimate";
+import WaitlistPushOptIn from "./WaitlistPushOptIn";
 import { styles } from "./JoinWaitlistForm.styles";
 
 const PARTY_SIZES = 10;
 
 /**
  * Joining the walk-in queue. The quote re-fetches as the party size changes, so the guest sees
- * the wait they are signing up for before they commit. Whether the queue is open is the
+ * the wait they are signing up for before they commit. A device that opted in to the "table
+ * ready" push is attached to the ticket right after joining; if that fails, the guest still has
+ * the ticket, which updates on its own. Whether the queue is open is the
  * server's call (walk-in only and open right now); this form only reflects it. Party size is
  * the page's, like the booking form's.
  *
  * @see [JoinWaitlistForm.test.tsx](../../tests/components/waitlist/JoinWaitlistForm.test.tsx):
- * pins the closed state, the requote on a size change, and the hand-off of the new ticket.
+ * pins the closed state, the requote on a size change, the hand-off of the new ticket, and the
+ * push opt-in reaching the ticket.
  */
 export default function JoinWaitlistForm({
   restaurantId,
@@ -39,6 +49,7 @@ export default function JoinWaitlistForm({
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [push, setPush] = useState<ReminderRegistration | null>(null);
   const [quote, setQuote] = useState<WaitlistQuote | null | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,10 +77,12 @@ export default function JoinWaitlistForm({
       email: trimmedEmail || undefined,
       locale,
     });
-    setSubmitting(false);
     if (result.ok) {
+      if (push) await setWaitlistPush(result.value.ref, push);
+      setSubmitting(false);
       onJoined(result.value.ref);
     } else {
+      setSubmitting(false);
       setError(result.message);
     }
   };
@@ -120,10 +133,8 @@ export default function JoinWaitlistForm({
         onChange={onSeatsChange}
       />
       <NameField value={name} onChange={setName} />
-      <EmailField value={email} onChange={setEmail} />
-      <ThemedText style={[styles.hint, { color: colors.muted }]}>
-        {t("booking.waitlist.emailHint")}
-      </ThemedText>
+      <EmailField label={t("booking.waitlist.emailLabel")} value={email} onChange={setEmail} />
+      <WaitlistPushOptIn registration={push} onChange={setPush} />
       {error && (
         <ThemedText testID="waitlist-join-error" style={[styles.error, { color: colors.error }]}>
           {error}

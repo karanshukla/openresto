@@ -186,7 +186,14 @@
       "joinCta": "Rejoindre la liste d'attente",
       "intro": "Laissez votre nom, nous vous préviendrons quand votre table sera prête.",
       "partySizeLabel": "Nombre de convives",
-      "emailHint": "Facultatif. Nous vous écrirons quand votre table sera prête.",
+      "emailLabel": "E-mail (facultatif)",
+      "push": {
+        "offButton": "Me prévenir",
+        "onButton": "Notifications activées",
+        "offHint": "Recevez une notification sur cet appareil quand votre table est prête.",
+        "onHint": "Cet appareil sera prévenu quand votre table sera prête.",
+        "denied": "Les notifications sont désactivées pour cette application. Autorisez-les dans les réglages de l'appareil pour être prévenu."
+      },
       "submit": "Rejoindre la liste d'attente",
       "partiesWaiting_one": "1 groupe en attente",
       "partiesWaiting_other": "{{count}} groupes en attente",
@@ -213,6 +220,7 @@
       "leftTitle": "Vous avez quitté la liste d'attente",
       "expiredTitle": "Cette inscription a expiré",
       "keepOpen": "Gardez cette page ouverte. Elle se met à jour toute seule.",
+      "pushOn": "Vous recevrez une notification quand votre table sera prête. Cette page se met aussi à jour toute seule.",
       "leave": "Quitter la liste d'attente",
       "leaveFailed": "Impossible de quitter la liste d'attente. Veuillez réessayer.",
       "notFound": "Nous n'avons pas trouvé cette inscription.",
@@ -482,7 +490,8 @@
       "email_invalid": "Cette adresse e-mail ne semble pas valide.",
       "party_too_large": "Aucune table ne peut accueillir un groupe de {{seats}}.",
       "not_active": "Ce groupe a déjà quitté la liste d'attente.",
-      "no_table_free": "Aucune table libre ne peut accueillir ce groupe pour le moment."
+      "no_table_free": "Aucune table libre ne peut accueillir ce groupe pour le moment.",
+      "push_invalid": "Cet appareil ne peut pas recevoir de notifications de ce site."
     }
   },
   "lookup": {
@@ -2090,7 +2099,6 @@
     },
     "waitlist": {
       "title": "Liste d'attente",
-      "locationLabel": "Établissement",
       "noLocations": "Ajoutez un établissement pour lancer une liste d'attente.",
       "accepting": "Les clients peuvent s'inscrire depuis le site en ce moment.",
       "notAccepting": "Les clients ne peuvent s'inscrire depuis le site que lorsque l'établissement accueille sans réservation et est ouvert. Vous pouvez toujours ajouter des groupes ici.",

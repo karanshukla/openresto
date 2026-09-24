@@ -186,7 +186,14 @@
       "joinCta": "Unirse a la lista de espera",
       "intro": "Déjenos su nombre y le avisaremos cuando su mesa esté lista.",
       "partySizeLabel": "Número de comensales",
-      "emailHint": "Opcional. Le escribiremos cuando su mesa esté lista.",
+      "emailLabel": "Correo electrónico (opcional)",
+      "push": {
+        "offButton": "Avisarme",
+        "onButton": "Notificaciones activadas",
+        "offHint": "Reciba una notificación en este dispositivo cuando su mesa esté lista.",
+        "onHint": "Este dispositivo recibirá un aviso cuando su mesa esté lista.",
+        "denied": "Las notificaciones están desactivadas para esta aplicación. Actívelas en los ajustes del dispositivo para recibir el aviso."
+      },
       "submit": "Unirse a la lista de espera",
       "partiesWaiting_one": "1 grupo esperando",
       "partiesWaiting_other": "{{count}} grupos esperando",
@@ -213,6 +220,7 @@
       "leftTitle": "Ha salido de la lista de espera",
       "expiredTitle": "Esta inscripción ha caducado",
       "keepOpen": "Mantenga esta página abierta. Se actualiza sola.",
+      "pushOn": "Recibirá una notificación cuando su mesa esté lista. Esta página también se actualiza sola.",
       "leave": "Salir de la lista de espera",
       "leaveFailed": "No se pudo salir de la lista de espera. Inténtelo de nuevo.",
       "notFound": "No encontramos esa inscripción.",
@@ -482,7 +490,8 @@
       "email_invalid": "Esa dirección de correo no parece correcta.",
       "party_too_large": "Ninguna mesa admite un grupo de {{seats}}.",
       "not_active": "Este grupo ya salió de la lista de espera.",
-      "no_table_free": "Ahora no hay ninguna mesa libre para este grupo."
+      "no_table_free": "Ahora no hay ninguna mesa libre para este grupo.",
+      "push_invalid": "Ese dispositivo no puede recibir notificaciones de este sitio."
     }
   },
   "lookup": {
@@ -2090,7 +2099,6 @@
     },
     "waitlist": {
       "title": "Lista de espera",
-      "locationLabel": "Local",
       "noLocations": "Añada un local para empezar una lista de espera.",
       "accepting": "Los clientes pueden apuntarse desde la web ahora mismo.",
       "notAccepting": "Los clientes solo pueden apuntarse desde la web mientras el local atiende sin reserva y está abierto. Aquí puede seguir añadiendo grupos.",

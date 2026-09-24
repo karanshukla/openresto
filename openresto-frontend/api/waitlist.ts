@@ -1,5 +1,6 @@
-import { get, post } from "./client";
+import { get, post, put } from "./client";
 import { apiErrorMessage } from "./errors";
+import type { ReminderRegistration } from "./reminders";
 
 export type WaitlistStatus = "waiting" | "notified" | "seated" | "left" | "expired";
 
@@ -26,6 +27,8 @@ export interface WaitlistEntryStatus {
   estimatedWaitMinutes: number | null;
   joinedAt: string;
   notifiedAt: string | null;
+  /** Whether a device will be pushed when the table is ready. */
+  pushEnabled: boolean;
 }
 
 export interface JoinWaitlistRequest {
@@ -111,6 +114,23 @@ export async function leaveWaitlist(entryRef: string): Promise<boolean> {
     return res.ok;
   } catch (err) {
     console.error("leaveWaitlist error:", err);
+    return false;
+  }
+}
+
+/**
+ * Points the "table ready" push at this device, replacing any device that asked before. The
+ * address is the same one booking reminders register.
+ */
+export async function setWaitlistPush(
+  entryRef: string,
+  registration: ReminderRegistration
+): Promise<boolean> {
+  try {
+    const res = await put(`/waitlist/${encodeURIComponent(entryRef)}/push`, registration);
+    return res.ok;
+  } catch (err) {
+    console.error("setWaitlistPush error:", err);
     return false;
   }
 }

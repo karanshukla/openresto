@@ -29,7 +29,12 @@ public class GuestPushSubscription
     /// <summary>The lead time (hours before the sitting) of the most recent reminder sent, if any.</summary>
     public int? LastReminderLeadHours { get; set; }
     public DateTime? LastReminderSentAt { get; set; }
+
+    public GuestPushAddress Address() => new(Channel, Endpoint, P256dh, Auth);
 }
+
+/// <summary>Where a guest push goes: an Expo token, or a Web Push endpoint with its keys.</summary>
+public sealed record GuestPushAddress(string Channel, string Endpoint, string? P256dh, string? Auth);
 
 public static class GuestPushChannels
 {

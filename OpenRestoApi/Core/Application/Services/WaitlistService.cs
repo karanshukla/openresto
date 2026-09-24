@@ -128,6 +128,42 @@ public class WaitlistService(
         return true;
     }
 
+    /// <summary>
+    /// Points the "table ready" push at this device, replacing whichever device asked before.
+    /// The ref is the guest's whole identity here, as on leave.
+    /// </summary>
+    /// <seealso>WaitlistServiceTests.SetPushAsync_StoresTheAddress_AndReplacesAnEarlierDevice</seealso>
+    /// <seealso>WaitlistServiceTests.SetPushAsync_RejectsAnInvalidAddress</seealso>
+    /// <seealso>WaitlistServiceTests.SetPushAsync_RejectsAnEntryThatHasLeft</seealso>
+    public async Task<bool> SetPushAsync(string entryRef, WaitlistPushRequest req)
+    {
+        WaitlistEntry? entry = await _waitlist.GetByRefAsync(entryRef);
+        if (entry == null)
+        {
+            return false;
+        }
+
+        if (!entry.IsActive)
+        {
+            throw new ConflictException("This party has already left the waitlist.") { Code = ErrorCodes.WaitlistNotActive };
+        }
+
+        string endpoint = req.Endpoint.Trim();
+        bool hasKeys = req.Channel != GuestPushChannels.WebPush
+            || (!string.IsNullOrWhiteSpace(req.P256dh) && !string.IsNullOrWhiteSpace(req.Auth));
+        if (!hasKeys || !PushEndpointValidator.IsValidFor(req.Channel, endpoint))
+        {
+            throw new ValidationException("The push address is not one this server will send to.") { Code = ErrorCodes.WaitlistPushInvalid };
+        }
+
+        entry.PushChannel = req.Channel;
+        entry.PushEndpoint = endpoint;
+        entry.PushP256dh = req.P256dh;
+        entry.PushAuth = req.Auth;
+        await _waitlist.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<WaitlistBoardDto> GetBoardAsync(int restaurantId)
     {
         Restaurant restaurant = await LoadRestaurantAsync(restaurantId);
@@ -180,6 +216,8 @@ public class WaitlistService(
         if (_readyNotifier != null)
         {
             await _readyNotifier.NotifyAsync(entry, entry.Restaurant);
+            // Saves the push address the notifier cleared, if the device no longer exists.
+            await _waitlist.SaveChangesAsync();
         }
 
         Describe(AuditActions.WaitlistNotify, entry, $"Called ticket #{entry.Number}");
@@ -302,6 +340,7 @@ public class WaitlistService(
             Status = StatusName(entry.Status),
             JoinedAt = entry.CreatedAt,
             NotifiedAt = entry.NotifiedAt,
+            PushEnabled = entry.PushEndpoint != null,
         };
 
         if (!entry.IsActive)
@@ -379,6 +418,7 @@ public class WaitlistService(
     {
         entry.Status = status;
         entry.ClosedAt = _clock.UtcNow;
+        entry.ClearPush();
     }
 
     private static WaitlistEntryDto ToClosedDto(WaitlistEntry e) => new()

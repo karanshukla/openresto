@@ -186,7 +186,14 @@
       "joinCta": "Auf die Warteliste",
       "intro": "Geben Sie Ihren Namen an, wir sagen Bescheid, sobald Ihr Tisch bereit ist.",
       "partySizeLabel": "Personenzahl",
-      "emailHint": "Optional. Wir schreiben Ihnen, sobald Ihr Tisch bereit ist.",
+      "emailLabel": "E-Mail (optional)",
+      "push": {
+        "offButton": "Benachrichtigen",
+        "onButton": "Benachrichtigungen an",
+        "offHint": "Erhalten Sie auf diesem Gerät eine Benachrichtigung, sobald Ihr Tisch bereit ist.",
+        "onHint": "Dieses Gerät wird benachrichtigt, sobald Ihr Tisch bereit ist.",
+        "denied": "Benachrichtigungen sind für diese App deaktiviert. Erlauben Sie sie in den Geräteeinstellungen, um benachrichtigt zu werden."
+      },
       "submit": "Auf die Warteliste",
       "partiesWaiting_one": "1 Gruppe wartet",
       "partiesWaiting_other": "{{count}} Gruppen warten",
@@ -213,6 +220,7 @@
       "leftTitle": "Sie haben die Warteliste verlassen",
       "expiredTitle": "Dieser Eintrag ist abgelaufen",
       "keepOpen": "Lassen Sie diese Seite offen. Sie aktualisiert sich selbst.",
+      "pushOn": "Sie erhalten eine Benachrichtigung, sobald Ihr Tisch bereit ist. Diese Seite aktualisiert sich außerdem von selbst.",
       "leave": "Warteliste verlassen",
       "leaveFailed": "Die Warteliste konnte nicht verlassen werden. Bitte versuchen Sie es erneut.",
       "notFound": "Dieser Eintrag wurde nicht gefunden.",
@@ -482,7 +490,8 @@
       "email_invalid": "Diese E-Mail-Adresse scheint nicht zu stimmen.",
       "party_too_large": "Kein Tisch hier passt für {{seats}} Personen.",
       "not_active": "Diese Gruppe hat die Warteliste bereits verlassen.",
-      "no_table_free": "Gerade ist kein passender Tisch für diese Gruppe frei."
+      "no_table_free": "Gerade ist kein passender Tisch für diese Gruppe frei.",
+      "push_invalid": "Dieses Gerät kann keine Benachrichtigungen von dieser Website empfangen."
     }
   },
   "lookup": {
@@ -2090,7 +2099,6 @@
     },
     "waitlist": {
       "title": "Warteliste",
-      "locationLabel": "Standort",
       "noLocations": "Legen Sie einen Standort an, um eine Warteliste zu führen.",
       "accepting": "Gäste können sich gerade über die Website eintragen.",
       "notAccepting": "Gäste können sich nur über die Website eintragen, solange der Standort ohne Reservierung bedient und geöffnet ist. Hier können Sie weiterhin Gruppen hinzufügen.",

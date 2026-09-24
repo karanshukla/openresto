@@ -22,9 +22,8 @@ public class ExpoPushClientTests
     private static readonly GuestPushMessage Message = new(
         Title: "Your table at Bistro",
         Body: "Tomorrow at 19:30 · 2 guests · Ref crispy-basil-truffle",
-        BookingRef: "crispy-basil-truffle",
-        BookingId: 7,
-        Url: "https://bookings.example.com/booking-confirmation/crispy-basil-truffle?email=guest%40example.com");
+        Url: "https://bookings.example.com/booking-confirmation/crispy-basil-truffle?email=guest%40example.com",
+        Tag: "booking-7");
 
     private const string OkTicket = """{"data":{"status":"ok","id":"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"}}""";
 
@@ -81,8 +80,6 @@ public class ExpoPushClientTests
         Assert.Equal(Message.Title, root.GetProperty("title").GetString());
         Assert.Equal(Message.Body, root.GetProperty("body").GetString());
         JsonElement data = root.GetProperty("data");
-        Assert.Equal(Message.BookingRef, data.GetProperty("bookingRef").GetString());
-        Assert.Equal(Message.BookingId, data.GetProperty("bookingId").GetInt32());
         Assert.Equal(Message.Url, data.GetProperty("url").GetString());
     }
 

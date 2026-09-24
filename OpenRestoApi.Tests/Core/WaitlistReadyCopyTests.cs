@@ -15,6 +15,15 @@ public class WaitlistReadyCopyTests
         Assert.Contains("href=\"https://x.test/waitlist/abc\"", html);
     }
 
+    [Fact]
+    public void BuildPush_UsesTheGuestsLocale()
+    {
+        (string title, string body) = WaitlistReadyCopy.BuildPush("es", "Chez Nous", 12);
+
+        Assert.Equal("Su mesa en Chez Nous está lista", title);
+        Assert.Equal("Número 12: Su mesa está lista. Acérquese a recepción, por favor.", body);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("xx")]

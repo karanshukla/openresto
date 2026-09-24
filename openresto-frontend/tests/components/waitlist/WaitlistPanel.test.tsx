@@ -32,6 +32,7 @@ const entry = (status: WaitlistEntryStatus["status"]): WaitlistEntryStatus => ({
   estimatedWaitMinutes: status === "waiting" ? 15 : null,
   joinedAt: "2026-09-24T18:00:00Z",
   notifiedAt: null,
+  pushEnabled: false,
 });
 
 const props = {

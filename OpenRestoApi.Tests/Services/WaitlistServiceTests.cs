@@ -262,11 +262,14 @@ public class WaitlistServiceTests
     public async Task LeaveAsync_ClosesTheEntry()
     {
         WaitlistEntry mine = Seed(2);
+        mine.PushChannel = GuestPushChannels.Expo;
+        mine.PushEndpoint = ExpoToken;
 
         Assert.True(await CreateService().LeaveAsync(mine.Ref));
 
         Assert.Equal(WaitlistStatus.Left, mine.Status);
         Assert.Equal(Now, mine.ClosedAt);
+        Assert.Null(mine.PushAddress());
     }
 
     [Fact]
@@ -283,6 +286,53 @@ public class WaitlistServiceTests
     public async Task LeaveAsync_IsFalse_ForAnUnknownRef()
     {
         Assert.False(await CreateService().LeaveAsync("nope"));
+    }
+
+    // ── Push ────────────────────────────────────────────────────────────────
+
+    private const string ExpoToken = "ExponentPushToken[abc]";
+
+    private static WaitlistPushRequest Device(string channel = GuestPushChannels.Expo, string endpoint = ExpoToken, string? p256dh = null, string? auth = null)
+        => new() { Channel = channel, Endpoint = endpoint, P256dh = p256dh, Auth = auth };
+
+    [Fact]
+    public async Task SetPushAsync_StoresTheAddress_AndReplacesAnEarlierDevice()
+    {
+        WaitlistEntry mine = Seed(2);
+        WaitlistService service = CreateService();
+
+        Assert.True(await service.SetPushAsync(mine.Ref, Device()));
+        Assert.True(await service.SetPushAsync(mine.Ref, Device(GuestPushChannels.WebPush, "https://push.example.com/sub", "key", "secret")));
+
+        Assert.Equal(new GuestPushAddress(GuestPushChannels.WebPush, "https://push.example.com/sub", "key", "secret"), mine.PushAddress());
+        Assert.True((await service.GetStatusAsync(mine.Ref))!.PushEnabled);
+    }
+
+    [Theory]
+    [InlineData("sms", "+15550100", "key", "secret")]
+    [InlineData(GuestPushChannels.Expo, "not-a-token", null, null)]
+    [InlineData(GuestPushChannels.WebPush, "https://push.example.com/sub", null, null)]
+    [InlineData(GuestPushChannels.WebPush, "http://127.0.0.1/sub", "key", "secret")]
+    public async Task SetPushAsync_RejectsAnInvalidAddress(string channel, string endpoint, string? p256dh, string? auth)
+    {
+        WaitlistEntry mine = Seed(2);
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(
+            () => CreateService().SetPushAsync(mine.Ref, Device(channel, endpoint, p256dh, auth)));
+
+        Assert.Equal(ErrorCodes.WaitlistPushInvalid, ex.Code);
+        Assert.Null(mine.PushAddress());
+    }
+
+    [Fact]
+    public async Task SetPushAsync_RejectsAnEntryThatHasLeft()
+    {
+        WaitlistEntry mine = Seed(2, WaitlistStatus.Left);
+
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => CreateService().SetPushAsync(mine.Ref, Device()));
+
+        Assert.Equal(ErrorCodes.WaitlistNotActive, ex.Code);
+        Assert.False(await CreateService().SetPushAsync("nope", Device()));
     }
 
     // ── Board ───────────────────────────────────────────────────────────────

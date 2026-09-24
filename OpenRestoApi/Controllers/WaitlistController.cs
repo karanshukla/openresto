@@ -46,6 +46,12 @@ public class WaitlistController(WaitlistService waitlistService) : ControllerBas
         return await _waitlist.LeaveAsync(entryRef) ? NoContent() : EntryNotFound();
     }
 
+    [HttpPut("api/waitlist/{entryRef}/push")]
+    public async Task<IActionResult> SetPush(string entryRef, [FromBody] WaitlistPushRequest req)
+    {
+        return await _waitlist.SetPushAsync(entryRef, req) ? NoContent() : EntryNotFound();
+    }
+
     [HttpGet("api/admin/restaurants/{restaurantId:int}/waitlist")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
     [RequiresScope(ApiKeyScopes.Bookings, ApiKeyScopes.Read)]

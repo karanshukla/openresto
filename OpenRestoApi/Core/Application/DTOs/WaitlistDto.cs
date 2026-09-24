@@ -20,6 +20,24 @@ public class JoinWaitlistRequest
     public string? Locale { get; set; }
 }
 
+/// <summary>The device a guest wants pushed when their table is ready.</summary>
+public class WaitlistPushRequest
+{
+    /// <summary>"expo" from the native app, "webpush" from a browser.</summary>
+    [Required, StringLength(GuestPushFields.MaxChannelLength)]
+    public string Channel { get; set; } = string.Empty;
+
+    /// <summary>The Expo push token, or the Web Push subscription endpoint.</summary>
+    [Required, StringLength(GuestPushFields.MaxEndpointLength)]
+    public string Endpoint { get; set; } = string.Empty;
+
+    [StringLength(GuestPushFields.MaxKeyLength)]
+    public string? P256dh { get; set; }
+
+    [StringLength(GuestPushFields.MaxKeyLength)]
+    public string? Auth { get; set; }
+}
+
 /// <summary>What a guest sees about their own place in the queue. Never carries the email.</summary>
 public class WaitlistStatusDto
 {
@@ -41,6 +59,9 @@ public class WaitlistStatusDto
 
     public DateTime JoinedAt { get; set; }
     public DateTime? NotifiedAt { get; set; }
+
+    /// <summary>Whether a device will be pushed when the table is ready.</summary>
+    public bool PushEnabled { get; set; }
 }
 
 /// <summary>What a guest sees before joining: whether the queue is open and the wait a new party would face.</summary>

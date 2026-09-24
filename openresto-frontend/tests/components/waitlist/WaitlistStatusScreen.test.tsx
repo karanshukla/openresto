@@ -37,6 +37,7 @@ const entry = (over: Partial<WaitlistEntryStatus> = {}): WaitlistEntryStatus => 
   estimatedWaitMinutes: 25,
   joinedAt: "2026-09-26T19:00:00Z",
   notifiedAt: null,
+  pushEnabled: false,
   ...over,
 });
 
@@ -63,6 +64,14 @@ describe("WaitlistStatusScreen", () => {
     expect(screen.getByText("Ticket #12 · 2 guests")).toBeTruthy();
     expect(screen.getByText("2 parties ahead of you")).toBeTruthy();
     expect(screen.getByText("About 25 min wait")).toBeTruthy();
+  });
+
+  it("tells a guest who opted in to push that a notification is coming", async () => {
+    mockStatus.mockResolvedValue(entry({ pushEnabled: true }));
+    render(<WaitlistStatusScreen entryRef="abc" />);
+
+    expect(await screen.findByText(/You'll get a notification/)).toBeTruthy();
+    expect(screen.queryByText(/Keep this page open/)).toBeNull();
   });
 
   it("says the guest is next with nobody ahead", async () => {
