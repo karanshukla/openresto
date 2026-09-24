@@ -117,7 +117,7 @@ const BADGE_STYLES: Record<
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  due: theme.status.upcoming as {
+  due: theme.status.due as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
@@ -129,7 +129,7 @@ const BADGE_STYLES: Record<
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  unmarked: theme.status.completed as {
+  unmarked: theme.status.unmarked as {
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
@@ -137,9 +137,7 @@ const BADGE_STYLES: Record<
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  // The cancelled red reads at 4.1:1 on its own tint (3:1 in dark), so the badge text steps
-  // a shade darker, or lighter on the dark tint, to clear 4.5:1.
-  noShow: { bg: theme.status.cancelled.bg, text: { light: "#b91c1c", dark: "#f87171" } },
+  noShow: theme.status.noShow,
 };
 
 export function StatusBadge({ booking, isDark }: { booking: BadgeBooking; isDark: boolean }) {
@@ -153,9 +151,9 @@ export function StatusBadge({ booking, isDark }: { booking: BadgeBooking; isDark
   // Fallbacks based on original implementation for contrast in dark mode
   if (isDark) {
     if (variant === "arrived") text = "#4ade80";
-    if (variant === "upcoming" || variant === "due") text = "#fde047";
+    if (variant === "upcoming") text = "#fde047";
     if (variant === "scheduled") text = "#94a3b8";
-    if (variant === "unmarked" || variant === "finished") text = "#7c8ba1";
+    if (variant === "finished") text = "#7c8ba1";
   }
 
   return (

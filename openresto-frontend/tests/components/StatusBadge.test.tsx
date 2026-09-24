@@ -1,4 +1,5 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 import { render, screen } from "@testing-library/react-native";
 import i18n from "@/i18n";
 import {
@@ -134,12 +135,30 @@ describe("StatusBadge", () => {
     });
   });
 
-  // The cancelled red on its own tint falls short of 4.5:1 in both themes.
+  // Rose, not the cancelled red, and at 4.5:1 or better on its tint in both themes.
   it.each([
-    [false, "#b91c1c"],
-    [true, "#f87171"],
-  ])("gives No-show text that clears its tint (dark mode: %s)", (isDark, color) => {
+    [false, "#be185d"],
+    [true, "#f9a8d4"],
+  ])("gives No-show its own colour, apart from cancelled (dark mode: %s)", (isDark, color) => {
     render(<StatusBadge booking={{ ...booked(-10), status: "NoShow" }} isDark={isDark} />);
     expect(screen.getByText("No-show")).toHaveStyle({ color });
   });
+
+  it.each([false, true])(
+    "colours Due apart from Upcoming and Unmarked apart from Finished (dark mode: %s)",
+    (isDark) => {
+      const colorOf = (label: string) =>
+        StyleSheet.flatten(screen.getByText(label).props.style).color;
+      render(
+        <>
+          <StatusBadge booking={booked(-10)} isDark={isDark} />
+          <StatusBadge booking={booked(30)} isDark={isDark} />
+          <StatusBadge booking={booked(-300)} isDark={isDark} />
+          <StatusBadge booking={{ ...booked(-300), status: "Finished" }} isDark={isDark} />
+        </>
+      );
+      expect(colorOf("Due")).not.toBe(colorOf("Upcoming"));
+      expect(colorOf("Unmarked")).not.toBe(colorOf("Finished"));
+    }
+  );
 });

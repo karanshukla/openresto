@@ -2,6 +2,7 @@ import { View, ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { theme } from "@/theme/theme";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { fmtLongDate, fmtMonthDay, fmtTime } from "@/utils/formatters";
 import { bookingDetailStyles as styles } from "./booking-detail.styles";
 
@@ -35,6 +36,7 @@ export function BookingDetailsCard({
   style,
 }: BookingDetailsCardProps) {
   const { t } = useTranslation();
+  const { isDark } = useAppTheme();
   const startTime = new Date(booking.date);
   const endTime = booking.endTime
     ? new Date(booking.endTime)
@@ -142,7 +144,7 @@ export function BookingDetailsCard({
               style={[
                 styles.rowValue,
                 key === "status" && { color: theme.colors.error, fontWeight: "700" },
-                key === "noShows" && { color: theme.colors.error },
+                key === "noShows" && { color: theme.status.noShow.text[isDark ? "dark" : "light"] },
               ]}
             >
               {value}

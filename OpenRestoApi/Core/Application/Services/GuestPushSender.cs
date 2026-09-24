@@ -16,6 +16,7 @@ namespace OpenRestoApi.Core.Application.Services;
 /// </summary>
 /// <seealso>GuestPushSenderTests.SendAsync_WebPush_ReportsStaleOnGoneOrNotFound</seealso>
 /// <seealso>GuestPushSenderTests.SendAsync_WebPush_ReportsFailureWithoutVapid</seealso>
+/// <seealso>GuestPushSenderTests.SendAsync_WebPush_ReportsAnUnreachableAddressAsAFailure</seealso>
 /// <seealso>GuestPushSenderTests.SendAsync_Expo_DelegatesToTheExpoClient</seealso>
 public sealed class GuestPushSender(
     IWebPushClient webPushClient,
@@ -67,6 +68,13 @@ public sealed class GuestPushSender(
         catch (WebPushException ex)
         {
             return GuestPushResult.Failed($"HTTP {(int)ex.StatusCode}: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            // As in BookingNotificationService: an address that cannot be reached, or is refused
+            // for resolving to a private network, is this subscription's failure, not an escape
+            // that aborts the reminder run for every guest after it.
+            return GuestPushResult.Failed($"{ex.GetType().Name}: {ex.Message}");
         }
     }
 }

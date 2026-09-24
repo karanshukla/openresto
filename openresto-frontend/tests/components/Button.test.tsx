@@ -123,6 +123,31 @@ describe("Button", () => {
       expect(labelColor().color).toBe(theme.colors.white);
     });
 
+    // #16a34a is 3.3:1 against white, as a fill under a white label or as a label on a light card.
+    it("takes the darker green for a success fill and a success label on a light card", () => {
+      render(<Button tone="success">Act</Button>);
+      expect(surface().backgroundColor).toBe(theme.status.arrived.text);
+      screen.unmount();
+      render(
+        <Button variant="secondary" tone="success">
+          Act
+        </Button>
+      );
+      expect(labelColor().color).toBe(theme.status.arrived.text);
+    });
+
+    it("keeps the lighter green for a success label on a dark card", () => {
+      const { useColorScheme } = require("@/hooks/use-color-scheme");
+      (useColorScheme as jest.Mock).mockReturnValue("dark");
+      render(
+        <Button variant="secondary" tone="success">
+          Act
+        </Button>
+      );
+      expect(labelColor().color).toBe(theme.colors.success);
+      (useColorScheme as jest.Mock).mockReturnValue("light");
+    });
+
     it("outlines a secondary button in its tone and leaves it unfilled", () => {
       render(
         <Button variant="secondary" tone="danger">
