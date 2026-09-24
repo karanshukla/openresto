@@ -79,9 +79,10 @@ describe("WaitlistTicketPanel", () => {
     render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
 
     expect(await screen.findByText("You're on the list")).toBeTruthy();
-    expect(screen.getByText("Ticket #12 · 2 guests")).toBeTruthy();
+    expect(screen.getByText("Door")).toBeTruthy();
     expect(screen.getByText("2 parties ahead of you")).toBeTruthy();
-    expect(screen.getByText("About 25 min wait")).toBeTruthy();
+    expect(screen.getByText("#12")).toBeTruthy();
+    expect(screen.getByText("25 min")).toBeTruthy();
   });
 
   it("tells a guest who opted in to push that a notification is coming", async () => {
@@ -89,7 +90,14 @@ describe("WaitlistTicketPanel", () => {
     render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
 
     expect(await screen.findByText(/You'll get a notification/)).toBeTruthy();
-    expect(screen.queryByText(/Keep this page open/)).toBeNull();
+  });
+
+  it("gives a guest without push no line about notifications", async () => {
+    mockStatus.mockResolvedValue(entry());
+    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    await screen.findByText("You're on the list");
+
+    expect(screen.queryByText(/notification/)).toBeNull();
   });
 
   it("says the guest is next with nobody ahead", async () => {
@@ -97,7 +105,7 @@ describe("WaitlistTicketPanel", () => {
     render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
 
     expect(await screen.findByText("You're next")).toBeTruthy();
-    expect(screen.getByText("A table is free now")).toBeTruthy();
+    expect(screen.getByText("Now")).toBeTruthy();
   });
 
   it("re-reads the place while queued, and buzzes once when the party is called", async () => {
@@ -126,6 +134,22 @@ describe("WaitlistTicketPanel", () => {
 
     expect(mockStatus).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("waitlist-leave")).toBeNull();
+  });
+
+  it("shows when a closed ticket joined in place of the wait", async () => {
+    mockStatus.mockResolvedValue(entry({ status: "seated", partiesAhead: null }));
+    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+    await screen.findByText("Enjoy your meal");
+
+    expect(screen.getByText("Joined")).toBeTruthy();
+    expect(screen.queryByText("Wait")).toBeNull();
+  });
+
+  it("marks a wait no table can seat rather than guessing one", async () => {
+    mockStatus.mockResolvedValue(entry({ estimatedWaitMinutes: null }));
+    render(<WaitlistTicketPanel entryRef="abc" onLoaded={onLoaded} />);
+
+    expect(await screen.findByText("—")).toBeTruthy();
   });
 
   it.each([

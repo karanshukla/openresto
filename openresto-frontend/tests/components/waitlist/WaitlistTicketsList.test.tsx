@@ -36,7 +36,7 @@ describe("WaitlistTicketsList", () => {
     expect(screen.queryByText("YOUR WAITLIST TICKETS")).toBeNull();
   });
 
-  it("names each ticket's location and where the party stands", async () => {
+  it("reads each ticket the way a booking row reads: number, then location, day and party", async () => {
     mockStatus.mockImplementation(async (ref: string) =>
       ref === "abc"
         ? entry()
@@ -46,10 +46,10 @@ describe("WaitlistTicketsList", () => {
       <WaitlistTicketsList entryRefs={["abc", "def"]} activeRef={null} onSelect={jest.fn()} />
     );
 
-    expect(await screen.findByText("Shore House")).toBeTruthy();
-    expect(screen.getByText("Ticket #12 · You're on the list")).toBeTruthy();
-    expect(await screen.findByText("Dockside")).toBeTruthy();
-    expect(screen.getByText("Ticket #3 · Your table is ready")).toBeTruthy();
+    expect(await screen.findByText("Ticket #12")).toBeTruthy();
+    expect(screen.getByText(/^Shore House · .+ · 2 guests$/)).toBeTruthy();
+    expect(await screen.findByText("Ticket #3")).toBeTruthy();
+    expect(screen.getByText(/^Dockside · /)).toBeTruthy();
   });
 
   it("says so for a ticket the server no longer knows", async () => {
@@ -63,7 +63,7 @@ describe("WaitlistTicketsList", () => {
     mockStatus.mockResolvedValue(entry());
     const onSelect = jest.fn();
     render(<WaitlistTicketsList entryRefs={["abc"]} activeRef="abc" onSelect={onSelect} />);
-    await screen.findByText("Shore House");
+    await screen.findByText("Ticket #12");
 
     const row = screen.getByTestId("waitlist-ticket-row-abc");
     expect(row.props.accessibilityState).toEqual({ selected: true });

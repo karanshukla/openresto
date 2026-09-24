@@ -4,12 +4,12 @@ import { ThemedText } from "@/components/themed-text";
 import { Icon } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { styles } from "@/components/booking/RecentBookingsList.styles";
+import { fmtMonthDay } from "@/utils/formatters";
 import { useWaitlistEntry } from "./useWaitlistEntry";
-import { STATUS_TITLES } from "./WaitlistTicket";
 
 /**
  * The waitlist tickets this device holds, listed in My bookings beside the recent bookings.
- * Each row reads its own ticket, so it names the location and where the party stands.
+ * Each row reads its own ticket, and reads the way a booking row does.
  *
  * @see [WaitlistTicketsList.test.tsx](../../tests/components/waitlist/WaitlistTicketsList.test.tsx)
  */
@@ -58,12 +58,18 @@ function TicketRow({
   const { colors, primaryColor, isDark } = useAppTheme();
   const { entry } = useWaitlistEntry(entryRef);
 
-  const name = entry?.restaurantName ?? t("booking.waitlistStatus.routeTitle");
+  const title = entry
+    ? t("booking.waitlistStatus.ticket", { number: entry.number })
+    : t("booking.waitlistStatus.routeTitle");
   const meta =
     entry === null
       ? t("booking.waitlistStatus.notFound")
       : entry
-        ? `${t("booking.waitlistStatus.ticket", { number: entry.number })} · ${t(STATUS_TITLES[entry.status])}`
+        ? [
+            entry.restaurantName,
+            fmtMonthDay(new Date(entry.joinedAt)),
+            t("lookup.recent.guestCount", { count: entry.seats }),
+          ].join(" · ")
         : "";
 
   return (
@@ -80,11 +86,15 @@ function TicketRow({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={t("lookup.waitlist.itemA11y", { name })}
+      accessibilityLabel={
+        entry
+          ? t("lookup.waitlist.itemA11y", { name: entry.restaurantName })
+          : t("booking.waitlistStatus.routeTitle")
+      }
     >
       <View style={styles.cardRow}>
         <View style={{ flex: 1, gap: 3 }}>
-          <ThemedText style={styles.ref}>{name}</ThemedText>
+          <ThemedText style={styles.ref}>{title}</ThemedText>
           <ThemedText style={[styles.meta, { color: colors.muted }]}>{meta}</ThemedText>
         </View>
         <Icon

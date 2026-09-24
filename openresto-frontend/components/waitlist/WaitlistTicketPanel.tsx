@@ -1,9 +1,6 @@
 import { useEffect } from "react";
-import { View } from "react-native";
-import { ThemedText } from "@/components/themed-text";
 import { useWaitlistEntry } from "./useWaitlistEntry";
 import WaitlistTicket from "./WaitlistTicket";
-import { styles } from "./WaitlistTicketPanel.styles";
 
 /**
  * A waitlist ticket in My bookings' result panel, where the "table ready" email's
@@ -26,10 +23,5 @@ export default function WaitlistTicketPanel({
     if (restaurantId !== undefined) onLoaded(restaurantId);
   }, [restaurantId, onLoaded]);
 
-  return (
-    <View style={styles.root}>
-      {state.entry && <ThemedText style={styles.name}>{state.entry.restaurantName}</ThemedText>}
-      <WaitlistTicket state={state} />
-    </View>
-  );
+  return <WaitlistTicket state={state} />;
 }

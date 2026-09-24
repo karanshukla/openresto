@@ -51,14 +51,43 @@ export default function BookingSummaryHeader({
   tint = null,
 }: BookingSummaryHeaderProps) {
   const { t } = useTranslation();
-  const seatingLine = buildSeatingLine(booking, restaurant, t);
-  const name = restaurant?.name;
 
   return (
-    <View
+    <SummaryHeader
       testID="booking-summary-header"
-      style={[styles.header, tint ? { backgroundColor: tint } : null]}
-    >
+      name={restaurant?.name}
+      subline={buildSeatingLine(booking, restaurant, t)}
+      statusLabel={statusLabel}
+      statusIcon={statusIcon}
+      statusColor={statusColor}
+      mutedColor={mutedColor}
+      tint={tint}
+    />
+  );
+}
+
+/** The header itself, shared with the waitlist ticket so the two cards read alike. */
+export function SummaryHeader({
+  testID,
+  name,
+  subline,
+  statusLabel,
+  statusIcon,
+  statusColor,
+  mutedColor,
+  tint = null,
+}: {
+  testID?: string;
+  name?: string;
+  subline?: string;
+  statusLabel: string;
+  statusIcon: IconName;
+  statusColor: string;
+  mutedColor: string;
+  tint?: string | null;
+}) {
+  return (
+    <View testID={testID} style={[styles.header, tint ? { backgroundColor: tint } : null]}>
       {/* A lookup that couldn't resolve the restaurant has no name to head the card with,
           so the outcome takes the headline rather than leaving an eyebrow floating over an
           empty space. */}
@@ -71,8 +100,8 @@ export default function BookingSummaryHeader({
 
       <ThemedText style={styles.name}>{name ?? statusLabel}</ThemedText>
 
-      {seatingLine ? (
-        <ThemedText style={[styles.seating, { color: mutedColor }]}>{seatingLine}</ThemedText>
+      {subline ? (
+        <ThemedText style={[styles.seating, { color: mutedColor }]}>{subline}</ThemedText>
       ) : null}
     </View>
   );
