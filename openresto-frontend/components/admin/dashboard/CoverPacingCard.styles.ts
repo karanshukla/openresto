@@ -17,8 +17,14 @@ export const styles = StyleSheet.create({
   locationName: { fontWeight: "600" },
   meta: { fontSize: 12 },
   bars: { flexDirection: "row", alignItems: "flex-end", flexWrap: "wrap", gap: theme.spacing.sm },
-  slot: { alignItems: "center", gap: theme.spacing.xxs, minWidth: 36 },
-  track: { height: BAR_MAX_HEIGHT, width: 14, justifyContent: "flex-end", borderRadius: 4 },
+  slot: { flex: 1, alignItems: "center", gap: theme.spacing.xxs, minWidth: 36 },
+  track: {
+    height: BAR_MAX_HEIGHT,
+    width: "100%",
+    maxWidth: 32,
+    justifyContent: "flex-end",
+    borderRadius: 4,
+  },
   bar: { width: "100%", borderRadius: 4 },
   slotText: { fontSize: 11 },
 });
