@@ -6,6 +6,7 @@ import { hexToRgb } from "@/utils/colors";
 import { styles } from "./WalkInNotice.styles";
 import { Icon } from "@/components/common/Icon";
 import Button from "@/components/common/Button";
+import { ButtonRow } from "@/components/common/ButtonRow";
 
 /**
  * Friendly banner shown wherever the booking flow is disabled because a
@@ -51,7 +52,7 @@ export default function WalkInNotice({
         <ThemedText style={[styles.title, { color: colors.text }]}>{title}</ThemedText>
         <ThemedText style={[styles.body, { color: colors.muted }]}>{body}</ThemedText>
         {onJoinWaitlist && (
-          <View style={styles.action}>
+          <ButtonRow align="start" style={styles.action}>
             <Button
               variant="secondary"
               size="sm"
@@ -61,7 +62,7 @@ export default function WalkInNotice({
             >
               {t("booking.waitlist.joinCta")}
             </Button>
-          </View>
+          </ButtonRow>
         )}
       </View>
     </View>

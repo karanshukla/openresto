@@ -70,6 +70,12 @@ describe("ConfirmModal", () => {
     expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
   });
 
+  it("takes no second confirm while the action is in flight", () => {
+    render(<ConfirmModal {...defaultProps} loading confirmLabel="Leaving…" />);
+    fireEvent.press(screen.getByText("Leaving…"));
+    expect(defaultProps.onConfirm).not.toHaveBeenCalled();
+  });
+
   it("falls back to the default primary color when the brand has none", () => {
     (useBrand as jest.Mock).mockReturnValue({ appName: "Open Resto", primaryColor: "" });
     render(<ConfirmModal {...defaultProps} confirmLabel="OK" />);

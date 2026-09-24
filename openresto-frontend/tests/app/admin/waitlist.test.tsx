@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from "react";
-import { act, fireEvent, screen, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react-native";
 import { Platform } from "react-native";
 import WaitlistScreen, { BOARD_POLL_MS } from "@/app/admin/waitlist";
 import * as restaurantsApi from "@/api/restaurants";
@@ -18,6 +18,7 @@ jest.mock("@/utils/haptics", () => ({
   haptics: { selection: jest.fn(), press: jest.fn(), outcome: jest.fn() },
 }));
 jest.mock("@/api/restaurants", () => ({ fetchRestaurants: jest.fn() }));
+jest.mock("@/components/common/ConfirmModal", () => require("../../../jest-mocks/ConfirmModal"));
 jest.mock("@/api/waitlist", () => ({
   getWaitlistBoard: jest.fn(),
   addWaitlistParty: jest.fn(),
@@ -76,7 +77,7 @@ describe("admin waitlist", () => {
     mockBoard.mockResolvedValue(board([], false));
     renderWithProviders(<WaitlistScreen />);
 
-    expect(await screen.findByText("No one is waiting.")).toBeTruthy();
+    expect(await screen.findByText("No one is waiting")).toBeTruthy();
     expect(screen.getByTestId("waitlist-accepting")).toHaveTextContent(/only while/);
   });
 
@@ -160,6 +161,26 @@ describe("admin waitlist", () => {
 
     await waitFor(() => expect(mockAct).toHaveBeenCalledWith(4, "seat"));
     await waitFor(() => expect(mockBoard).toHaveBeenCalledTimes(2));
+  });
+
+  it("removes a party only once the removal is confirmed", async () => {
+    mockAct.mockResolvedValue({ ok: true, value: null });
+    renderWithProviders(<WaitlistScreen />);
+    await screen.findByTestId("waitlist-row-4");
+
+    fireEvent.press(screen.getByTestId("waitlist-remove-4"));
+    expect(screen.getByText("Remove Ada from the waitlist?")).toBeTruthy();
+    expect(mockAct).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByText("Cancel"));
+    expect(screen.queryByTestId("confirm-modal")).toBeNull();
+    expect(mockAct).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByTestId("waitlist-remove-4"));
+    fireEvent.press(within(screen.getByTestId("confirm-modal")).getByText("Remove"));
+
+    await waitFor(() => expect(mockAct).toHaveBeenCalledWith(4, "remove"));
+    expect(screen.queryByTestId("confirm-modal")).toBeNull();
   });
 
   it("shows why an action was refused", async () => {

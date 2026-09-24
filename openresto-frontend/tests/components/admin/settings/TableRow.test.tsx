@@ -336,6 +336,7 @@ describe("TableRow", () => {
     expect(screen.getByTestId("table-walk-in-toggle-5").props.accessibilityState).toEqual({
       checked: true,
     });
+    expect(screen.getByRole("checkbox")).toBeChecked();
     await act(async () => {
       fireEvent.press(screen.getByText("Save"));
     });

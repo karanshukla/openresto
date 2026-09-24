@@ -287,6 +287,7 @@ export default function LookupScreen({
 
             <ActiveWaitlistTickets
               entryRefs={ticketRefs}
+              linkedRef={initialTicketRef}
               onLoaded={handleTicketLoaded}
               onClosed={handleTicketClosed}
               style={styles.waitlistTicket}

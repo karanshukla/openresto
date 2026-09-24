@@ -166,7 +166,10 @@ export function BookingsWideTable({
               </ThemedText>
             )}
             {!!b.previousNoShows && (
-              <ThemedText style={[styles.tdNotes, { color: theme.colors.error }]} numberOfLines={1}>
+              <ThemedText
+                style={[styles.tdNotes, { color: isDark ? "#f87171" : theme.colors.error }]}
+                numberOfLines={1}
+              >
                 {t("admin.bookings.previousNoShows", { count: b.previousNoShows })}
               </ThemedText>
             )}

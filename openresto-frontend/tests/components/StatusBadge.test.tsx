@@ -133,4 +133,13 @@ describe("StatusBadge", () => {
       unmount();
     });
   });
+
+  // The cancelled red on its own tint falls short of 4.5:1 in both themes.
+  it.each([
+    [false, "#b91c1c"],
+    [true, "#f87171"],
+  ])("gives No-show text that clears its tint (dark mode: %s)", (isDark, color) => {
+    render(<StatusBadge booking={{ ...booked(-10), status: "NoShow" }} isDark={isDark} />);
+    expect(screen.getByText("No-show")).toHaveStyle({ color });
+  });
 });

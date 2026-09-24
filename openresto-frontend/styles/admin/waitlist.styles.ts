@@ -6,7 +6,7 @@ export const styles = StyleSheet.create({
     padding: theme.spacing.xxl,
     paddingTop: theme.spacing.xxxl,
     gap: theme.spacing.lg,
-    maxWidth: 1000,
+    maxWidth: 1200,
     width: "100%",
     alignSelf: "center",
   },
@@ -27,10 +27,13 @@ export const styles = StyleSheet.create({
   },
   addField: { flexGrow: 1, flexBasis: 180, minWidth: 140 },
   addSeats: { flexBasis: 140, flexGrow: 0 },
+  field: { gap: theme.spacing.xs },
+  label: { ...theme.typography.label },
   list: {
     borderRadius: theme.borderRadius.card,
     borderWidth: 1,
     overflow: "hidden",
+    ...theme.shadows.sm,
   },
   row: {
     flexDirection: "row",
@@ -38,7 +41,6 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing.md,
     padding: theme.spacing.lg,
-    borderBottomWidth: 1,
   },
   ticket: {
     ...theme.typography.bodyBold,
@@ -50,6 +52,5 @@ export const styles = StyleSheet.create({
   meta: { fontSize: 13 },
   wait: { minWidth: 110, fontSize: 14, fontWeight: "600" },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.xs },
-  empty: { padding: theme.spacing.xxl, alignItems: "center" },
   error: { fontSize: 14 },
 });

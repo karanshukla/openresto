@@ -184,7 +184,7 @@
     },
     "waitlist": {
       "joinCta": "Join the waitlist",
-      "intro": "Add your name and we'll tell you when your table is ready.",
+      "intro": "We'll tell you when your table is ready.",
       "partySizeLabel": "Party size",
       "emailLabel": "Email (optional)",
       "push": {
@@ -200,7 +200,7 @@
       "waitNow": "A table is free now",
       "waitMinutes": "About {{minutes}} min wait",
       "waitUnknown": "No table here seats a party that size",
-      "notAccepting": "The waitlist isn't open right now. It runs while the location takes walk-ins and is open.",
+      "notAccepting": "The waitlist isn't open right now.",
       "loadFailed": "Couldn't load the waitlist. Please try again.",
       "joinAgain": "Join again",
       "openTicket": "See it in My Bookings"
@@ -223,7 +223,7 @@
       "leftTitle": "You've left the waitlist",
       "expiredTitle": "This waitlist entry has expired",
       "pushOn": "You'll get a notification when your table is ready.",
-      "leave": "Leave the waitlist",
+      "leave": "Leave the Waitlist",
       "leaveModal": {
         "title": "Leave the Waitlist",
         "message": "Are you sure you want to leave the waitlist? You'll lose your place in line.",
@@ -1075,7 +1075,7 @@
         "accessibilityLabel_other": "{{count}} upcoming bookings no longer fit their location's schedule. Review locations."
       },
       "pacing": {
-        "title": "Arrivals per slot today",
+        "title": "Arrivals per Slot Today",
         "cap_one": "Cap {{count}} guest",
         "cap_other": "Cap {{count}} guests",
         "empty": "No arrivals yet today.",
@@ -1941,7 +1941,7 @@
         "turnTimesHint": "Give larger parties a longer sitting. A party smaller than every rule gets the default duration, and existing bookings keep their length.",
         "turnTimesAdd": "Add a rule",
         "turnTimesSeatsLabel": "Party size from",
-        "turnTimesMinutesLabel": "Sitting length",
+        "turnTimesMinutesLabel": "Sitting length from {{seats}}",
         "turnTimesFrom_one": "From {{count}} guest",
         "turnTimesFrom_other": "From {{count}} guests",
         "turnTimesRange": "Parties of {{min}}–{{max}}",
@@ -2111,7 +2111,8 @@
       "noLocations": "Add a location to start a waitlist.",
       "accepting": "Guests can join from the site right now.",
       "notAccepting": "Guests can join from the site only while this location takes walk-ins and is open. You can still add parties here.",
-      "empty": "No one is waiting.",
+      "empty": "No one is waiting",
+      "emptyBody": "Parties appear here as they join, from the site or from this page.",
       "addTitle": "Add a party",
       "nameLabel": "Name",
       "emailLabel": "Email (optional)",
@@ -2129,6 +2130,13 @@
       "joined": "Joined {{time}}",
       "called": "Called {{time}}",
       "hiddenGuest": "Guest details hidden",
+      "ticketName": "ticket #{{number}}",
+      "callLabel": "Call {{name}}",
+      "callAgainLabel": "Call {{name}} again",
+      "seatLabel": "Seat {{name}}",
+      "removeLabel": "Remove {{name}}",
+      "removeTitle": "Remove Party",
+      "removeConfirm": "Remove {{name}} from the waitlist?",
       "loadFailed": "Couldn't load the waitlist."
     }
   }

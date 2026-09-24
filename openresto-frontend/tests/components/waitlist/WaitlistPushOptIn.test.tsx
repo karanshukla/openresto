@@ -49,10 +49,12 @@ describe("WaitlistPushOptIn", () => {
     mockRegister.mockResolvedValue({ status: "registered", registration: device });
     render(<OptIn />);
     expect(screen.getByText("Notify me")).toBeTruthy();
+    expect(screen.getByRole("switch")).not.toBeChecked();
 
     fireEvent.press(screen.getByTestId("waitlist-push-btn"));
 
     expect(await screen.findByText("Notifications on")).toBeTruthy();
+    expect(screen.getByRole("switch")).toBeChecked();
     expect(mockRegister).toHaveBeenCalledWith({ webPushPublicKey: "BKEY" });
     expect(onChange).toHaveBeenLastCalledWith(device);
   });

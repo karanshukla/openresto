@@ -34,11 +34,15 @@ export default function WaitlistTicket({ state }: { state: WaitlistEntryState })
 
   if (entry === undefined) {
     return refreshFailed ? (
-      <ThemedText style={[styles.muted, { color: colors.error }]}>
+      <ThemedText
+        style={[styles.muted, { color: colors.error }]}
+        role="alert"
+        accessibilityLiveRegion="assertive"
+      >
         {t("booking.waitlist.loadFailed")}
       </ThemedText>
     ) : (
-      <ActivityIndicator testID="waitlist-status-loading" />
+      <ActivityIndicator testID="waitlist-status-loading" color={primaryColor} />
     );
   }
 
@@ -61,26 +65,33 @@ export default function WaitlistTicket({ state }: { state: WaitlistEntryState })
       testID={`waitlist-status-${entry.status}`}
       style={[cardStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
-      <SummaryHeader
-        name={entry.restaurantName}
-        subline={subline(entry, t)}
-        statusLabel={t(STATUS_TITLES[entry.status])}
-        statusIcon={STATUS_ICONS[entry.status]}
-        statusColor={statusColor}
-        mutedColor={colors.muted}
-        tint={tint}
-      />
+      {/* The ticket polls, so a table coming free or the queue moving is announced. */}
+      <View role="status" accessibilityLiveRegion="polite">
+        <SummaryHeader
+          name={entry.restaurantName}
+          subline={subline(entry, t)}
+          statusLabel={t(STATUS_TITLES[entry.status])}
+          statusIcon={STATUS_ICONS[entry.status]}
+          statusColor={statusColor}
+          mutedColor={colors.muted}
+          tint={tint}
+        />
 
-      {divider}
+        {divider}
 
-      <FactsBand facts={facts(entry, t)} mutedColor={colors.muted} borderColor={colors.border} />
+        <FactsBand facts={facts(entry, t)} mutedColor={colors.muted} borderColor={colors.border} />
+      </View>
 
       {(queued || refreshFailed) && (
         <>
           {divider}
           <View style={cardStyles.cancelSection}>
             {refreshFailed && (
-              <ThemedText style={[cardStyles.cancelHint, { color: colors.error }]}>
+              <ThemedText
+                style={[cardStyles.cancelHint, { color: colors.error }]}
+                role="alert"
+                accessibilityLiveRegion="assertive"
+              >
                 {t("booking.waitlistStatus.loadFailed")}
               </ThemedText>
             )}
@@ -98,7 +109,11 @@ export default function WaitlistTicket({ state }: { state: WaitlistEntryState })
                   {t("booking.waitlistStatus.leave")}
                 </Button>
                 {leaveFailed && (
-                  <ThemedText style={[cardStyles.cancelHint, { color: colors.error }]}>
+                  <ThemedText
+                    style={[cardStyles.cancelHint, { color: colors.error }]}
+                    role="alert"
+                    accessibilityLiveRegion="assertive"
+                  >
                     {t("booking.waitlistStatus.leaveFailed")}
                   </ThemedText>
                 )}
@@ -125,6 +140,7 @@ export default function WaitlistTicket({ state }: { state: WaitlistEntryState })
           }
           cancelLabel={t("booking.waitlistStatus.leaveModal.keep")}
           destructive
+          loading={leaving}
           onConfirm={leave}
           onCancel={() => !leaving && setShowLeaveConfirm(false)}
         />
@@ -152,7 +168,7 @@ function facts(entry: WaitlistEntryStatus, t: TFunction): Fact[] {
           key: t("booking.waitlistStatus.waitKey"),
           value:
             minutes === null
-              ? "—"
+              ? t("booking.waitlist.waitUnknown")
               : minutes === 0
                 ? t("booking.waitlistStatus.waitNow")
                 : t("booking.waitlistStatus.waitValue", { minutes }),

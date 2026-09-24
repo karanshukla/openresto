@@ -15,10 +15,12 @@ public class WaitlistController(WaitlistService waitlistService) : ControllerBas
 {
     private readonly WaitlistService _waitlist = waitlistService;
 
-    // Joining creates a row, so it takes the tight booking-lookup ceiling rather than the
-    // browsing one. Status is polled while the guest waits and stays on "public"; the entry
-    // reference is 100 bits of CSPRNG output, so it is not worth guessing at either rate.
+    // Joining creates a row, and leaving or setting push acts on one by its reference, so those
+    // take the tight booking-lookup ceiling like cancelling a booking does. Status is polled
+    // while the guest waits and stays on "public"; the entry reference is 100 bits of CSPRNG
+    // output, so it is not worth guessing at either rate.
     // <seealso>WaitlistControllerTests.Join_CarriesTheTightLookupPolicy</seealso>
+    // <seealso>WaitlistControllerTests.LeaveAndSetPush_CarryTheTightLookupPolicy</seealso>
     [HttpPost("api/restaurants/{restaurantId:int}/waitlist")]
     [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
     public async Task<IActionResult> Join(int restaurantId, [FromBody] JoinWaitlistRequest req)
@@ -41,12 +43,14 @@ public class WaitlistController(WaitlistService waitlistService) : ControllerBas
     }
 
     [HttpPost("api/waitlist/{entryRef}/leave")]
+    [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
     public async Task<IActionResult> Leave(string entryRef)
     {
         return await _waitlist.LeaveAsync(entryRef) ? NoContent() : EntryNotFound();
     }
 
     [HttpPut("api/waitlist/{entryRef}/push")]
+    [EnableRateLimiting(ServiceCollectionExtensions.BookingLookupPolicy)]
     public async Task<IActionResult> SetPush(string entryRef, [FromBody] WaitlistPushRequest req)
     {
         return await _waitlist.SetPushAsync(entryRef, req) ? NoContent() : EntryNotFound();

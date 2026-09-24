@@ -184,7 +184,7 @@
     },
     "waitlist": {
       "joinCta": "Rejoindre la liste d'attente",
-      "intro": "Laissez votre nom, nous vous préviendrons quand votre table sera prête.",
+      "intro": "Nous vous préviendrons quand votre table sera prête.",
       "partySizeLabel": "Nombre de convives",
       "emailLabel": "E-mail (facultatif)",
       "push": {
@@ -200,7 +200,7 @@
       "waitNow": "Une table est libre",
       "waitMinutes": "Environ {{minutes}} min d'attente",
       "waitUnknown": "Aucune table ne peut accueillir un groupe de cette taille",
-      "notAccepting": "La liste d'attente n'est pas ouverte pour le moment. Elle fonctionne quand l'établissement accueille sans réservation et est ouvert.",
+      "notAccepting": "La liste d'attente n'est pas ouverte pour le moment.",
       "loadFailed": "Impossible de charger la liste d'attente. Veuillez réessayer.",
       "joinAgain": "Rejoindre à nouveau",
       "openTicket": "Le voir dans Mes réservations"
@@ -1941,7 +1941,7 @@
         "turnTimesHint": "Accordez plus de temps aux grands groupes. Un groupe plus petit que toutes les règles reçoit la durée par défaut, et les réservations existantes gardent leur durée.",
         "turnTimesAdd": "Ajouter une règle",
         "turnTimesSeatsLabel": "Taille du groupe à partir de",
-        "turnTimesMinutesLabel": "Durée à table",
+        "turnTimesMinutesLabel": "Durée à table à partir de {{seats}}",
         "turnTimesFrom_one": "À partir de {{count}} personne",
         "turnTimesFrom_other": "À partir de {{count}} personnes",
         "turnTimesRange": "Groupes de {{min}} à {{max}}",
@@ -2111,7 +2111,8 @@
       "noLocations": "Ajoutez un établissement pour lancer une liste d'attente.",
       "accepting": "Les clients peuvent s'inscrire depuis le site en ce moment.",
       "notAccepting": "Les clients ne peuvent s'inscrire depuis le site que lorsque l'établissement accueille sans réservation et est ouvert. Vous pouvez toujours ajouter des groupes ici.",
-      "empty": "Personne n'attend.",
+      "empty": "Personne n'attend",
+      "emptyBody": "Les groupes apparaissent ici dès leur inscription, depuis le site ou depuis cette page.",
       "addTitle": "Ajouter un groupe",
       "nameLabel": "Nom",
       "emailLabel": "E-mail (facultatif)",
@@ -2129,6 +2130,13 @@
       "joined": "Inscrit {{time}}",
       "called": "Appelé {{time}}",
       "hiddenGuest": "Coordonnées masquées",
+      "ticketName": "le ticket n° {{number}}",
+      "callLabel": "Appeler {{name}}",
+      "callAgainLabel": "Rappeler {{name}}",
+      "seatLabel": "Installer {{name}}",
+      "removeLabel": "Retirer {{name}}",
+      "removeTitle": "Retirer le groupe",
+      "removeConfirm": "Retirer {{name}} de la liste d'attente ?",
       "loadFailed": "Impossible de charger la liste d'attente."
     }
   }

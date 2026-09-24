@@ -44,6 +44,19 @@ public partial class AdminServiceTests
     }
 
     [Fact]
+    public async Task GetBookingAsync_OmitsNoShowHistory_ForAKeyWithoutGuestsScope()
+    {
+        await SeedSittingAsync(id: 1, startedMinutesAgo: 60 * 24, status: BookingStatus.NoShow);
+        await SeedSittingAsync(id: 2, startedMinutesAgo: -60);
+        AdminService svc = CreateService(FakeCurrentUser.ApiKey((ApiKeyScopes.Bookings, ApiKeyScopes.Read)));
+
+        BookingDetailDto? result = await svc.GetBookingAsync(2);
+
+        Assert.NotNull(result);
+        Assert.Null(result!.PreviousNoShows);
+    }
+
+    [Fact]
     public async Task GetBookingAsync_ReturnsFullGuestFields_ForAnApiKeyWithGuestsRead()
     {
         SeedBase();

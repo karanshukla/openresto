@@ -137,7 +137,9 @@ const BADGE_STYLES: Record<
     bg: { light: string; dark: string };
     text: string | { light: string; dark: string };
   },
-  noShow: theme.status.cancelled,
+  // The cancelled red reads at 4.1:1 on its own tint (3:1 in dark), so the badge text steps
+  // a shade darker, or lighter on the dark tint, to clear 4.5:1.
+  noShow: { bg: theme.status.cancelled.bg, text: { light: "#b91c1c", dark: "#f87171" } },
 };
 
 export function StatusBadge({ booking, isDark }: { booking: BadgeBooking; isDark: boolean }) {
@@ -153,7 +155,7 @@ export function StatusBadge({ booking, isDark }: { booking: BadgeBooking; isDark
     if (variant === "arrived") text = "#4ade80";
     if (variant === "upcoming" || variant === "due") text = "#fde047";
     if (variant === "scheduled") text = "#94a3b8";
-    if (variant === "unmarked" || variant === "finished") text = "#64748b";
+    if (variant === "unmarked" || variant === "finished") text = "#7c8ba1";
   }
 
   return (

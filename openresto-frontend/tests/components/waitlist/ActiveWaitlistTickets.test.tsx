@@ -74,6 +74,37 @@ describe("ActiveWaitlistTickets", () => {
     expect(onLoaded).not.toHaveBeenCalled();
   });
 
+  it("keeps the linked ticket on screen while it loads, then says it wasn't found", async () => {
+    let resolve: (value: null) => void = () => {};
+    mockStatus.mockReturnValue(new Promise((r) => (resolve = r)));
+    render(
+      <ActiveWaitlistTickets
+        entryRefs={["gone"]}
+        linkedRef="gone"
+        onLoaded={onLoaded}
+        onClosed={onClosed}
+      />
+    );
+
+    expect(screen.getByTestId("waitlist-status-loading")).toBeTruthy();
+    await act(async () => resolve(null));
+    expect(screen.getByTestId("waitlist-not-found")).toBeTruthy();
+  });
+
+  it("says so when the linked ticket fails to load", async () => {
+    mockStatus.mockResolvedValue(undefined);
+    render(
+      <ActiveWaitlistTickets
+        entryRefs={["abc"]}
+        linkedRef="abc"
+        onLoaded={onLoaded}
+        onClosed={onClosed}
+      />
+    );
+
+    expect(await screen.findByText("Couldn't load the waitlist. Please try again.")).toBeTruthy();
+  });
+
   it("shows only the live tickets among several", async () => {
     mockStatus.mockImplementation(async (ref: string) =>
       ref === "live" ? entry({ ref }) : entry({ ref, status: "seated", partiesAhead: null })

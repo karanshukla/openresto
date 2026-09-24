@@ -366,7 +366,8 @@ export function TableRow({
       </View>
       <Pressable
         testID={`table-walk-in-toggle-${table.id}`}
-        accessibilityRole="checkbox"
+        role="checkbox"
+        aria-checked={draftWalkInOnly}
         accessibilityState={{ checked: draftWalkInOnly }}
         onPress={() => setDraftWalkInOnly((v) => !v)}
         style={styles.walkInToggle}

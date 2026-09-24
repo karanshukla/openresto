@@ -14,6 +14,8 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /** The confirmed action is in flight: the confirm button spins and takes no second press. */
+  loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -25,6 +27,7 @@ export default function ConfirmModal({
   confirmLabel,
   cancelLabel,
   destructive = false,
+  loading = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -63,6 +66,7 @@ export default function ConfirmModal({
         <Button
           variant={destructive ? "danger" : "primary"}
           size="md"
+          loading={loading}
           onPress={handleConfirm}
           style={styles.action}
         >

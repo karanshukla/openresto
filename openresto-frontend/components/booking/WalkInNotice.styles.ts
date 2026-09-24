@@ -30,7 +30,6 @@ export const styles = StyleSheet.create({
     lineHeight: 19,
   },
   action: {
-    flexDirection: "row",
     marginTop: 8,
   },
 });

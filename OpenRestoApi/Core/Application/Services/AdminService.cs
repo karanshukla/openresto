@@ -294,11 +294,18 @@ public class AdminService(
     /// <summary>
     /// Maps bookings with each guest's no-show count from every other booking under their email,
     /// counted in one query. Derived rather than stored, so the GDPR purge that removes a
-    /// guest's bookings removes their history with it.
+    /// guest's bookings removes their history with it. Left off for a caller that cannot see
+    /// who the guest is, since the count is guest history keyed on their email.
     /// </summary>
     /// <seealso>AdminServiceTests.GetBookingAsync_CountsTheGuestsOtherNoShows_CaseInsensitively</seealso>
+    /// <seealso>AdminServiceTests.GetBookingAsync_OmitsNoShowHistory_ForAKeyWithoutGuestsScope</seealso>
     private async Task<List<BookingDetailDto>> WithNoShowHistoryAsync(List<Booking> bookings)
     {
+        if (BookingGuestVisibility.IsRedactedFor(_currentUser))
+        {
+            return bookings.Select(ToDetailDto).ToList();
+        }
+
         Dictionary<string, int> noShows = await _bookingRepository.CountNoShowsByEmailAsync(
             bookings.Where(b => !string.IsNullOrWhiteSpace(b.CustomerEmail)).Select(b => b.CustomerEmail!));
 
