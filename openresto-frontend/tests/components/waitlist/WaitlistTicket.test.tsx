@@ -4,7 +4,6 @@ import WaitlistTicket from "@/components/waitlist/WaitlistTicket";
 import { WAITLIST_POLL_MS, useWaitlistEntry } from "@/components/waitlist/useWaitlistEntry";
 import { getWaitlistStatus, leaveWaitlist, type WaitlistEntryStatus } from "@/api/waitlist";
 import haptics from "@/utils/haptics";
-import { confirm } from "@/utils/confirm";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("@/hooks/use-color-scheme", () => ({ useColorScheme: () => "light" }));
@@ -19,11 +18,10 @@ jest.mock("@/utils/haptics", () => {
   const mock = { outcome: jest.fn(), press: jest.fn() };
   return { __esModule: true, default: mock, haptics: mock };
 });
-jest.mock("@/utils/confirm", () => ({ confirm: jest.fn() }));
+jest.mock("@/components/common/ConfirmModal", () => require("../../../jest-mocks/ConfirmModal"));
 
 const mockStatus = getWaitlistStatus as jest.Mock;
 const mockLeave = leaveWaitlist as jest.Mock;
-const mockConfirm = confirm as jest.Mock;
 
 const entry = (over: Partial<WaitlistEntryStatus> = {}): WaitlistEntryStatus => ({
   ref: "abc",
@@ -44,7 +42,6 @@ const entry = (over: Partial<WaitlistEntryStatus> = {}): WaitlistEntryStatus => 
 beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
-  mockConfirm.mockResolvedValue(true);
 });
 
 afterEach(() => jest.useRealTimers());
@@ -181,21 +178,49 @@ describe("WaitlistTicket", () => {
     await screen.findByText("You're on the list");
 
     fireEvent.press(screen.getByTestId("waitlist-leave"));
+    expect(
+      screen.getByText(
+        "Are you sure you want to leave the waitlist? You'll lose your place in line."
+      )
+    ).toBeTruthy();
+    expect(mockLeave).not.toHaveBeenCalled();
+
+    fireEvent.press(screen.getByText("Leave Waitlist"));
 
     expect(await screen.findByText("You've left the waitlist")).toBeTruthy();
     expect(mockLeave).toHaveBeenCalledWith("abc");
+    expect(screen.queryByTestId("confirm-modal")).toBeNull();
   });
 
-  it("stays put when the guest backs out of leaving", async () => {
+  it("keeps the confirmation up, saying so, while the leave is in flight", async () => {
     mockStatus.mockResolvedValue(entry());
-    mockConfirm.mockResolvedValue(false);
+    let finish: (ok: boolean) => void = () => {};
+    mockLeave.mockReturnValue(new Promise((resolve) => (finish = resolve)));
     render(<Ticket entryRef="abc" />);
     await screen.findByText("You're on the list");
 
     fireEvent.press(screen.getByTestId("waitlist-leave"));
+    fireEvent.press(screen.getByText("Leave Waitlist"));
 
-    await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
+    expect(await screen.findByText("Leaving…")).toBeTruthy();
+    fireEvent.press(screen.getByText("Stay in Line"));
+    expect(screen.getByTestId("confirm-modal")).toBeTruthy();
+
+    await act(async () => finish(true));
+    expect(screen.queryByTestId("confirm-modal")).toBeNull();
+  });
+
+  it("stays put when the guest backs out of leaving", async () => {
+    mockStatus.mockResolvedValue(entry());
+    render(<Ticket entryRef="abc" />);
+    await screen.findByText("You're on the list");
+
+    fireEvent.press(screen.getByTestId("waitlist-leave"));
+    fireEvent.press(screen.getByText("Stay in Line"));
+
+    await waitFor(() => expect(screen.queryByTestId("confirm-modal")).toBeNull());
     expect(mockLeave).not.toHaveBeenCalled();
+    expect(screen.getByText("You're on the list")).toBeTruthy();
   });
 
   it("says so when leaving fails", async () => {
@@ -205,7 +230,9 @@ describe("WaitlistTicket", () => {
     await screen.findByText("You're on the list");
 
     fireEvent.press(screen.getByTestId("waitlist-leave"));
+    fireEvent.press(screen.getByText("Leave Waitlist"));
 
     expect(await screen.findByText("Couldn't leave the waitlist. Please try again.")).toBeTruthy();
+    expect(screen.queryByTestId("confirm-modal")).toBeNull();
   });
 });

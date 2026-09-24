@@ -3,7 +3,6 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 import ActiveWaitlistTickets from "@/components/waitlist/ActiveWaitlistTickets";
 import { WAITLIST_POLL_MS } from "@/components/waitlist/useWaitlistEntry";
 import { getWaitlistStatus, leaveWaitlist, type WaitlistEntryStatus } from "@/api/waitlist";
-import { confirm } from "@/utils/confirm";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("@/hooks/use-color-scheme", () => ({ useColorScheme: () => "light" }));
@@ -14,7 +13,7 @@ jest.mock("@/api/waitlist", () => ({
   getWaitlistStatus: jest.fn(),
   leaveWaitlist: jest.fn(),
 }));
-jest.mock("@/utils/confirm", () => ({ confirm: jest.fn() }));
+jest.mock("@/components/common/ConfirmModal", () => require("../../../jest-mocks/ConfirmModal"));
 
 const mockStatus = getWaitlistStatus as jest.Mock;
 
@@ -88,10 +87,10 @@ describe("ActiveWaitlistTickets", () => {
   it("drops the ticket once the guest leaves", async () => {
     mockStatus.mockResolvedValueOnce(entry()).mockResolvedValue(entry({ status: "left" }));
     (leaveWaitlist as jest.Mock).mockResolvedValue(true);
-    (confirm as jest.Mock).mockResolvedValue(true);
     renderTickets(["abc"]);
 
     fireEvent.press(await screen.findByTestId("waitlist-leave"));
+    fireEvent.press(screen.getByText("Leave Waitlist"));
 
     await waitFor(() => expect(onClosed).toHaveBeenCalledWith("abc"));
     expect(screen.queryByTestId("waitlist-status-waiting")).toBeNull();

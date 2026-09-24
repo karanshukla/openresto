@@ -224,6 +224,13 @@
       "expiredTitle": "Dieser Eintrag ist abgelaufen",
       "pushOn": "Sie erhalten eine Benachrichtigung, sobald Ihr Tisch bereit ist.",
       "leave": "Warteliste verlassen",
+      "leaveModal": {
+        "title": "Warteliste verlassen",
+        "message": "Möchten Sie die Warteliste wirklich verlassen? Sie verlieren Ihren Platz in der Schlange.",
+        "confirm": "Warteliste verlassen",
+        "confirming": "Wird verlassen…",
+        "keep": "In der Schlange bleiben"
+      },
       "leaveFailed": "Die Warteliste konnte nicht verlassen werden. Bitte versuchen Sie es erneut.",
       "notFound": "Dieser Eintrag wurde nicht gefunden.",
       "loadFailed": "Ihr Platz konnte nicht aktualisiert werden."
