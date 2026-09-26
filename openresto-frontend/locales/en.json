@@ -92,6 +92,7 @@
       "expiryNoticeChannel": "Table holds",
       "expiryNoticeTitle": "Your table is still held",
       "heldLabel": "Table held",
+      "heldLabelNamed": "Table held: {{table}}",
       "refreshButton": "Refresh page",
       "refreshHint": "Reloads availability for this date",
       "unavailableDefault": "Table not available for this date. Please choose another."

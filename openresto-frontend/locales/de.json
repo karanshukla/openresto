@@ -92,6 +92,7 @@
       "expiryNoticeChannel": "Tischreservierungen",
       "expiryNoticeTitle": "Ihr Tisch ist noch reserviert",
       "heldLabel": "Tisch vorgemerkt",
+      "heldLabelNamed": "Tisch vorgemerkt: {{table}}",
       "refreshButton": "Seite aktualisieren",
       "refreshHint": "Lädt die Verfügbarkeit für dieses Datum neu",
       "unavailableDefault": "Tisch für dieses Datum nicht verfügbar. Bitte wählen Sie ein anderes."

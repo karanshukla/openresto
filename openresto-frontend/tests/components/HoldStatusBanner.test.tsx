@@ -32,6 +32,18 @@ describe("HoldStatusBanner", () => {
     expect(screen.getByText(/expires in 3:05/)).toBeTruthy();
   });
 
+  it("names the held table when one is given", () => {
+    render(
+      <HoldStatusBanner
+        holdStatus="held"
+        secondsLeft={60}
+        hasSelection={true}
+        tableName="Patio 4"
+      />
+    );
+    expect(screen.getByText(/Table held: Patio 4/)).toBeTruthy();
+  });
+
   it("shows generic unavailable message when no holdMessage is provided", () => {
     render(<HoldStatusBanner holdStatus="unavailable" secondsLeft={0} hasSelection={true} />);
     expect(screen.getByText(/Table not available/)).toBeTruthy();
