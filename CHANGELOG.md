@@ -5,477 +5,383 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+How each feature behaves, its API fields and its error codes are in
+[`docs/features.md`](docs/features.md).
+
 ## [Unreleased]
 
 ## [2.3.0] - 2026-09-24
 
 ### Added
 
-- **Turn times by party size.** A location can now give larger parties a longer sitting: under the default booking duration on the Locations page, "Add a rule" sets a length from a party size up, so a two-top can turn in an hour while a party of five holds its table for two. A party gets the rule with the largest party size at or below its own, and a party smaller than every rule keeps the default, so a location with no rules behaves exactly as before. Availability, table holds, auto-assign, admin-recorded bookings, seating from the waitlist and its wait estimates all use the party's own length, so a party of five is no longer offered a slot that only has an hour free. A hold now blocks the table for as long as the booking it leads to will, which means the booking form sends the party size with every hold. Existing bookings keep the length they were booked with. The API takes and returns the rules as `turnTimes` on the restaurant (`[{ "minSeats": 3, "minutes": 90 }]`); `null` leaves them alone on update and an empty list clears them.
-- **Booking status: arrived, seated, finished, no-show.** A booking now records what happened at the sitting, not just whether it was cancelled. The booking popup in the admin shows the status and a button for each next step (Arrived, Seated, Finished, and No-show once the sitting has started), and a mis-tap can be undone for five minutes. Finishing early or marking a no-show ends the sitting there and then, so the table comes free for availability, holds and the waitlist straight away; undoing it puts the original end back. Parties seated from the waitlist start as Seated. The bookings list gains a **No-shows** tab, shows each booking's status in the status column (a booking nobody has marked yet reads **Due** once its sitting starts and **Unmarked** once it ends, instead of a guessed Arrived, Seated or Completed), and treats finished and no-show sittings as past; lookups and the booking popup note how many other bookings under the same email were no-shows, counted across every location and derived from the bookings themselves, so the GDPR purge removes it with them. The dashboard's today tile shows today's no-shows. Guests see nothing new, and nothing is blocked or charged for a no-show. The API is `POST /api/admin/bookings/{id}/status` with `{ "status": "Seated" }` under `bookings:write`, audited as `booking.status` with the before and after; admin booking reads carry `status`, `nextStatuses`, `undoStatus` and `previousNoShows` (left off for API keys without `guests:read`, like the guest's name and email), and `status=noshow` filters the list.
-- **Walk-in-only tables.** A table can now be kept for the door without closing online booking for the whole location: tick "Walk-ins only" when editing a table on the Locations page. That table is never offered online, auto-assign skips it, and a booking or hold that picks it anyway is refused with `table.walk_in_only`. A combinable group containing it is held back too, since booking the group would take the table. Staff can still seat parties there from the admin and from the waitlist. The location page's seating map marks the table as walk-ins only, so a guest can see why it never comes up. The API carries `walkInOnly` on tables.
-- **Cover pacing.** A location can cap how many guests start in one slot, so the kitchen doesn't get every table at once: "Max guests starting per slot" on the Locations page, blank for no limit. The cap applies to each booking slot (every 15, 30 or 60 minutes, whatever the location uses), and only arrivals count: a party seated in the previous slot is not new load. A slot the party would overfill is no longer offered, and a booking that races another for the last seats is refused with `booking.pacing_full`, which says how many guests can still start then. Bookings made by staff and parties seated from the waitlist aren't limited but still count toward the total. The dashboard gains an "Arrivals per slot today" card showing each capped location's covers per slot against its cap. The API takes and returns `maxCoversPerSlot` on the restaurant (`null` clears it); the admin overview carries `todayPacing`.
-- **A walk-in waitlist.** A walk-in-only location's card on the Locations page now offers "Join waitlist" where Book now would be, and the walk-in notice offers it on a walk-in day. It opens in the same side panel or sheet as the booking form: the guest picks a party size, sees the wait they would face, leaves a name and optionally an email, and the panel then shows their ticket number, how many parties are ahead and the estimated wait. The ticket stays there if they close the panel and come back, and it also has a page of its own. The ticket updates on its own and says "Your table is ready" when staff call them; the same call sends a push notification to the guest's phone or browser if they pressed "Notify me" when joining (in the native app, or in a browser with notifications set up), and a short email if they left an address and mail is configured. Staff run the queue from the new **Waitlist** page in the admin: each party's quoted wait, whether a table can take them right now, and Call / Seat / Remove. Seating turns the entry into an ordinary booking on the smallest free table that fits, so the floor and availability see it as taken. Staff can add a party at the door on any day; the public site only takes sign-ups while the location is walk-in only and open. Estimates replay the queue against the floor: each table frees when its current sitting ends, and each party in turn takes the fitting table that frees first for a sitting of its own length. A party still queued 6 hours after joining expires so the queue does not clog, and every entry is hard-deleted after 7 days since it holds a name and email. There is no SMS channel. The admin endpoints sit under the existing `bookings` API key scope, with names and emails redacted for keys without `guests:read`.
+- **Turn times by party size.** Larger parties can get longer sittings. Availability, holds, auto-assign and the waitlist all use the party's own length. Existing bookings keep the length they were booked with.
+- **Booking status.** Mark bookings Arrived, Seated, Finished or No-show from the admin, with five minutes to undo. Finishing early or a no-show frees the table straight away. The bookings list gets a No-shows tab, and lookups show a guest's past no-shows.
+- **Walk-in-only tables.** Keep a single table for the door without closing online booking for the whole location.
+- **Cover pacing.** Cap how many guests can start in one booking slot. The dashboard shows today's arrivals per slot.
+- **Walk-in waitlist.** Guests at a walk-in-only location can join a queue online and see their estimated wait. Staff run it from the new Waitlist page, and calling a party can send a push notification and an email.
 
 ### Changed
 
-- Backend NuGet packages bumped to their latest patch and minor releases (#449): ASP.NET Core, EF Core and `Microsoft.Data.Sqlite` to 10.0.12, MailKit to 4.18.0, Magick.NET to 14.17.1 and `System.IdentityModel.Tokens.Jwt` to 8.23.0. No advisories were open against any of them.
+- Backend packages updated: ASP.NET Core and EF Core 10.0.12, MailKit 4.18.0, Magick.NET 14.17.1 (#449).
 
 ### Security
 
-- **A browser push address can no longer point the server at its own network.** A Web Push endpoint was checked only as text, so `localhost` or a private IP was refused but a host name that resolves to one was not, and the server would POST to it when a reminder, a "table ready" call or an admin notification went out. The push client now resolves the host itself, refuses it if any address it lands on is private, loopback or link-local, and connects only to the addresses it checked, so a name cannot answer differently the second time. It also no longer uses a system proxy or follows redirects. A guest push that fails this way, or fails to connect at all, is now recorded against that one subscription instead of ending the reminder run for every guest after it.
+- Browser push addresses that resolve to a private or local network are now refused when the server connects, not just when they're saved.
 
 ## [2.2.0] - 2026-09-13
 
 ### Added
 
-- **The booking result now stays in view on wide screens.** On `/lookup` and `/booking-confirmation`, the result panel used to scroll away with the rest of the page, unlike the booking drawer on `/locations`, which stays put. A booking is the tallest thing in the row, so a sticky column previously had nothing to stick against. On a wide web layout the result column is now capped at the scroller's visible height and scrolls inside it, with the row held to the viewport's height so the heading scrolls off and both columns pin underneath. The footer moves below the scroller, the same way it does beside the drawer on `LocationsScreen`, and the scroll-to-top rail drops out, since either one after the row would carry the pinned column off with it. Native is unchanged.
+- On wide screens, the booking result on `/lookup` and `/booking-confirmation` stays in view while the page scrolls.
 
 ## [2.1.0] - 2026-09-11
 
 ### Added
 
-- **Sharing a booking now hands out a link to it, on every platform.** The share sheet used to be native-only and carried only the reference, restaurant, time and party as text; it now also carries the same `/booking-confirmation/<ref>?email=…` link the confirmation email sends, built from the brand's website URL (or the server the build was pointed at when none is set). On iOS the link travels as its own item, so Messages previews it and AirDrop and Safari appear as targets; on Android it goes on its own line of the message. The web app and the installed PWA gain a Share button beside Copy: a browser with a share sheet (every phone browser, and desktop Chrome and Edge) opens it through the Web Share API, and one without copies the link to the clipboard instead. A recipient with the native app installed opens the link there through the existing Universal / App Link setup, and everyone else lands on the web page.
+- Sharing a booking now includes a link to it, on web and in the native app. Browsers without a share sheet copy the link instead.
 
 ## [2.0.1] - 2026-09-05
 
-A small release on top of 2.0.0: a booking-confirmation preview for the admin, and the admin push fix that turned out to need most of this release's attention.
-
 ### Added
 
-- **The admin email settings page now previews the booking confirmation** (`/admin/settings/email`). The panel beside the SMTP form renders the real confirmation for a stand-in booking, with the location's own name, photo, hours, address and reference format, and the brand colour, icon and footer from your brand settings. The From line follows the sender name and address as you type them, before you save, and the panel says plainly when confirmations are off or SMTP is not configured yet, which are the two ways a guest ends up receiving nothing. Instances with more than one location get a picker, since each one renders differently. Nothing is sent and nothing is stored.
-- `GET /api/admin/email-settings/preview` (scope `email:read`, optional `?restaurantId=`) returns that rendered HTML plus the subject, so a script can check what guests are receiving without booking a table.
-
-### Changed
-
-- The confirmation email's subject is now built by `EmailTemplateService` alongside its body. The send path and the new preview call the same builder, so the two cannot drift.
-- `POST /api/admin/push/subscribe` no longer takes a `restaurantId`. One call registers the browser for every location. The parameter is still accepted and ignored, so a tab still running the previous frontend keeps working against an upgraded server.
+- The email settings page previews the booking confirmation guests will get. Also available as `GET /api/admin/email-settings/preview`.
 
 ### Fixed
 
-- **Admin push notifications arrived for one location and no others, which in practice meant never.** A subscription was stored against a single restaurant, and the notifications page registered it against whichever location the admin happened to be filtering by — so an instance with more than one location had its bookings land on restaurants nobody's browser had subscribed to, and the send path reported "0 subscription(s)" every time. A subscription now belongs to the browser rather than to a location, which is what the Settings page had been promising all along ("active for all locations"); it covers locations added after you subscribed, too. **Existing subscriptions are migrated, not dropped** — the browsers registered against several locations collapse to one row each and keep working — but a browser that only ever subscribed from the notifications banner was already receiving nothing, and will start receiving everything.
-- **One browser with unusable push keys silenced every other subscriber.** The send loop caught the two failures Web Push reports as HTTP status codes and let everything else escape, aborting the fan-out partway: the subscribers after the bad one were skipped, and the notification's delivery outcome was never recorded, so nothing in the admin UI showed that a send had been attempted at all. Each subscription's failure is now contained to that subscription and recorded against the notification. A dead endpoint (410/404) is still removed; a bad key is not, since the browser can refresh it.
+- Admin push notifications only arrived for one location. A subscription now covers every location, and existing subscriptions are migrated.
+- One browser with bad push keys stopped every other admin from getting notifications.
 
 ## [2.0.0] - 2026-09-03
 
 Hey everyone,
 
-This is a massive update for OpenResto. When I set out on this project a few months ago, I just wanted to make something that would simply allow restaurants to take table bookings online. But, as I've developed it, I've learned a lot more about software and what people expect out of a product. This release is the combination of everything I've learned, and I've finally achieved the goals I set out to accomplish. OpenResto is now a fully-featured, production-ready booking system that can be used by restaurants of all sizes. The key highlights here are the option for a native application, as well as localization into multiple languages.
+This is a massive update for OpenResto. When I started this project a few months ago, I just wanted something that let restaurants take table bookings online. As I've built it, I've learned a lot about software and what people expect from a product, and this release is the result. The highlights are a native app that self-hosters can publish themselves, and translations into multiple languages.
 
-With a combination of the native app support, and the CLI, OpenResto is truly "open." The product itself is not just booking service, but the encapsulation of the complex logic involved with booking a table. It seems simple, but there's a lot of edge cases that come up. Now, with the combination of the CLI, the native app, and the web frontend, OpenResto is truly an open solution. The CLI and API allows for interop, and potentially alternative frontends. The native app allows for a more seamless experience for guests, and the web frontend is still the priority for the admin.
+With the native app, the CLI and the API, OpenResto is truly "open": the booking logic is the product, and any frontend can use it. The web frontend is still the priority for the admin.
 
-Moving forward the app will continue to be maintained and improved, but I think I've fully realised the vision I had for it. I hope you enjoy using it as much as I enjoyed building it!
+I think I've fully realised the vision I had for it, and it will keep being maintained and improved. I hope you enjoy using it as much as I enjoyed building it!
 
 ### Breaking Changes
 
-- **The CLI's user-management verbs are gone**: `openresto users create`, `users role` and `users reset-password`. An API key could use them to create an admin account with a role and password of its choosing and then sign in as it, reaching the whole surface keys are deliberately excluded from. The server now refuses those three verbs to any key session, so the commands could only ever have failed. `users list`, `users activate` and `users deactivate` are unchanged. **If you script account creation, move it to the admin UI**; there is no key-based replacement, by design.
-- **The two guest by-reference endpoints are now limited to 10 requests per minute per IP**, down from the 120 they shared with general browsing. `GET /api/bookings/ref/{ref}` and `POST /api/bookings/ref/{ref}/cancel` are the only unauthenticated endpoints where a correct guess hands over someone else's booking, so they now sit at the same ceiling as login. A guest reads a reference off an email and looks it up once, so this is invisible in normal use. **It is not invisible behind a shared address**: an office, a hotel or carrier-grade NAT puts many guests in one bucket. Raise it in front of the app if that describes your deployment.
-- **New booking references carry a four-digit tail**, so the word format reads `crispy-basil-thyme-0482` rather than `crispy-basil-thyme`. The old format drew 177,000 combinations from a non-cryptographic PRNG, which is walkable in about a day from one known email address. References now come from a CSPRNG and the space is 1.77 billion. **Every reference ever issued still resolves and still cancels**, and the numeric format is unchanged, but an integration that pattern-matches the old three-word shape needs updating.
+- **The CLI's `users create`, `users role` and `users reset-password` commands are removed**, and the server refuses those actions to any API key. Create accounts in the admin UI.
+- **Guest endpoints that take a booking reference (lookup, cancel) are limited to 10 requests per minute per IP.** If many guests share one IP (an office, a hotel), raise the limit in your reverse proxy.
+- **New booking references end in four digits** (`crispy-basil-thyme-0482`). Existing references still work.
 
 ### Added
 
-- **Guests can ask to be reminded about a booking, as a push notification** (#419). A confirmed booking in the native app (and on the website, when the server has VAPID keys) carries a **Remind me** toggle; the phone asks for notification permission only then, and the server pushes the day before and two hours before the sitting (`GuestPush__ReminderLeadHours`), in the language the app was in. A device is registered against one booking, holds nothing but its push address, and is forgotten once the sitting starts, the booking is cancelled or an admin purges it. Native delivery goes through Expo's push service, so the APNs and FCM credentials stay with the self-hoster's EAS project and never reach the server; browser delivery reuses the admin notifications' Web Push path. A reminder window that had already opened when the guest opted in is skipped, so booking tomorrow's table does not produce a "24 hours to go" push seconds after the confirmation.
-- **A booking can be added to Apple Wallet or Google Wallet** (#420). Once the self-hoster configures a Pass Type ID certificate (`Wallet__Apple__*`) or a Wallet issuer and service account (`Wallet__Google__*`), every confirmed booking offers the platform's own pass, both on the website: restaurant, date, time, party size and reference, a QR code of the manage-booking link, the brand colour and icon, surfaced on the lock screen around the sitting. Passes are signed on the server from the booking each time and nothing is registered with Apple or Google. The Native app page reports which issuers are active; [`docs/native-app.md`](docs/native-app.md) has the setup for both. These two are the features that make an iOS App Review case, so the guide's submission advice now points at them.
-- **Self-hosters can publish the guest app to the Play Store and App Store themselves** (#388). The booking screens now build as a native iOS/Android app under the self-hoster's own developer accounts, pointed at their own instance; upstream never ships a binary and the stores never see an "OpenResto" app. `npm run native:init -- --server <url> --bundle-id <id>` reads the instance's brand and writes everything a build needs into a gitignored `native/` directory — identifiers, a 1024×1024 opaque iOS icon and a 432×432 Android adaptive-icon layer generated from the configured brand icon (`GET /api/brand/app-icon-ios.png` and `app-icon-android-foreground.png`, new), and the `.well-known` files that make a confirmation email's link open the app. The nginx image serves `/.well-known/` from a directory mounted beside `docker-compose.yml`, so Universal Links and App Links need no rebuilt image. On a device the guest flow now works end to end: recent bookings are kept on the phone (the encrypted cookie the web uses never reaches a native app), add-to-calendar goes through the share sheet as an `.ics`, directions and calendar links open the native apps, uploaded location photos, menus and the home hero resolve against the server rather than a page origin the app does not have, and the admin dashboard, which stays web-only, redirects home. The API base stays a build-time constant — one build per server, which is what keeps upstream out of every self-hoster's store listing. `eas.json` ships with a sideloadable `preview` profile and a store `production` profile that lets EAS own the build numbers, so the visible app version tracks the OpenResto release it was built from and nothing about a publisher's cadence enters this repository. CI bundles the JS for both platforms on every change; the guide is [`docs/native-app.md`](docs/native-app.md), Android first, with the App Review caveats spelled out before anyone pays Apple. Push reminders and Wallet passes followed as their own entries above.
-- **The admin can see whether the server is ready for a native app, and who is using it.** A new Settings → Native app page runs the checks a store submission or a tapped link would fail on (public address is https, a brand icon is chosen, a privacy policy URL is set, the two `.well-known` files come back from the domain as JSON) and says what to do about each; lists the builds talking to this server by platform and version with last-seen and request counts, kept only as daily aggregates with no device identifiers and pruned after 90 days; lets the admin set a minimum supported app version so a build that predates a guest-API change asks its users to update instead of failing quietly; and shows the `native:init` command pre-filled for this deployment. The privacy policy URL both stores require joins the Brand settings and is linked from the guest footer. On a device the app now follows the phone's dark mode and language, offers language and theme from the header (the web navbar never renders there), avoids the keyboard in the booking and lookup forms, and says when it is offline instead of reporting a generic failure.
-- **The CLI reaches the operational verbs, not just each resource's CRUD.** `openresto status` reports the admin overview (today's covers, booking totals, paused locations, the schedule-conflict count) as server state, where `auth whoami` answers for the key itself. `bookings extend` pushes one sitting's end time out; `locations extend` does the same for every active booking at a location, which is the "we're running late tonight" case. `locations conflicts` lists the bookings a narrowed schedule stranded — editing hours deliberately leaves existing bookings alone, so this is how a script finds who needs calling. `users reset-password` takes no password flag, for the same reason `auth login` takes no key flag: an argument is visible to every other process on the host through `ps`.
-- **`openresto bookings email` sends a one-off message to the guest on a booking.** The body comes from `--body-file` or from piped stdin rather than a flag, since a message is multi-line and a flag would put the whole thing in the shell history.
-- **A read-only `email` scope, so an integration can find out its guests are receiving nothing.** Booking confirmations are best-effort by design — a send failure is recorded and the booking goes through regardless — which left a script creating bookings by key with no way to see that none of them were being delivered. `GET /api/admin/email-settings/status` reports whether SMTP is configured and whether confirmations are switched on; those are two different causes with the same visible effect, so they are two fields. The delivery-failure list moves under the same scope. Neither carries a host, username or password, masked or otherwise, and there is no `email:write` to mint: a key that could rewrite the SMTP settings could point every outgoing mail at a relay it controls. The failure list also blanks the recipient address for a key without `guests:read`, the same redaction the booking endpoints already apply.
-- **`openresto-cli` is now on npm**, so the CLI installs with `npx openresto-cli@<version>` or `npm install -g openresto-cli` instead of only through a Docker container. Docker was a poor fit for a CLI: saved profiles needed a mounted volume, `auth login`'s hidden prompt needed `-it`, and every invocation carried the full `docker run` preamble. The image still ships for hosts that have Docker but no Node 24. The `publish-npm` release job is gated on the same `verify-version` check as the four image builds and on the CLI's own test suite. It authenticates with npm trusted publishing rather than a long-lived token, so there is no publish secret in the repository at all, and npm attaches a provenance attestation on its own that ties the tarball back to the workflow run that built it.
-- **The API Keys screen now says what to do with a key once you have one** (#409). A new card under the key list gives the header a key travels on (`X-API-Key`, never `Authorization`), a curl example built against this deployment's own API base — the one endpoint every key reaches whatever its scopes, so it doubles as the "does this key work" check — and a way out to the command-line client, a new guide to calling the API over plain HTTP ([`docs/http-api.md`](docs/http-api.md)) and the source repository. The three destinations are served on `GET /api/brand` and default to this project's, so a fork that ships its own client or docs redirects them with `OPENRESTO_CLI_PACKAGE_URL`, `OPENRESTO_API_DOCS_URL` and `OPENRESTO_REPOSITORY_URL` rather than by rebuilding the prebuilt frontend image.
+- **Native guest app** that self-hosters can build and publish to the App Store and Play Store under their own accounts (#388). See [`docs/native-app.md`](docs/native-app.md).
+- **Booking reminders** by push notification, in the native app and in browsers (#419).
+- **Apple Wallet and Google Wallet passes** for bookings (#420).
+- **Settings → Native app page** that checks whether the server is ready for the app and shows which app versions are in use. You can also set a minimum app version.
+- **Privacy policy URL** in brand settings, linked from the guest footer.
+- **CLI:** `status`, `bookings extend`, `bookings email`, `locations extend` and `locations conflicts`.
+- **CLI on npm:** `npm install -g openresto-cli`. The Docker image still ships.
+- **Read-only `email` API key scope** to check whether mail is configured and delivering.
+- **API Keys screen** now shows how to use a key, with a curl example and links to the CLI and [`docs/http-api.md`](docs/http-api.md) (#409).
 
 ### Changed
 
-- **The native app's tab bar is now the platform's own** (#426). The row of pressables that stood in for it drew a blur and a pill to look the part, but a hand-drawn bar cannot do what the system's does: on iOS the bar is now the real one — the translucent material, and on iOS 26 liquid glass — and re-pressing the selected tab scrolls its list back to the top and pops it to its root, on Android too, where the bar is the Material 3 one. To get there the guest routes moved into one route group per tab, each with its own stack, so a screen pushed inside a tab keeps that tab selected and the booking confirmation stays under **My booking** because that is where its file lives. Public URLs are unchanged, the website keeps its navbar, and a confirmation link opened cold now sits over the lookup screen rather than over nothing. The lookup result sheet also stops padding itself by the tab bar's height, which a sheet covering the bar has no business doing.
-- **Party size in the native app is a stepper, not a dropdown** (#424). Picking 1 to 10 through a `Select` opened a sheet of numbered radio rows, which is how a website's form control reads on a phone. Off web the field is now a `− 2 guests +` stepper with 44px targets, a haptic tick per step and its buttons disabled at the ends. Web keeps the dropdown, since a stepper driven by a mouse is worse than one. The stepper walks the same option list the dropdown gets rather than carrying its own min and max, so the two cannot start offering different party sizes. The oversize-table prompt and the large-party notice key off the seat count, not the control, and are unchanged.
-- **The booking and lookup forms now let the phone fill in the name and email** (#427). Both fields set `keyboardType` and `autoCapitalize` but neither `textContentType` nor `autoComplete`, so iOS never offered the contact card above the keyboard and Android never offered its autofill, and a guest typed their email out on every booking. Name and email now declare both, on the booking form and on the lookup form's email field. Web gets the HTML `autocomplete` attribute out of the same props, which is also an improvement.
-- **The admin sidebar no longer carries its own booking lookup.** It duplicated the search already sitting in the bookings list header, and a second copy of one control is what made the sidebar feel busy. The `/` shortcut now opens the bookings list and focuses that search, so the keystroke reaches the same place from anywhere in the admin.
-- **Choosing an API key's permissions is now one choice per resource rather than two checkboxes.** A write grant already satisfies a read requirement, so "read and write" was never a fourth state, it was `write` selected twice. Each resource now takes None, Read or Write, and carries a line saying what it actually reaches — most usefully Guests, which decides whether customer names and emails come back on a booking at all rather than naming a resource of its own. The permissions block also picks up the width cap every other settings field already had, so a resource name no longer sits a card's width away from the control that grants it.
+- The native app uses the platform's own tab bar (#426).
+- Party size in the native app is a stepper instead of a dropdown (#424).
+- Booking and lookup forms let the phone autofill name and email (#427).
+- The admin sidebar's booking search is removed. Press `/` to jump to the bookings list search.
+- API key permissions are one None / Read / Write choice per resource.
 
 ### Removed
 
-- **Three dead files left the repository root.** `nginx.conf` was a standalone reverse-proxy config that nothing had referenced since the `nginx/` and `nginx-vps/` images took over, yet it kept collecting edits alongside the configs that are actually built — a caching-header pass and the menu-PDF body-size bump both landed in it. `docker-compose.dev.yml` opened with `# doesnt work right now`; hot reload is `npm run dev`. `DOCKER_README.md` documented that nginx config, a root `Dockerfile.dev` that does not exist and a `.env.docker` that lives inside each service instead, and duplicated what the README already covers. `CODEOWNERS` and the ZAP rules file move to `.github/`, and `coverlet.runsettings` moves next to the test project whose `<Exclude>` it has to mirror, so the two are edited side by side.
+- Unused files in the repository root: `nginx.conf`, `docker-compose.dev.yml` and `DOCKER_README.md`.
 
 ### Security
 
-- **An API key can no longer mint itself a login.** A key holding `users:write` could create an admin account with a role and password of its choosing, then sign into the admin UI as it — reaching everything keys are deliberately excluded from, including minting itself an unscoped key and rewriting the SMTP host, username and password. Resetting an existing account's password and changing its role were the same hole. Restricting which role a key may create would not have closed it, because the excluded surface is gated on being an admin rather than on being an Owner, so a Manager login defeats the boundary just as well. Those three verbs are now refused to any key session outright; listing accounts and activating or deactivating them stay scoped, since neither hands out a session. The CLI's `users create`, `role` and `reset-password` commands are gone with them: an API key is the only credential it has, so they could only ever have failed.
-- **Booking references are now unguessable.** A guest booking has no login — the reference plus a matching email is the whole of its security — and the default word format drew from 177,000 combinations using a non-cryptographic PRNG, on an endpoint that allowed 120 requests a minute. Someone who knew a guest's email address, which is not a secret, could walk that space in about a day from one address and an hour from ten, then read the booking in full and cancel it. References now come from a CSPRNG and carry a four-digit tail (`crispy-basil-thyme-0482`), taking the space to 1.77 billion, and the two by-reference endpoints get their own 10/min ceiling rather than sharing the general browsing one. Both halves matter: rate limits are per address and addresses are cheap to rent, so entropy is the part that survives a distributed attempt. Every reference ever issued still resolves and still cancels — the format setting governs what new bookings are given and is never consulted when one is looked up, so a location that switches between the word and numeric shapes keeps all of its existing bookings working.
-- **A failed cancellation no longer writes the guest's email address to the log.** The mismatch branch printed both the stored address and the supplied one, so a run of guessed references wrote a victim's address to stdout on every miss — the same customer identity the audit trail is careful never to record.
-- **The command-line client no longer follows redirects.** It sends its key in a custom header, and the fetch specification strips `Authorization` across a cross-origin redirect but not custom headers, so a redirect could hand a long-lived admin credential to whatever origin a server named. That is reachable by a hostile server URL, or by anyone on the network path of a deployment still served over plain HTTP. A redirect is now reported, naming the address to configure instead.
-- **An anonymous client can no longer lift its own rate ceiling by inventing a header.** The elevated allowance meant for API-key callers was granted on the presence of `X-API-Key` alone, so any value at all bought a request budget three times the normal one. It now requires a value shaped like a key this server could have issued.
+- An API key can no longer create an admin login or take over an existing one.
+- Booking references are now random enough that they can't be guessed.
+- A failed cancellation no longer writes the guest's email to the log.
+- The CLI no longer follows redirects, so it can't send its API key to another server.
+- A made-up `X-API-Key` header no longer raises the caller's rate limit.
+- A demo reset now deletes API keys created by visitors.
 
 ### Fixed
 
-- **The guest app now looks like an app on a phone rather than a website rendered small.** The screens a visitor sees were built web-first, and every native branch in them dropped something rather than replacing it. The home hero had no background at all off the web, where a browser gets a layered wash behind the name: it now has one, built from the brand's own accent rather than a new dependency. The headings that sit on a header photo get a shadow to stay legible, as they always have in a browser. Location cards arrive with a short staggered rise instead of appearing fully formed, and skip it entirely when the device asks for reduced motion. Top-level screens carry iOS large titles while the screens pushed on top of them correctly do not, the double hairline between a header and the first card is gone, and a back button no longer repeats the previous screen's title. The scroll-to-top button is gone from the app, where it could never do what it does in a browser and where the platform already offers the gesture, and the footer folds into a centred stack that fits a phone instead of a desktop row running off the edge. Its link to the admin dashboard is gone too: the dashboard is deliberately web-only, so on a phone that row led nowhere. The privacy policy, contact details and social links all stay.
-- **Language and theme were unreachable from the app's first screen.** The settings control lives in the navigation header, and the home screen deliberately draws without one so its hero can run to the edges of the display, so a visitor who opened the app and never navigated had no way to change either. The home screen now carries its own control, clear of the status bar.
-- **The native app ignored the theme it was told to render in, and its headers were the wrong colour entirely.** The scheme the app draws with came from two different places: on the web it was the visitor's own light/dark pick, and on a device it was React Native's device-only reading, so the in-app theme picker recorded a choice that nothing rendered. The two also disagreed on the default, since a device that declares no scheme reads as light where the app treats undeclared as dark. There is now one answer to that question. React Navigation paints a native header from its own theme and had never been given one, so every header on a device rendered its light default: in dark mode, a white bar above a near-black page. The status bar had the same shape of bug and followed the phone rather than the app. The home screen, the one guest route that draws without a header, started its hero at the very top of the display on a constant sized for the web navbar, which lands a few points inside a notch. Location cards cast their shadow from the same view that clipped its own children, which iOS honours by clipping the shadow away, so every card rendered flat on an iPhone while Android kept its depth. And both card grids sized their columns with a CSS `calc()` expression that React Native cannot parse, which reached the app at every width above 600dp — every tablet, and every phone turned sideways.
-- **The service floor counted combinable tables twice.** A group is drawn beside its member tables, which is right — a member stays individually bookable — but the totals counted each as its own table, so a party seated at a combined group left both its members reading free, and the unassigned row counted as a table that does not exist. A six-table room could report eight free. Statuses now count real tables only, a sitting on either a group or a member shows on both, and covers count each party once however many units carry it.
-- **The service floor spoke English regardless of the chosen language.** Its section headings for combined and unassigned tables, and the label for a booking with no table, were hardcoded, so a French or German admin got them untranslated. The same three strings appear on the timetable and are fixed there too.
-- **The dialog showing a new API key confirmed copies it had not made.** Browsers expose no clipboard outside a secure context, which includes the plain-HTTP install the setup guide describes, and a rejected write was never caught either — so an admin saw "Copied", closed the one screen that ever shows the secret, and lost it. Success is now reported only once the write lands, with a notice to select the key manually otherwise.
-- **Two date-picker tests failed on the last day of every month.** The picker renders one calendar month at a time, so "tomorrow" is not on screen on the 31st, and the tests assumed it was. The picker was right; the tests now pin a fixed date. A third one, paging to the next month, failed on the first of every month instead: the picker offers 29 days ahead, so on the 1st the next month is out of range and the arrow is rightly disabled. It is pinned the same way.
-
-- **An API key without `guests:read` can email a guest again.** The guest redaction reached the send path as well as the read path, so a key holding `bookings:write` was told a booking carrying a customer address had none — which made the feature useless to exactly the keys meant to automate it. The scope governs what a caller may see, not who the server may write to; the address is now read unredacted to send to, and it is the recipient echoed back in the success message that is withheld instead.
-
-- **A booking email sent from a server with no SMTP settings now says so.** The failure was flattened into `booking.email_send_failed` along with every transport error, so a caller could not tell a permanent setup problem from a connection that might work on the next attempt. It now carries `email.not_configured` in its own right.
-
-- **API keys minted on a demo instance now go away when it resets.** `AppDbContext` relied on the AdminApiKeys cascade to clear them alongside the credentials wipe, but the reset applies raw SQL under `PRAGMA foreign_keys=OFF`, so nothing cascaded. Because the wipe also resets `sqlite_sequence`, the surviving key's `UserId` landed back on the freshly seeded Owner and kept working for its full one-year expiry. Self-hosters are unaffected; a public demo, whose admin password is published, was handing every visitor a durable bearer credential.
-- **The one-time "copy your new key" dialog no longer pushes its Copy button outside the dialog.** The secret is a single unbroken token, so its min-content width is the whole string and the flex row refused to shrink below it.
-- **The scroll-to-top button now stops above the footer instead of sinking into it.** It used to be an overlay pinned to the viewport, so at the bottom of the page it sat on the footer, and the footer had to reserve an empty band underneath its own links to keep them clear. It is now a row of the scroll content that sticks to the bottom of the scrollport: it holds the viewport for as long as the page has further to go, then settles an inset above the footer's top edge, and the footer is back to its natural height. Sticky positioning is what makes that free. The climb the button does at the end of the page is the one an `onScroll` handler used to compute on every event, which is what juddered in #399, done by the browser with nothing re-rendering.
-- **The hidden scroll-to-top button no longer sits in the web accessibility tree.** The FAB stays mounted while hidden so it keeps its measured width, and hid itself with `accessibilityElementsHidden` and `importantForAccessibility`. Both are native-only: react-native-web drops them, so on the web build a screen reader was offered a "Scroll to top" button for the whole page, including at the top where pressing it does nothing. It now hides with `aria-hidden`, which React Native maps onto that same native pair and react-native-web forwards to the DOM.
+- The native app looks and behaves like an app rather than a shrunken website: correct dark mode, headers, status bar, shadows and layout on tablets.
+- Language and theme can be changed from the native app's home screen.
+- The service floor counted combinable tables twice, and some of its labels weren't translated.
+- The new API key dialog could say "Copied" when nothing was copied.
+- API keys without `guests:read` can email guests again.
+- Sending email with no SMTP configured now returns a clear `email.not_configured` error.
+- Layout and accessibility fixes for the scroll-to-top button and the API key dialog.
 
 ## [1.9.0] - 2026-08-27
 
-Hi all! The headline this time is languages. OpenResto now speaks English, French, Spanish and German across the guest site and the whole admin, with a switcher on the page you are already on and a default a self-hoster can set from the environment. Alongside that, the admin timetable has been rebuilt around real sittings, and narrowing a location's hours now tells you which bookings you just stranded instead of leaving you to hear it from the guest.
+Hi all! The headline this time is languages: OpenResto now speaks English, French, Spanish and German across the guest site and the admin. The admin timetable has also been rebuilt, and changing a location's hours now tells you which bookings no longer fit.
 
 ### Added
 
-- **Translated into French, Spanish and German, with an in-page language switcher** (#368, #374). Every guest- and admin-facing string goes through i18next. Guests switch from the navbar overflow menu, admins from the sidebar footer; the choice is remembered in the browser and dates, times and numbers reformat with it. Self-hosters set the default with `OPENRESTO_DEFAULT_LOCALE` (or `Locale:Default`) on the backend, served on `GET /api/brand` — the frontend image is prebuilt for releases, so a build-time variable would mean rebuilding the app to change its language. Resolution runs picked language, then instance default, then English. Hand-rolled `${n} thing${n !== 1 ? "s" : ""}` plurals became real singular/plural key pairs. A test keeps the four locale files key-identical and checks every `{{placeholder}}` survives translation.
-- **Server rejections arrive in the viewer's language** (#375). A French guest hitting a paused restaurant read "Bookings are paused until 19:00" under an otherwise French page. Every rule that rejects a request now carries a stable machine-readable code alongside its English message, resolved to translated copy at one seam in the API layer, with values travelling as separate arguments rather than baked into finished English. An untranslated code falls back to the server's own message. Two messages turned out to be two rules sharing one code and were split.
-- **A location's schedule edit reports the bookings it stranded** (#359). Narrowing opening hours, dropping an open day or switching a day to walk-ins never touched the bookings already taken under the old schedule — nothing cancelled them and the guest was never told. `/admin/locations` now lists the upcoming bookings that no longer fit above the form, with the reason and a link that opens each in place, and the dashboard carries the total across active locations as a banner. It is a report, not a gate: blocking the edit would leave an admin unable to stop taking new bookings. The banner is silent at zero, since an all-clear shown every day trains the eye to skip it.
-- **Moving a booking composes the email that tells the guest.** Moving a booking and telling the guest were two unrelated steps, so the message a guest most needs to be exact about was the one most likely to be wrong. A save that changes the sitting now writes a notice naming both the old time and the new into the email form and scrolls it into view; the admin edits it and sends. Composing was the missing step, not sending. Offered only after the write lands, so a rejected move is never announced, and only when the booking carries an address. Times resolve through the restaurant's timezone and name it.
-- **Changing a location's timezone warns about the bookings already on the books** (#362). Bookings are stored in UTC, so the guest is still expected at the same real moment — what moves is the wall-clock time their confirmation email gave them, and nothing re-sends. A warning under the field, not a gate and not a rewrite: silently rebasing confirmed bookings as a side effect of a settings edit is the failure this area exists to avoid, and blocking the edit would leave a wrong timezone uncorrectable. Shown only when the location holds upcoming bookings.
+- **French, Spanish and German translations**, with a language switcher (#368, #374). Set the default language with `OPENRESTO_DEFAULT_LOCALE`.
+- **Error messages from the server are translated** too (#375).
+- **Schedule conflicts:** after narrowing a location's hours, the admin lists the upcoming bookings that no longer fit, and the dashboard shows the total (#359).
+- Moving a booking pre-fills an email telling the guest about the change.
+- Changing a location's timezone warns you if it has upcoming bookings (#362).
 
 ### Changed
 
-- **The admin timetable draws sittings on a minute axis instead of bookings in hour buckets** (#334). The old grid ignored end times, bucketed by the hour so an 18:00 and an 18:30 booking on one table collapsed into one cell, and matched on table id, which a combinable-group booking does not have. Bookings now sit on a continuous minute axis from real start to resolved end, overlaps stack into lanes, group bookings get their own rows, and a booking whose table was deleted lands on an unassigned row instead of vanishing. A now marker makes current occupancy readable at a glance, and the axis spans the day's sittings plus an hour either side rather than the whole service window, so a location configured 00:00–23:59 no longer buries two lunchtime bookings in 24 columns.
-- **Admin booking lookup is one free-text search** (#358). The lookup split what you typed client-side into "email if it contains an @, otherwise a booking reference", in three separate places, so a partial email matched nothing and a customer name matched nothing at all. It is now one backend query matching name, email and reference as a case-insensitive substring. Guest-facing reference lookup tolerates case and surrounding whitespace, since references are minted lowercase and pasted out of an email.
-- **A search from the sidebar shows its results.** Searching navigated to the bookings screen, which then rendered whatever view mode was persisted — so "Search Results, N matches" sat above a timetable of one location on one day that had never heard of the search. A search now forces the list view and takes the location chips, status tabs and view toggle down with it, since the search fetch ignores all three.
-- **The guest language picker sits in the navbar overflow menu, not the footer** (#387). It opens a modal listing the four languages as radio rows; nesting the dropdown inside a menu item would put two anchored panels live at once, which the shared panel's one-focus-target contract does not allow.
-- **Name and party size sit together on the admin's new-booking form.** They are what staff have in hand when someone rings. The optional email no longer takes the half-row beside the seats picker while the name sits alone below it.
-- **The schedule-conflicts panel moved above the location form, and the autosave outcome lost its empty card.** The stranded bookings were three cards below the control that stranded them. The save outcome had a section card of its own, which rendered as an empty box between edits; it is a bar stuck to the foot of the scrollport now, so the outcome and its ten-second undo stay reachable from whichever card was edited.
+- The admin timetable shows bookings at their real start and end times, including combined tables and bookings whose table was deleted (#334).
+- Admin booking search matches name, email or reference, including partial matches (#358).
+- The guest language picker is in the navbar menu (#387).
+- Small layout improvements to the new-booking form and the location page.
 
 ### Fixed
 
-- **The booking-edit conflict check had never run.** Editing a booking is how it gets moved, so this was the only guard between an admin changing a date and the same table being seated twice. The method wrote the request onto the booking before asking whether the two differed, so both comparisons were a value against itself and the block was unreachable — excluded from coverage and pinned by a test asserting that the double-booking succeeds. It now compares against a snapshot taken before mutating. Turning it on surfaced two latent bugs: the occupancy window took its end from the booking and its start from the request, and a stored UTC value was being shifted by the server's offset instead of labelled. It also had to move off the table-only conflict query, which misses group bookings entirely.
-- **The picker offered late-night slots the hold endpoint then refused** (#363). Availability emitted Saturday's 18:00–02:00 after-midnight slots as part of Saturday, while the hold gate resolved 00:30 against Sunday — exactly the Friday-and-Saturday-only late-night venue. Three copies of the window arithmetic existed and disagreed; they are one helper now, owning the rule the other two only half had: a window closing after midnight belongs to the day it opened. A test pins the invariant directly — every slot the picker offers for an overnight service must pass the gate the hold endpoint uses.
-- **A walk-in-only day was reported as a schedule conflict.** Walk-in-only stops new online bookings; it does not close the location, and staff-recorded walk-ins are deliberately exempt from the gate — so such a location always holds bookings and every one was reported, giving it a conflict count that could never reach zero and advice that meant cancelling guests with a real table. Only the two reasons that mean the guest arrives to a closed restaurant count now.
-- **The schedule-conflicts panel could not tell "all clear" from "could not check".** It rendered nothing for both, so a working panel and a dead one were indistinguishable on every location that has nothing wrong with it. Three states now: conflicts listed, an empty result stated in a quiet row, and a failed read still silent.
-- **Opening a stranded booking left the location you were editing.** The panel's Open button routed to the bookings screen with the reference as a search term, dropping the form's scroll position. It opens in the detail popup over the form now, the same surface the dashboard uses, and the list updates without a manual refresh.
-- **The Filter Unread toggle rendered off the side of the notifications page.** The full-width scroller beside it does not shrink, so it claimed the line and pushed the toggle past the content column — at 1000px the toggle started at x=982 against a column ending at 976. The call site's flex fix was being forwarded to the inner scroll view rather than the box doing the layout. Pinned with a spec asserting the toggle stays inside the viewport at 1024 and 1600 wide.
-- **The scroll-to-top button landed on the footer's links** (#352, #353). It rested in its container's bottom corner over whatever was under it, which at the end of a scroll was the footer's Admin link. It now rises with the footer and comes to rest on its top edge, and sits in the gutter beside the content column rather than the raw viewport corner on wide monitors. The Locations footer itself sat inside the list column, so opening the booking drawer squashed it beside the form; it spans the page beneath both panes now.
-- **Two grid bugs from the same function.** A booking outside the current opening hours had no column and vanished from the timetable, and an overnight window computed a negative span, collapsing to a single column with midnight rendering as "0a".
-- **Cancelling a booking from the dashboard could leave the button stuck mid-cancel**, and a location passed in the URL was overridden by the persisted selection rather than winning.
-- **A clean checkout failed six frontend tests outside a US locale.** Relative-time assertions ran without setting an active locale, so they were really asserting the host machine is en-US: en-CA renders "5 mins ago" and en-GB "5 min ago" where en-US gives "5m ago". GitHub's runners are en-US, so CI stayed green while contributors elsewhere saw failures. The app itself was never affected.
+- Editing a booking could double-book a table. The conflict check had never run.
+- Late-night slots after midnight were offered and then refused (#363).
+- Walk-in-only days were wrongly reported as schedule conflicts.
+- The scroll-to-top button covered the footer's links (#352, #353).
+- Bookings outside current opening hours disappeared from the timetable, and overnight hours broke it.
+- Several smaller admin fixes: a stuck cancel button, the notifications filter toggle, opening a conflicting booking in place.
 
 ### Security
 
-- **An uncoded infrastructure failure could have put library detail on the wire in production.** The exception type's own contract said it surfaces as a generic 500 outside Development, and the handler returned its message in every environment. Nothing leaked, since both throw sites pass hand-written constants, but the first `catch (SmtpException ex)` forwarding the library's message would have published a mail host and account. Disclosure now keys off whether the exception carries a code: a coded one is copy its throw site wrote for a client, an uncoded one is reported generically. Development still shows everything.
-- **Five high-severity denial-of-service advisories in `image-size`** (GHSA-w3rx-r6r6-pgpr, GHSA-5p2g-fcmc-qvqq), reachable through the Metro toolchain. Two copies of Metro were installed and only one had picked up the patched release; both are deduped onto it now, within the ranges already declared. `npm audit` reports zero vulnerabilities.
+- Unexpected server errors no longer return internal details outside Development.
+- Patched `image-size` denial-of-service advisories (GHSA-w3rx-r6r6-pgpr, GHSA-5p2g-fcmc-qvqq).
 
 ## [1.8.0] - 2026-08-17
 
-Hey everyone! This is a bit of a meety update, with multi-user support with two roles (Owner and Manager), Audit Trails for the Admins, and another frontend pass. Enjoy!
+Hey everyone! This is a meaty update: multiple admin accounts with Owner and Manager roles, an audit trail, and another frontend pass. Enjoy!
 
 ### Added
 
-- **An admin activity trail — who did what, when, and from where** (#327). Multi-user admin arrived without any record of what each user did with it. Every state-changing admin action now lands an append-only entry, readable by an Owner at **Activity** in the sidebar. Coverage is structural rather than a list someone maintains: the audit middleware records any mutating request to an endpoint behind an admin policy, and a test reflects over every controller action to fail the build if one is gated in a way the recorder cannot see. Services layer readable detail on top — `Cancelled booking ABC123`, `Resized Table 4 from 2 to 4 seats` — with an expandable before/after diff alongside the raw method, path, status code, IP and user agent. Refused attempts and failed sign-ins are kept too. Two things are deliberately absent: an entry never carries a secret or a customer's identity (diffs are written field by field by the service that made the change, and credential and customer fields are masked on top of that, so a GDPR purge is not quietly undone), and there is no delete endpoint at any role, because an admin who can erase the audit log has no audit log. Entries leave only through a retention pass, a year by default via `Audit:RetentionDays`. Upgrading adds one table and nothing else moves. The demo seeds a handful of entries and wipes the table on every reset, since its admin password is public.
-- **Multiple admin accounts, with Owner and Manager roles** (#265). `AdminCredentials` is no longer a singleton table: each row is a user with a display name, role, active flag and its own security question, and login looks the account up by email rather than comparing against whichever row came back first. JWTs carry the user id and the account's real role instead of a hardcoded `Admin`, so every self-service action targets the person who made the request — the bug that made a second account impossible even once one existed. Owners get a Users card to invite colleagues with a temporary password, promote and demote, deactivate and reactivate, and reset a password for someone locked out; Managers never see it. The instance cannot be locked out of itself: the last active Owner cannot be demoted or deactivated, and nobody can deactivate their own account or change their own role. Role values live in one allow-list and controllers gate through named policies (`RequireAdmin`, `RequireOwner`), mirrored on the frontend by a single `useCan(capability)` seam. Upgrading is a no-op — the migration is additive, the existing admin becomes the Owner, and sessions started before the upgrade keep working. The demo seeds both roles.
-- **A "Book now" button on every location card, and the card body as its own Details toggle** (#328). Time chips were the only way into the booking panel, so a location with nothing free under the current filters had no route in at all — and the fix for it lived inside the panel you could not open. Book now is seeded with the earliest slot on offer, falling back to the day's opening time. It stays put on a day the location is shut or takes walk-ins only, because today says nothing about next Tuesday: the panel opens on that day's notice and its date picker moves the diner on. It is absent only for a location that takes no online bookings on any day. Pressing the card body now expands and collapses the details, so the whole tile is the target.
-- **A location picker inside the booking panel** (#329). The panel opened on whichever card you pressed and had no way to change its mind, so switching branch meant closing it and starting again. Its title is a picker now whenever the page lists more than one location; party size, date and time carry over, and the form re-asks for availability and moves to the nearest bookable slot when the new location cannot take that time.
-- **A live preview of the home page next to the brand form.** Every field on `/admin/settings/brand` described something you could only check by saving and opening the customer site in another tab. A miniature home page in browser chrome now sits beside the form on a wide screen and sticks while you scroll — favicon and app name in the tab, website URL in the address bar, hero, highlights strip, and footer with its copyright and social links. It renders from unsaved form state, so a colour or an uploaded image shows up as you type, and its own light/dark toggle is independent of the admin's theme. Below 1100px it stacks above the form.
-
-### Fixed
-
-- **The time picker scrolled away from the press, then flashed a second picker on the way out.** Three defects left behind by #348, all in the shared dropdown rather than the time picker. The open list positioned itself at its current value with an animated scroll, so a late sitting raced fifty rows down before settling; it lands in one frame now. The trigger's measurement was released in the same handler that closed the panel, so the panel lost its anchor mid-fade and snapped to the centre of the screen — the measurement now outlives the animation. And on a phone, where the booking panel is a bottom sheet, the picker's `Modal` opens inside another one; react-native-web gives each a focus trap and the two settled on the picker's backdrop, so #348's keyboard support reached nothing at all on the surface most diners use. The panel takes focus back when something else takes it, innermost popup only. All three are pinned by an end-to-end spec, since where a panel sits and what holds the keyboard are things a component test cannot see.
-- **The date picker's calendar cost 33 tab presses to get past, and moved nothing with the arrow keys** (#350). Every day of the month was its own tab stop, the arrow keys did nothing, and a screen reader was handed 31 unrelated buttons rather than a table with a row and a column. The month is an ARIA grid of `gridcell`s now, with one tab stop on the highlighted day: arrows move a day or a week, Page Up/Down a month, Home/End the ends of the week, Enter or Space takes the day, Escape backs out, and focus follows the highlight. The visible month is read off the highlight, so arrowing off the end pages the calendar by itself and no key can leave the bookable range. Closed and walk-in-only days keep their place and can be landed on, since skipping them hides the reason they are unpickable. One thing only a browser shows, and the reason there is an E2E spec: a `gridcell` is a `div`, so Enter's default action fell through to the backdrop and dismissed the calendar.
-- **The app's one dropdown could be reached by keyboard and then not used with one** (#348). `Select` backs fifteen controls. It announced itself as a `menu` of `menuitem`s and never said which value it held, had no keyboard support at all, and measured its position once so it had to close itself on a resize. It is a `combobox` over a `listbox` of `option`s now and names its current value; arrows, Home/End, Page Up/Down, Enter, Space, Escape, Tab and type-ahead all work. The open list takes focus itself and moves an `aria-activedescendant` highlight, so a fifty-row seat picker adds one focus target instead of fifty and closing hands focus back to the trigger. The panel tracks its anchor on scroll and resize instead of dismissing.
-- **The same dropdown machinery was hand-rolled four times.** The navbar's overflow menu had its own copy of the placement arithmetic, and the two `TimePicker` files were a third and fourth spelling of the same option list. All of it goes through one `AnchoredPanel` now: one `Modal`, backdrop, measurement, and set of focus and key handling, with the geometry (flip up, pull back on at an edge, right-align a panel wider than its trigger) in one tested function. The overflow menu got the same keyboard support, and its Help popup uses the shared dialog shell and a real `Button` instead of a `Pressable` painted to look like one. `TimePicker` is a `Select` over the quarter-hours, which is all it ever was. `@react-native-picker/picker`, a dependency imported nowhere, is gone.
-- **Smaller picker fixes in the same sweep.** The native date picker listed its dates as `menuitem`s. The web calendar had no keyboard exit, since `onRequestClose` covers the Android back button and not a keypress; Escape closes it now, and it takes focus while open and gives it back on close. Its month arrows are `IconButton`s rather than bare `Pressable`s wrapping `‹` and `›`. And an option tint built by appending two hex digits to the brand colour produced no colour at all for a three-digit brand like `#0a7`; the tints mix through `hexToRgba` instead.
-- **Pausing bookings closed the whole book, not the next hour** (#326). "Pause bookings for 60 minutes" is a service-floor switch, but `IsPaused()` was checked once per request with no reference to the time being booked — so a table next Saturday was as unbookable as one at 19:00 tonight, and `/api/availability` returned every slot on every date as unavailable. The gate is `IsPausedFor(bookingUtc)` now, evaluated per slot rather than once per response, so tonight goes dark and the rest of the week is untouched. The rejection names the local time the pause lifts, since the diner's next move is to pick a later slot. In `BookingService` the check also sat above the line normalizing the requested date to UTC; it now runs after. Admin copy follows the behaviour.
-- **Walk-in-only days could be filled in and submitted like any other day** (#320). The booking panel swapped its time list for a notice and disabled Confirm, then left everything else live: the exact-time picker, seating disclosure, name, email, requests, and a table hold that fired on every keystroke of a valid email and came back rejected. It now renders the notice, party size and date and nothing else, and requests no hold for a day the server would refuse one on. Closed days get the same treatment. Walk-in days stay in the date picker, greyed out and labelled "Walk-ins only": the location is open, so what the diner needs to know is that they can turn up.
-- **The date picker wouldn't let you leave a walk-in-only day.** The first cut of #320 folded walk-in days out of `openDays`, which the two pickers took very differently. The web calendar greys out days outside `openDays` rather than hiding them, so it disabled every walk-in day and turned the trigger red under "normally closed on this day" — and handed a fully walk-in location a calendar with no pickable date at all. The native picker filtered them out instead, leaving the trigger reading "Select a date" while a date was selected. Unbookable days are their own input (`unavailableDays` plus a reason) on both pickers now. Two smaller things fell out: the native picker's card swallows its own presses, since a press on an unpickable row reached the backdrop and dismissed the picker, and a walk-in day no longer claims the venue is closed.
-- **Deselecting a favicon icon never saved.** An omitted field means "leave this alone" to the brand endpoint and an empty one failed icon validation, so there was no value the frontend could send that meant "no icon". Blank now clears it.
-- **The email card's "Save to apply" banner sat squashed against its own top edge, and outstayed the change it described.** A shared style's `paddingTop: 0` survived the card's own `padding` (a longhand wins over a shorthand regardless of order), so the text had a full gap below it and none above. The banner also only appeared when booking confirmations were switched on and was never cleared when they were switched back off.
-- **Notification rows rendered with red blocks down both edges.** `ReanimatedSwipeable` lays its swipe-to-delete panels behind the row, and the row never painted a background, so on a pointer device the panels showed through as red bleed at either end. The row paints the card surface now, and the panels only render where a swipe is actually possible.
-- **A reachable booking could be reported as a network failure on `/lookup`.** `useBookingLookup` fetched the booking and then its location inside one `try`, so a 429 or an archived location threw away the booking it had just successfully retrieved and rendered "We couldn't reach the booking system" over it. The location fetch has its own catch now; losing it drops the address, map and calendar detail and leaves the booking on screen.
-- **The same settings card header rendered at three different weights.** `AccordionCardHeader` had two callers while eleven kept hand-rolled copies, with the icon tint drifted to three values and only some truncating their subtitle. Every collapsible card goes through the shared header now, which gained the two things the copies had that it didn't: a state-coloured icon and subtitle, and a trailing slot for the push card's spinner.
-- **A dropdown label longer than its trigger pushed the chevron outside the control.** The five pickers truncated their label only when called with a leading icon; without one the text had no flex and simply overflowed. All five truncate in both forms now, and the two `TimePicker` triggers picked up the `gap` the other three already had.
-- **Smaller consistency fixes in the same sweep.** The admin sidebar's Search was still a `Pressable` painted to look like a button and is a `Button` now. `ConfirmModal`'s dismiss button was brand-toned while every other dismissing action is neutral. The notification row's "Mark Read"/"Mark Unread" were the only Title Case row actions. "Cancelling..." was the last three-dot ellipsis, and the push card's "Notifications blocked - enable in browser settings" the last hyphen standing in for a sentence break.
-- **Upgrading to the multi-user schema failed on any instance that already had an admin account.** `AddMultiUserAccounts` added `CreatedAt` with a `CURRENT_TIMESTAMP` default, which SQLite permits only while the table is empty — so a fresh install migrated fine and the only databases that hit it were real ones. The column is added nullable, backfilled, and the table rebuilt, and the migration-safety CI job now seeds a row into every table before applying new migrations so an empty-database pass can no longer stand in for a working upgrade.
+- **Multiple admin accounts** with Owner and Manager roles (#265). Owners can invite, promote, deactivate and reset other users. Your existing admin becomes the Owner when you upgrade.
+- **Activity log** showing who did what in the admin, visible to Owners (#327). Entries are kept for a year by default and can't be deleted.
+- **"Book now" button** on every location card (#328).
+- **Location picker** inside the booking panel (#329).
+- **Live preview** of the home page next to the brand settings.
 
 ### Changed
 
-- **Settings is four pages now, not one scroll** (#322). Everything was stacked on `/admin/settings`, and adding the Users card in #265 made a long page longer. It splits into `/admin/settings/brand` (identity, footer, highlights), `/email` (SMTP, guest confirmations, push), `/users` (Owner only) and `/account` (your own password, email and security question), with `/admin/settings` redirecting to Brand so old links and the `g s` shortcut still land. The sidebar splits to match — MANAGE for day-to-day, CONFIGURE for settings, Users only for a role that can manage users — and now scrolls on its own instead of clipping the log-out row on a short screen.
-- **Settings UI cleanup.** The settings routes share the same 1200px page width as every other admin route instead of a narrower 880px column. Field pairs that used to stack full-width — contact phone/email, highlights heading/subheading, the security-question and password forms, the invite email/display-name pair — now sit side by side and drop back to stacked on a narrow screen. In the Users card the role picker moves inside the account tile under a "Role" label, "Add user" stops spanning the card, and an account with no display name no longer prints its email twice. The sidebar shows the signed-in address in full.
-- **The Brand page is five cards grouped by what they do, not one card of everything.** Brand Identity held the app name, tagline, colour, favicon, header image and fit, website URL, both contact fallbacks and the highlights heading, while the Highlights card below it held the list those last two fields captioned. It splits into Brand Identity, Homepage Header, and Contact & Website; the heading and subheading move into the Highlights card next to the list they label, and each card saves its own fields.
-- **The brand cards have no Save button.** Five cards on one page meant five Save buttons over subsets of the same record, plus a preview showing a change you then had to remember to commit. Every field writes itself 800ms after you stop typing, and the corner where Save sat reports "Saving…", "Saved", or the server's own message with a Retry. A burst of typing is one request, and a pending edit flushes if you navigate away mid-word. Values the server would reject are held back rather than sent and bounced, and the reason is stated in that same corner ("Not saved: waiting for a full hex colour, like #0a7ea4.") — with no button to grey out, silence would read as the autosave being broken. The two list editors keep their explicit Save, since a debounce there would create a row per keystroke. `saveBrandSettings` now returns a result with an `ok` flag; callers previously looked for the word "fail" in the message, which quietly reported every validation error as a success.
-- **The Locations detail form has no Save button either, and no Discard.** The same autosave covers name, address, blurb, menu link, contact details, opening hours, walk-in policy, timezone, booking duration, slot interval, oversize cap, reference format and tags, with the outcome reported where the footer used to hold "Unsaved changes". Four rules mirroring the server hold a write back rather than sending one it would reject (missing name, a menu URL that is not http(s), a phone over 32 characters, a malformed contact email), and the reason is stated in that footer. A half-typed tag no longer needs the Save press: the tag input commits on Enter or blur, and that commit triggers the write. Discard is gone — once edits save themselves there is nothing left to throw away. What replaces it is undo-after-save, below.
-- **A filled button in the admin now means create or commit, never "save".** `AddRow`'s "Add Table" and "Add Section" sat bottom-right while every other create sat bottom-left; they are all bottom-left now, flush with the rows they append to. The social-link and highlight editors each serve both a new row and an existing one and labelled the commit "Save" either way; it now reads "Add" for a new row and "Save" for an edit, and "Create user" became "Add" to match. What still commits on an explicit press does so deliberately: credential changes, because the press is the confirmation; SMTP settings, because the confirmation toggle travels in the same payload as the credentials and the connection test saves before it tests; booking edits and permanent deletion, because they are guest-visible or irreversible; and a table row's inline edit, whose Cancel genuinely reverts.
-- **Every autosaved form can undo its last save.** A save that lands offers "Undo" beside it for ten seconds, putting the previous values back in the form and telling the server rather than only one or the other. Single level on purpose: it answers "that wasn't what I meant", not "walk me back through my session". It expires rather than lingering, since an Undo that sits there indefinitely reads as a pending action instead of a receipt, and it never appears next to a failed save. A form opts in by telling the hook how to put a payload back into its own inputs; the Locations form runs its own derivation backwards to do that.
-- **Row actions in the admin are named buttons, not bare glyphs.** Delete, Combine, Edit, Reset password, Deactivate and Reactivate all carry their label now, across the sections and tables list, the social links and highlights lists, the notification rows and the Users card. The admin runs on tablets, often for staff who are not in it every day, and a trash can next to a link icon next to a key is a puzzle rather than a control. Move-up/move-down arrows stay as icons, since an arrow is its own label.
-- **Archiving and deleting a location act on the location you have selected** (#335). `/admin/locations` had two independent location pickers — the pill row at the top and the Danger Zone's own row at the bottom — with nothing keeping them in step, so you could be editing Downtown and permanently delete Airport. The Danger Zone is gone. One pill row lists archived locations alongside active ones, and Archive lives at the foot of the selected location's card behind a confirmation naming the upcoming bookings that stop being reachable. Selecting an archived location used to be impossible; it now loads a read-only panel with Restore in one press and no confirmation, because reversible actions do not get gates. The header reads the real split ("3 active, 1 archived") instead of hardcoded text.
-- **Deleting a location requires archiving it first, and the server enforces it** (#335). `DELETE /api/admin/restaurants/{id}` would happily cascade a live location and its entire booking history on request, which contradicted the archive-then-purge pattern the docs describe. It now rejects a location that is not archived, so the two-step is a rule rather than a UI convention and the archive step serves as the undo. Delete is only rendered on an already-archived location; its confirmation states the blast radius with real counts (sections, tables, groups, and bookings with the upcoming ones called out) from a new `GET /api/admin/restaurants/{id}/delete-preview`, and it requires typing the location's name. Both endpoints are Owner-only now, matching user management.
-- **Untangled the circular dependency between `useBookingSeating` and `useTableHold`** (#316). The split in #315 left one seam, bridged by a ref assigned during render that only worked because of the order the two hooks happened to be called in. The explicit hold release turned out to be redundant: every param identifying the held unit is already a dependency of the hold effect, so a seating change either stops being holdable or resolves to a different unit and is replaced atomically. The ref, the `releaseCurrentHold` argument and the party-size release effect are gone, and `releaseCurrentHold` is no longer exported, so swapping the two hook calls fails to compile rather than silently changing behaviour. Four `useTableHold` tests cover the contract the ref stood in for.
-- **`/lookup` and `/booking-confirmation/[bookingRef]` are one screen now** (#337). They were around 1,100 lines apart rendering nearly the same booking, and `getBookingByRef` caught every failure and returned `null`, so a 500 or a 429 rendered as "No booking found". It is a small state machine now — idle, resolving, found (upcoming, cancelled or past), not-found, and a distinct error state with its own retry — shared through a new `BookingResultPanel` and `useBookingLookup` hook. Booking confirmation is a door into it, prefilling the reference, email and a `justBooked` flag. The result slides in beside the search form as a side panel on wide layouts or a bottom sheet on compact ones, via a new `SlidePanel` generalized out of `BookingDrawer`. A cancelled or past booking drops the cancel button entirely instead of leaving a disabled one behind; that status is the panel's header line. Ten hand-rolled `Pressable`s are `Button`/`IconButton` now, and the calendar and maps actions are one `CalendarActions`/`DirectionsActions` pair each — maps work on native now, since `Linking.openURL` was never a web-only API.
+- Settings is split into Brand, Email, Users and Account pages (#322).
+- Brand and location settings save automatically, with ten seconds to undo.
+- The brand settings are split into five cards.
+- Row actions in the admin are labelled buttons instead of bare icons.
+- Archiving and deleting act on the location you have selected, and a location must be archived before it can be deleted (#335). Deleting is Owner-only.
+- `/lookup` and `/booking-confirmation` are now the same screen (#337). Server errors no longer show as "No booking found".
+
+### Fixed
+
+- **Upgrading to the multi-user schema failed on existing installs.**
+- Pausing bookings blocked every future date, not just the pause window (#326).
+- Walk-in-only days could still be filled in and submitted (#320), and the date picker couldn't leave them.
+- Dropdowns and the date picker now work fully with a keyboard and screen reader (#348, #350).
+- Clearing the favicon never saved.
+- Many smaller visual fixes to dropdowns, settings cards, notification rows and the email settings banner.
 
 ## [1.7.0] - 2026-08-12
 
-This is a frontend focused release. I wanted to move away from responsive design towards interfaces that felt familiar on mobile and web. I also wanted to give the code some love, so a ton of refactoring and accessibility passes have been included.
+This is a frontend-focused release. I wanted interfaces that feel familiar on both mobile and web, and I gave the code some love with a lot of refactoring and accessibility work.
 
-Next up, I wanted to tackle the biggest piece of tech debt, which is accounts. Right now, the app is scoped to one admin. While I originally designed the app for one person, I realise now the app is in a good enough state to think about scale. While I don't believe the app should be used for large scale franchising, with the UI changes, and future Admin changes, it'll be more than suitable for owners with 5+ locations. One other use case, is separating out your existing Restaurant into separate "locations." such as an upstairs, downstairs, patio etc.
+Next up is accounts. The app is currently scoped to one admin, and it's now in good enough shape to think about restaurants with several locations, or one restaurant split into areas like upstairs, downstairs and patio.
 
 Cheers!
 
 ### Added
 
-- **Locations page redesigned around comparing locations, not reading one at a time** (#302) — party size, date and meal window move out of each card into a page-level filter bar that drives every card's availability at once and summarises the result ("2 of 3 locations have tables"). Cards shrink from a ~700px banner to a 108px tile (64px on phones) so several fit above the fold, and booking moves out of the per-card accordion into a floating panel beside the list or a bottom sheet on phones, inheriting guests, date and time so it only asks for name, email and confirm. Nothing is removed — sections, tables, the seating map, weekly hours, directions, the blurb and the menu still live behind "Details". Follow-ups iterated on the panel itself: an inset card rather than a full-height slab welded to the page edge (#308), a grab handle that actually drags (#308), guests and date back inside the panel (#307), and three labelled sections instead of one flat stack (#307, #308).
-- **Accessibility primitives and a full labeling sweep** (#303, #305, #306, #314) — the frontend had one shared `Button` used in 5 places, 242 hand-rolled `Pressable`s and 219 loose `Ionicons` at 17 ad-hoc sizes, with no consistent way to name any of them. New `Icon`, `Button`, `IconButton` (label required — an icon-only control with no name fails WCAG 4.1.2 outright) and `ModalCard` primitives replace three near-duplicate modal implementations and back every subsequent fix. Every interactive element in `app/` and `components/` now has a name and a role: the shared pickers announce their current value instead of a bare chevron, choice groups that only differed by border colour became radios with real checked state, booking rows collapse from four loose text nodes into one announced summary, and six horizontally-scrolling rows gained a named group, a "scrolls sideways" hint and a visible scroll button via a shared `HorizontalScroller`.
-- **Route Manifest CI check** — the Expo Router breakage that re-parented every admin route under a phantom `/admin/_layout.styles/...` subtree (see Changed) passed `tsc`, Jest and lint; only an E2E run caught it. `npm run routes:check` exports the web build, derives the route list from the emitted HTML, and diffs it against a committed `routes.snapshot.txt` in its own CI job. Intentional changes go through `npm run routes:update` and a committed snapshot, since routes are public URLs.
+- **Redesigned Locations page** for comparing locations: one filter bar for party size, date and time, smaller cards, and booking in a side panel or bottom sheet (#302, #307, #308).
+- **Accessibility pass:** every button and control now has a name and role for screen readers (#303, #305, #306, #314).
 
 ### Changed
 
-- **One source of truth for the release version** — v1.6.0 shipped with all four `version` fields still reading `1.5.0`, and the Expo app version had been stuck at `1.0.0` since the first commit, because nothing checked. `app.config.ts` now takes its version from `openresto-frontend/package.json` (the dead duplicate in `app.json` is gone), and a new `scripts/check-release-version.sh` asserts both `package.json`s, both lockfiles and a matching CHANGELOG section agree with the tag. The release workflow runs it as a `verify-version` job gating all three image builds, so a half-finished bump fails before anything reaches GHCR.
-- **Scroll-to-top button now appears on every device**, not just portrait phones under 700px — the wide layouts that scroll furthest were the only ones without the shortcut. Only the 300px scroll distance gates it now.
-- **One breakpoint instead of two.** `768` and `700` were both in use as "this is a phone", so a 720px window got mobile container padding with a desktop hero. Both now come from `constants/breakpoints.ts`, read by `BookingForm`, `PageContainer`, `Navbar`, the home page, lookup and the confirmation screen. The grid-column thresholds and the admin-only widths are left alone: they answer a different question.
-- **Home page redesigned to behave like an app, not a page that resizes.** Cards confirm a press with a haptic and a surface change (a hover border was the only feedback before, and does nothing on a phone); a new `RestaurantCardSkeleton` fills the real card's shape while loading so the grid settles instead of jumping; and the four highlight cards, which stacked four-high on a phone and pushed every location off screen, are now a snapping rail with the next card peeking. The hero title collapses into the navbar as you scroll, driven by a CSS scroll timeline rather than a scroll handler so it does not re-render the page every frame. The page also moved off its own six warm colour literals onto the same theme tokens every other screen uses.
-- **Route and panel transitions moved onto the compositor.** Both used `Animated` without the native driver, which ticks from JS on the same thread mounting the incoming screen — measured 49ms between frames during a route change, stuttering a 140ms fade through three visible steps. They run through the Web Animations API now. The route fade also moved from `useEffect` to `useLayoutEffect` so the incoming view no longer paints at rest for a frame before dropping to 0.88 opacity, and the side panel's entrance dropped from 200ms to 150ms. Tapping a time on the home page now expands the matching card on the Locations page rather than opening the booking panel over a list of collapsed cards.
-- **A large frontend styling-architecture cleanup.** All 207 remaining bare `Ionicons` call sites and 470 inline style literals across the admin settings cards were routed through the shared `Icon` component and sibling `.styles.ts` files, closing drift where the same surface had three independently-maintained copies. `LocationListItem` (585 → 286 lines) and `BookingForm` (816 → 456 lines) were split into named subcomponents and hooks (`useLocationSlots`, `useBookingSeating`, `LocationDetailsPanel`, and so on). One extraction briefly broke production: putting `<Screen>.styles.ts` next to its screen inside `app/` made Expo Router load `app/admin/_layout.styles.ts` as a _layout_ and silently re-parent the entire admin route subtree — caught by the E2E smoke run, fixed by moving screen-level styles to a mirrored `styles/` tree outside `app/`, and now guarded by the Route Manifest check above.
-- Coveralls upload steps are now `continue-on-error`, so a transient GitHub Releases download failure in the coverage-reporter installer no longer fails the backend/frontend jobs when tests and builds passed fine.
+- The home page behaves more like an app: loading placeholders, a swipeable highlights row, and press feedback.
+- Smoother page and panel transitions.
+- The scroll-to-top button appears on every screen size.
+- Release tooling now checks that every version number matches the tag.
 
 ### Fixed
 
-- **Booking form rendered its desktop two-column grid on phones** — the field pairs were gated on `Platform.OS === "web"`, and a phone browser is `web`, so a 390px screen got the same two columns as a 1280px desktop. Each column came out around 180px: the email truncated mid-string, the special-requests placeholder wrapped to three lines, and the seating hint ran two lines deep next to Full Name. The pairs now collapse below 768px, and the table-hold countdown moved out of the email column to sit directly above Confirm Booking where it is actually read.
-- **Dark-mode route transitions flashed white** — React Navigation paints its own `rgb(242,242,242)` inline on the screen container beneath everything the app renders, which nothing in `global.css` can reach. It was invisible until the route fade dropped the incoming view to 0.88 opacity for 140ms and let 12% of it through the whole viewport on every navigation. The root `Stack` now sets `contentStyle` to the app's own page colour.
-- **Compact filter bar squeezed the guest count into a single pixel dot** — on a 390px phone the bar's fixed 1:2:2 split gave the guests control 64px against the ~79px its icon, two digits and chevron need. Controls whose labels already say what they are ("Today", "All") dropped their icon, and the bar now wraps onto a second line on very narrow phones.
-- **Availability summary text spilled out of the filter bar** — the three controls hold a fixed 452px minimum, and once the booking panel took 460px off the list column, viewports around 1100px left the summary nowhere to sit. The bar now wraps, dropping the summary onto its own right-aligned line.
-- **Dragging the booking sheet down to dismiss it could trigger the browser's own pull-to-refresh reload** instead, losing the sheet, the table hold and anything typed into the form. `overscroll-behavior-y: contain` on `html`/`body` drops pull-to-refresh app-wide, and the grab handle, header and backdrop set `touch-action: none`.
-- **Non-composable SQL error in the startup `journal_mode` diagnostic query** — `FirstOrDefault()` on a raw `PRAGMA` query made EF Core wrap it in a `LIMIT 1` subquery, which SQLite rejects. Materialize with `ToList()` first, matching the `integrity_check` call beside it.
-- **Two Playwright specs asserted page-wide instead of scoping to the location under test** — `/book?restaurantId=` is now a redirect that renders the whole list scrolled to one location, so the pause/walk-in specs' unscoped chip counts could match a different location. A related environment issue masked the real failures behind unrelated 502s: nginx's `resolver` directive appended `127.0.0.1` even when `resolv.conf` already named one, and `resolver` round-robins rather than failing over, so on Podman roughly half of all proxied requests 502'd despite every container reporting healthy.
-- **VPS deploys risked a no-space build failure and a public 502 window on every recreate** — `docker image prune -f` never touches BuildKit's own cache, which had grown to 5.29GB with the disk at 86%; it is capped by size now rather than age, since an age filter would free nothing on a VPS that deploys several times a day. Separately, the reverse proxy's `service_healthy` condition gated the only container publishing the port it fronts; nginx only needs container start order, since it resolves upstreams via Docker's own DNS at startup.
+- The booking form used the desktop two-column layout on phone browsers.
+- Dark mode flashed white between pages.
+- Layout fixes for the Locations filter bar on narrow screens.
+- Dragging the booking sheet down could reload the page.
+- A startup database check threw a SQL error.
+- VPS deploys could run out of disk space and briefly return 502s.
 
 ### Security
 
-- Backend bumped to ASP.NET Core/EF Core 10.0.11, pulling in patched transitive dependencies for two high-severity NuGet advisories: `Microsoft.OpenApi` 2.0.0 (GHSA-v5pm-xwqc-g5wc) and `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 (GHSA-2m69-gcr7-jv3q).
-- `nanoid` overridden to `^3.3.17` to clear GHSA-2v37-7h3g-55p8 (indefinite loop when a custom generator is called with size zero), reached transitively at 3.3.16 via `expo-router` and `postcss`. Pinned with a caret rather than an unbounded `>=`, which resolves to nanoid 6 and drops the `require` export condition `postcss` depends on.
+- ASP.NET Core and EF Core 10.0.11, patching `Microsoft.OpenApi` (GHSA-v5pm-xwqc-g5wc) and `SQLitePCLRaw.lib.e_sqlite3` (GHSA-2m69-gcr7-jv3q).
+- `nanoid` pinned to `^3.3.17` (GHSA-2v37-7h3g-55p8).
 
 ## [1.6.1] - 2026-08-09
 
-A small release on top of 1.6.0: one new option (digits-only booking references) and the fixes that shook out of it.
-
 ### Added
 
-- **Numeric booking reference format** (#179) — a location can hand out digits-only references (`48273910`) instead of the word-based default (`crispy-basil-saffron`), via a new selector on the admin Restaurant info card, since some restaurants would rather read a number down the phone. Backed by a `BookingRefFormat` column on `Restaurant` (defaults to `AlphaNumeric`, so nothing changes unless you switch it) and a `NumericBookingRefGenerator`; all three places that mint a reference route through a single `BookingRefFactory` that reads the location's setting. Numeric references are 8 digits with a non-zero lead, a ~90-million-wide space, so switching cannot make collisions more likely. Existing bookings keep whatever reference they were issued.
+- **Numeric booking references** (#179). A location can give out digit-only references (`48273910`) instead of words.
 
 ### Fixed
 
-- **Numeric references broke the booking confirmation page** — the route told a database id from a booking reference by shape, so every all-digit reference took the authenticated by-id branch, 401'd for the diner who owns the booking, and rendered as "no booking found" — both on the redirect straight after booking and on the "view booking" link in the email. The public reference lookup runs first now, with the id lookup as a fallback for legacy links.
-- **Confirmation screen options never applied on native** — `app/(user)/_layout.tsx` registered a `Stack.Screen` named `booking-confirmation/[bookingId]` while the route file has always been `[bookingRef].tsx`, so the entry matched nothing and the screen silently lost its title and suppressed back button. Web looked fine because that title comes from the root layout. A new test walks the registered screen names and asserts each resolves to a file on disk.
-- **Demo artwork was wiped by the 2-hourly reset** — seed data hardcoded image URLs, so a reseed could point at files that no longer existed and uploaded images did not survive. `demo_data.py` now derives media URLs from what is actually on disk, leaving them NULL when the file is absent.
-- **Flaky `LocationListItem` slot-chip test** — the assertion depended on the wall clock and failed inside certain windows.
-
-### Changed
-
-- **Seed and demo data consolidated into `scripts/demo_data.py`** (#297) — three hand-maintained copies of the same dataset had drifted apart. There is now one generator that emits SQL, with `seed-local.sh` and the demo VPS's `purge-bookings.sh` as thin wrappers. The dataset deliberately exercises every feature flag the product has, and generates bookings against the same rules the server enforces so seeded rows never conflict. Dev tooling only, not part of the production image.
+- Numeric references broke the booking confirmation page.
+- Confirmation screen options didn't apply on native.
+- Uploaded demo images were wiped by the demo reset.
 
 ## [1.6.0] - 2026-08-07
 
-Hello! The headline of this release is **combinable table groups** — you can now flag physical tables as pushable-together (tables 8 & 9 become one 6-top for a party of 6) and the whole booking engine understands them: availability, auto-assign, holds, the diner dropdown, the seating minimap, and the large-party guard. Combinable tables stay individually bookable - grouping only makes them fill last, so they stay free for the larger parties that actually need them merged.
+Hello! The headline of this release is **combinable table groups**: mark tables that can be pushed together (tables 8 and 9 become one 6-top), and availability, auto-assign, holds and the booking form all understand them. Combinable tables can still be booked on their own; they're just filled last.
 
-Also in here: per-location contact info for multi-location deployments, two-step delete confirmations, and a refreshed table/section settings screen.
+Also in here: per-location contact info, safer deletes, and a refreshed table and section settings screen.
 
 ### Added
 
-- **Per-location and global contact info** (#262) — a location can carry its own optional contact phone and email, with brand-wide defaults on the Brand Identity card for deployments that share one number. Both are exposed on `GET /api/restaurants/{id}` and `GET /api/brand` and follow the existing PATCH convention (empty string clears, omitted leaves untouched). The large-party notice resolves them per field — location, then brand default, then the global social links — so a multi-location deployment finally shows the right number. `SocialLink` stays global.
-- **Two-step delete friction for tables & sections** (#270) — deleting a table or section now takes a deliberate inline confirmation (Delete… → Yes, delete / Cancel) instead of a centre-screen modal, and surfaces the concrete consequence: how many non-cancelled future bookings lose their table/section reference, via a new best-effort `…/impact` read. If the count is unavailable the UI falls back to generic copy. No change to what the backend deletes or FK-nulls.
-- **Combinable table groups — schema + CRUD API** (#271) — a `TableGroup` entity so an admin can flag tables as combinable and book them as one unit. Backend-only foundation: `POST`/`PUT`/`DELETE /api/restaurants/{id}/groups` with server-enforced integrity rules (members in the same restaurant, not already grouped, ≥ 2 members, `largest member seats < CombinedSeats ≤ sum of member seats`), a `Booking.TableGroupId` column, a unique index so a table joins at most one group, and `Groups` on the restaurant DTO. Deleting a group clears the reference on affected bookings in a single save.
-- **Combinable table groups — availability, auto-assign & holds wiring** (#272) — a `TableGroup` is a first-class bookable unit now. Availability advertises bookable groups per slot (`availableGroupIds` on `TimeSlotDto`); auto-assign prefers an ungrouped table, then a combinable one, then a group, so combinable tables fill last; placing a group hold reserves all member tables atomically; and booking a group checks every member is free of a conflicting booking or hold, with a member's own booking blocking the group. `MaxTableOversizeSeats` applies to groups too.
-- **Combinable table groups — admin UI** (#273) — define, edit and break groups inline from the section view: a `Link` affordance on each standalone table enters a selection mode to combine 2+ tables (combined seats default to the member sum); member rows render inside a tinted sub-block with a `⛓ Tables X + Y (N combined)` chip carrying an inline remove; removing down to one member dissolves the group; combined seats are editable. Tables already grouped are disabled in another table's selection mode.
-- **Combinable table groups — diner dropdown & large-party threshold** (#274) — groups appear in the diner table dropdown with a clear label (their name, or "Tables X + Y"), and the large-party guard accounts for combined capacity so the "contact the restaurant" notice only fires when even merged tables cannot seat the party. Group options respect per-slot availability; selecting one reserves the combined tables server-side. The "Any section" auto-assign path is unchanged.
-- **Combinable groups in the diner seating minimap** — the seating block listed every table individually with no hint that some push together, so the only place a diner could discover a group was the table dropdown, after picking a party size large enough to need one. Member tables are marked with a link icon and each group gets its own row ("Window booths — Seats up to 5 pushed together"); members are still listed individually, since grouping only deprioritizes them (#242). Group naming moved into a shared helper so the minimap and the dropdown cannot drift.
-- **Seat counts are now constrained dropdowns, validated end to end** — the admin table seats field, the add-table row and the combined-seats editor are pickers bounded to 1–50 instead of free-text inputs, so `parseInt`/`NaN` states are gone. Backed by a matching server-side `[Range(1, 50)]` on every DTO carrying a seat count plus service-level guards for callers that bypass model binding, with a single `BookingLimits` constant as the source of truth for both ends.
-
-### Fixed
-
-- **Merged tables could be double-booked** — `IsTableBookedOnDateAsync` matched only on `Booking.TableId`, but a group booking persists `TableId = null` with a `TableGroupId`, so every persisted group booking was invisible to every conflict check: holds were group-aware, but the moment a hold converted to a booking the reservation dropped out of detection. Conflict resolution now resolves the full set of reserved tables and groups through the membership table and matches on both columns, threaded through all four call sites — including `AvailabilityService`, which also indexes group bookings so members reserved via a group are no longer advertised as free.
-- **Group bookings showed no table in the diner UI** — a group booking has a null `Table`/`Section`, so the mapper produced a null table name and the booking detail view dropped the row, leaving guests with no idea where they were seated. Group bookings now render a "Tables" row with a readable label and the combined seat count, consistently across the diner view, the admin grid, the confirmation email and the calendar export.
-- **Combinable groups ignored the selected section** — the table dropdown filtered single tables by the picked section but built its group options from the restaurant-wide list, so choosing "Patio" still offered an all-indoor group; picking one submitted a null section and the backend derived it from the members. A group now qualifies for a section only when every member sits in it, since booking a group books all of its tables. "Any section" is unchanged.
-- **Dropdown options were unclickable on web** — `react-native-web`'s `FlatList` scroll container swallows the touch-start of a tap, treating it as a potential drag, so the option row's press handler never fired; this surfaced now because the admin seats fields were the first web-facing `Select` usages. The option list is a plain scroll view with direct pressable rows — option counts are small enough that virtualization bought nothing.
-- **Clearing a location's description did nothing** — the admin form sent `description: null` for a blank field, but the backend's PATCH convention reads `null` as "leave untouched". Blank now goes over the wire as `""`.
-- **Clearing a pasted menu link did nothing** — same root cause. Blank now clears, except while an uploaded PDF is the stored menu, where the field is deliberately left untouched so a save cannot wipe the file the upload flow just stored.
-- **Combinable tables were removed from normal service** (#242) — flagging tables 8 & 9 as combinable made them bookable _only_ as the merged 8-seat unit, so two 4-tops silently dropped out of availability and auto-assign for every party of 4. They are offered individually again, and the deprioritization does the real work: within a given size, ungrouped is assigned before combinable, which is assigned before a group.
-- **Deleting or shrinking a combinable table corrupted its group** (#242) — the memberships → tables FK is `ON DELETE CASCADE`, so deleting a member table silently dropped the membership row while leaving `CombinedSeats` untouched: a group of 8 backed by a single 4-top, still advertised and still bookable. Table and section deletes now dissolve a group that would drop below two members and clamp the survivors' combined seats; resizing a member reconciles the same way. Booking a group with fewer than two members is refused outright.
-- **Delete-impact counts missed merged-table bookings** (#242) — a group booking stores no `TableId`, so the "N future bookings will lose their reference" preview reported zero for a table whose group had upcoming bookings. Both impact reads now include bookings held through a group.
-- **Combined seats could exceed what the tables can seat** (#242) — `CombinedSeats` was validated as _at least_ the sum of member seats, the opposite of the documented intent: pushing two 4-tops together commonly seats 6, not 8+, because the covers where the corners meet are lost. The accepted window is now "more than the largest member, up to the sum", and the picker offers exactly that range. Existing groups above the sum are clamped the next time their tables change.
-- **Group booking trusted client-supplied member ids** (#242) — `memberTableIds` is part of the public `POST /api/bookings` body and was used for the "held by another user" check, so a request omitting a member skipped that member's hold check. Members are always re-resolved from the persisted group now.
-- **Flaky concurrency test stabilized** — `CreateBooking_AutoAssign_NeverDoubleBooksSameTable_WhenContended` asserted an exact winner count that was timing-sensitive under CI load; it now asserts the hard invariant (1–2 winners, all on distinct tables).
-- **Group membership creation relied on EF navigation fixup** (#289) — membership rows were built with only the table id set, depending on EF populating the navigation before the mapper dereferenced it, so any non-EF caller hit a null reference inside a mapper. The navigation is set explicitly at construction now, and the mapper raises a clear error instead of trusting a null-forgiving operator.
+- **Combinable table groups** (#271, #272, #273, #274).
+- **Contact phone and email per location**, with brand-wide defaults (#262).
+- **Delete confirmations** for tables and sections that show how many upcoming bookings are affected (#270).
+- Seat counts are dropdowns limited to 1–50.
 
 ### Changed
 
-- **Table & section settings redesigned** — the table and section editors now match the app's established design language: tables are rounded surface tiles with a leading icon, name plus seats subtitle, and a tidy trailing action cluster; delete is a trash icon like every other destructive affordance; section headers move their counts to a muted subtitle and consolidate move/rename/delete into one icon cluster; empty sections render as a dashed-border tile. Editing is a labelled "Edit" pill rather than a bare pencil glyph.
-- **Backend coverage reporting corrected** (#290) — CI's `--collect:"XPlat Code Coverage"` doesn't read the csproj's coverlet `<Exclude>`, so it counted EF migrations that the MSBuild integration strips — a ~6-point gap between the two numbers with no indication which was authoritative. A shared `coverlet.runsettings` aligns them.
-- **Unit test coverage raised** — backend to 99.01% line / 94.07% branch (1,472 tests), covering the combinable-group hold path, the table-group CRUD and delete-impact endpoints, and the auto-assign hold-adoption paths; frontend gaps in the locations list, admin notifications, walk-in utils and footer settings brought to full coverage.
-- **E2E suite split into smoke and extensive runs** — the 78 Playwright tests are partitioned by a `@smoke` tag into 18 golden-path tests that run on every PR and push, and 60 that run once per merge to `main`. `npm run test:e2e` still runs everything locally.
-- Dependency security patch — `brace-expansion` override raised to 5.0.9 to close GHSA-rgw5-rvv9-x895 (high, CVSS 7.5), an unbounded intermediate array DoS. The previous override pinned the floor to exactly the vulnerable version.
+- Redesigned table and section settings.
+- Dependency security patch for `brace-expansion` (GHSA-rgw5-rvv9-x895).
+
+### Fixed
+
+- **Combined tables could be double-booked.**
+- Combinable tables were only bookable as a group (#242).
+- Deleting or shrinking a table in a group left the group advertising seats it didn't have (#242).
+- Group bookings showed no table to the guest, and groups ignored the selected section.
+- Dropdown options couldn't be clicked on web.
+- Clearing a location's description or menu link didn't save.
 
 ## [1.5.0] - 2026-07-30
 
-Hello! This release includes an Expo upgrade, routine upgrades, as well as a couple new features below.
+Hello! This release includes an Expo upgrade, routine updates and a couple of new features.
 
 ### Added
 
-- **Large-party guard & single-location auto-expand** (#261) — booking submission is blocked when the party size exceeds the largest table at the location, with an inline hint and a modal directing guests to contact the restaurant directly (table merging isn't supported yet). Single-location instances auto-expand the location card instead of requiring an extra tap.
-- **Social links, highlights, and menu URL validation** (#264) — server-side validation following the existing `ValidationException` pattern; blocks unsafe schemes like `javascript:`.
+- Bookings are blocked when the party is larger than any table, with a prompt to contact the restaurant (#261). Single-location sites open the location automatically.
+- Server-side validation for social links, highlights and menu URLs (#264).
 
 ### Fixed
 
-- **Booking time defaulted to midnight** (#257) — `AvailabilityService` and the time picker both leaked a `00:00` default; restaurants now default to a sensible 09:00 open time.
-- **Pre-commit linter scope** (#260) — `oxlint --fix` ran against the whole frontend project instead of just staged files, occasionally rewriting unrelated source files.
+- Booking times defaulted to midnight (#257).
+- The pre-commit linter touched unrelated files (#260).
 
 ### Changed
 
-- **Upgraded Expo SDK 56 → 57** (#267) — `expo`, `react-native`, `typescript` and related packages bumped to their SDK 57-compatible versions.
-- Dependency security patches (#259) — `brace-expansion` and `js-yaml` overrides to close two high-severity Dependabot alerts.
-- Routine low-risk dependency bumps across backend (NuGet) and frontend/root (npm) (#266).
+- Expo SDK 57 (#267).
+- Dependency security and routine updates (#259, #266).
 
 ## [1.4.1] - 2026-07-26
 
-Hello! OpenResto is in a really good state right now, so no major changes today, but I'm upgrading from Node 20 to Node 24 (which is in LTS).
+Hello! No major changes today. I'm upgrading from Node 20 to Node 24, which is now LTS.
 
-As always please let me know if there's any other cool features you'd like to see!
+As always, let me know if there are any features you'd like to see!
 
-- Upgraded the build/runtime toolchain from Node 20 to Node 24 (#252).
-- Dependency security patches (#253, #254) — bumped `shell-quote`, React/`react-native-gesture-handler`, and GitHub Actions to their latest stable versions.
-- Backend unit test coverage improved from 97.6% to 98.8% line coverage (#255, #256).
+- Node 24 (#252).
+- Dependency security patches (#253, #254).
 
 ## [1.4.0] - 2026-07-20
 
-Hello! This release includes the Booking page rework with lots of new features! As always, let me know if you run into any issues!
+Hello! This release reworks the booking pages. As always, let me know if you run into any issues!
 
 ### Added
 
-- **Navigation redesign** (#196, #205, #211, #240) — merged Locations list + detail/booking page (replacing the standalone `/book/:id` page), full weekly opening hours on the customer restaurant view, a burger/overflow menu replacing the light/dark toggle, and a static Help popup for keyboard shortcuts and social links.
-- **"Any section" auto-assign** (#243, #248) — now the default choice in the booking form; the server picks the best available table across all sections at submit time instead of the client pre-selecting one, closing a race where two concurrent "any" submissions could grab the same table.
-- **Decoupled booking slot interval** (#245, #247) — a restaurant-level start-time interval (15/30/60 min, default 30) independent of `DefaultBookingDurationMinutes`, so 90-minute bookings can still start on a 15-minute grid.
-- **MaxTableOversizeSeats setting** (#244, #249) — cap how much larger than the party size an auto-assigned table may be, so a party of 2 no longer gets an idle 6-top by default.
-- **Menu PDF upload** (#246, #250) — admins can upload and host a PDF menu from location settings instead of only linking to an externally hosted one.
+- **Redesigned navigation** (#196, #205, #211, #240). One Locations page for browsing and booking, full weekly hours, and a menu with theme and help.
+- **"Any section"** is the default in the booking form, and the server picks the table (#243, #248).
+- **Booking start interval** of 15, 30 or 60 minutes, separate from booking length (#245, #247).
+- **Maximum table oversize** so small parties don't get large tables (#244, #249).
+- **Menu PDF upload** (#246, #250).
 
 ### Fixed
 
-- **Admin routes unreachable at `/locations`** — the new customer-facing Locations page silently collided with the admin sections/tables manager at the same URL; admin routes now live under `/admin/*`.
-- **Locations list card polish** (#241) — consistent expand/collapse chevron, "Book / details" scrolls to the form even when the card was already open, and the blurb/menu link show while collapsed.
-- **Overflow menu position on wide viewports** — the panel now anchors to the trigger button's real on-screen position instead of a fixed offset from the window edge.
-
-### Changed
-
-- Added a CODEOWNERS file so PRs automatically request review.
+- Admin pages clashed with the new `/locations` page. Admin routes now live under `/admin`.
+- Locations card and overflow menu polish (#241).
 
 ## [1.3.1] - 2026-07-17
 
-A couple minor tweaks that I neede to fix after yesterday's release!
-
-- Updated the styling in the Admin Bookings page and fixed the column widths in the header row.
-- The Location description was added in the BE but not in the FE. In 1.4.0 (hopefully!) there'll be a location refactor which will surface the restaurant blurb, but for now, it appears in the "Booking" page.
+- Admin bookings page styling and column widths.
+- The location description now shows on the booking page.
 
 ## [1.3.0] - 2026-07-16
 
-Hello again! This release tackles some open feature requests I had, including Home Page customisation, dashboard polish, plus a large internal backend/frontend refactor that shouldn't change anything you see. For the next release, I'm looking into a better restaurant view for the customers as well as Admin Dashboard improvements, cheers!
+Hello again! This release adds home page customisation, dashboard polish, and a large internal refactor that shouldn't change anything you see.
 
 ### Added
 
-- **Home-page customization** (#183, #184, #185, #187) — a configurable subtitle under the app name, a freeform location description (with `[label](url)` inline links), clickable highlight cards with a configurable heading/subheading, and a hero image fit toggle (Cover/Contain). All fields default to today's behavior when unset.
-- **Sortable bookings list** (#208) — the admin bookings table can be sorted by column.
-- **Occupancy chart improvements** (#180) — toggle between a rolling T-x view and calendar-date view, with real booking counts, a summary line, and peak highlighting.
-- **Custom time picker** — replaced the native web time input with a dropdown matching the existing date picker's style.
+- **Home page customisation** (#183, #184, #185, #187): subtitle, location description with links, clickable highlight cards, and hero image fit.
+- Sortable admin bookings list (#208).
+- Occupancy chart improvements (#180).
+- A dropdown time picker on web.
 
 ### Fixed
 
-- **Backend hold rejection reasons** (#213) — the UI surfaces the actual reason a table hold was rejected instead of a generic error.
-- **Timezone hint** (#181) — hidden when the viewer's device timezone already matches the restaurant's.
-- **Occupancy chart layout** (#223, #224, #225) — closed dead space and layout gaps in both wide and stacked layouts.
-- **Sticky footer gap on web** (#226) — `#root` now sizes against the viewport instead of `body`.
-- **Dependency security patches** — ASP.NET Core / EF Core to 10.0.10 (July 2026 servicing release) plus a handful of verified non-breaking patch bumps.
-
-### Changed
-
-- Large internal backend and frontend refactor for maintainability — no user-facing behavior changes.
+- The UI shows why a table hold was refused (#213).
+- The timezone hint is hidden when it matches your own (#181).
+- Occupancy chart and footer layout fixes (#223, #224, #225, #226).
+- ASP.NET Core and EF Core 10.0.10.
 
 ## [1.2.1] - 2026-07-06
 
-Fixed an issue with the Dates appearing incorrectly in the home page
-
-Added a React Native calendar view with closed days blocked out
-
-Fixed the new Lucide icons not working correctly
+- Fixed dates showing incorrectly on the home page.
+- Added a native calendar view with closed days blocked out.
+- Fixed the new Lucide icons.
 
 ## [1.2.0] - 2026-07-03
 
-This one's mostly driven by your feedback — thanks for all the issues and comments since 1.1.0! The headline items are per-day opening hours, walk-in-only locations, admin-changeable email, and a customizable footer with social links. There's also a decent pile of smaller bug fixes around past bookings, calendar/email consistency, and mobile UX. As always, please open an issue if anything looks off after upgrading.
+This one's mostly driven by your feedback. Thanks for all the issues and comments since 1.1.0! Please open an issue if anything looks off after upgrading.
 
 ### Added
 
-- **Per-day opening hours** (#175) — different open/close times per day of the week (e.g. Mon–Fri 12–22, Sat 11–23) instead of one set applied globally. `OpenDays` remains the canonical open/closed toggle; hours are stored in `Restaurant.OpenHoursJson` and collapse back to `OpenTime`/`CloseTime` when all seven days match. Existing restaurants with uniform hours are unaffected.
-- **Walk-in-only locations** (#176) — a location, or specific days of it, can be marked walk-in only. It stays listed and visible publicly, but the online booking flow is replaced with a walk-in notice, and the restaurant card shows which days are affected. Admin-recorded bookings are exempt so staff can still log walk-ins.
-- **Customizable booking duration** (#135, #177) — configure how long a booking slot lasts per restaurant instead of a hardcoded 1 hour. Availability, conflict checks, calendar/ICS event lengths and confirmation emails all respect it.
-- **Admin can change their own email** (#172) — a new settings field updates the login email directly from the UI instead of needing manual DB/env changes.
-- **Customizable footer with social links** (#186, #182) — the "Admin" link moves out of the header (over-prominent on desktop, hidden entirely below 768px) into a new always-visible footer alongside configurable copyright text and social links (Instagram, Facebook, X, TikTok, YouTube, or custom).
-- **Keyboard shortcuts** (#140) — added across both the admin dashboard and the customer-facing booking UI.
-- **Haptic feedback on mobile** (#147) — key interactions trigger `expo-haptics` feedback on native; no-ops safely on web.
-- **More brand favicon icons** (#188) — hamburger, sandwich, soup, cake and ice-cream-cone added (15 total, up from 10).
-- **Nginx caching headers** — content-hashed static bundles served `public, max-age=31536000, immutable`, the app-shell HTML marked `no-cache`, and gzip settings tightened across all three nginx configs.
+- **Opening hours per day of the week** (#175).
+- **Walk-in-only locations**, or walk-in-only days (#176).
+- **Booking length per location** instead of a fixed hour (#135, #177).
+- Admins can change their own email (#172).
+- **Footer with social links**, which is also where the Admin link now lives (#186, #182).
+- Keyboard shortcuts (#140) and haptic feedback on mobile (#147).
+- Five more favicon icons (#188).
+- Caching headers in nginx.
 
 ### Fixed
 
-- **Past bookings** (#159, #160) — customers can no longer cancel a booking already in the past, or create one in a past slot; admins remain able to record past walk-ins.
-- **Admin dashboard not refreshing after actions** (#93) — cancelling or deleting a booking now refreshes the dashboard instead of leaving stale data on screen.
-- **Calendar/ICS event duration** (#192) — Google Calendar links, Outlook links and the `.ics` file use the restaurant's configured duration instead of a hardcoded 60 minutes, and the description now includes the assigned table and section.
-- **Booking confirmation email formatting** — fixed spacing and a missing table/section line; simplified the time-range formatting.
-- **Purge-bookings script** — now also wipes and restores uploaded media (snapshot moved into `data/` for VPS persistence), so a purge leaves the media volume consistent with the database.
-- **Nginx ports bound to localhost** — exposed ports bind to `127.0.0.1` instead of all interfaces, reducing exposure on multi-tenant hosts.
-- **Location Manager polish** — removed leftover step-number labels and a stray monospace font.
+- Guests could cancel or book bookings in the past (#159, #160).
+- The admin dashboard didn't refresh after actions (#93).
+- Calendar links ignored the booking length (#192).
+- Confirmation email formatting.
+- nginx ports are bound to `127.0.0.1`.
 
 ## [1.1.1] - 2026-06-29
 
-Fixed an issue with the Admin Email not correctly being set by the ENV vars in the Docker Environment
-
-Fixed the release job not correctly accounting for the v prefix
+- Fixed the admin email not being set from environment variables in Docker.
+- Fixed the release job's handling of the `v` prefix.
 
 ## [1.1.0] - 2026-06-22
 
-Hello! Thanks for reading the changelog, and for the 50 stars on Github! This project has taught me a ton and I've gathered a ton of feedback to try and polish it since the 1.0.0 release. This adds to 1.0.0 and cleans up some of the code for maintanability. If you're using the app in a real environment, please read through the changes below and let me know if you have any questions or run into any issues. Thanks again!
+Hello! Thanks for reading, and for the 50 stars on GitHub! This release builds on 1.0.0 with feedback-driven polish and some cleanup. Let me know if you run into any issues.
 
 ### Added
 
-- **Booking Controls in Location Manager** — a new section in the admin Location Manager for the selected location: Pause/Resume new bookings for 60 minutes (with live "Paused until HH:MM" status) and Extend all active bookings by 60 minutes (with inline result count).
-- **Location Manager redesign** — complete visual and UX overhaul of the admin Location Manager panel.
-- **Restaurant photo in confirmation emails** — booking confirmations display the restaurant's photo as a full-width banner header; falls back to the brand favicon icon tile, then a text-only header.
-- **Shared email base template** — all outgoing emails share a single `EmailTemplateBuilder` (card layout, footer with website URL and copyright), including admin custom emails sent from the booking page.
-- **"Opens in X hours/minutes" on home page** — restaurant cards show an "Opens in Xh Ym" label when currently closed but scheduled to open later today.
-- **Configurable Website URL** — set the public deployment URL from Brand Identity settings, used for absolute URLs in email links and header images. Falls back to the `WEBSITE_URL` env var, then the first `CORS_ORIGINS` value, then `localhost`.
+- **Booking controls:** pause new bookings or extend active ones by an hour.
+- Redesigned Location Manager.
+- Restaurant photo and a shared template in emails.
+- "Opens in Xh Ym" on closed restaurants.
+- Configurable website URL for links in emails.
 
 ### Fixed
 
-- **Active booking detection** — bookings without an `EndTime` now fall back to `booking.Date + 1 hour` instead of being treated as perpetually active.
-- **Email confirmation deep link** — "Manage your booking" links directly to `/booking-confirmation/{ref}?email={email}` so customers land on their booking without re-entering details.
-- **Email header image URL** — relative `HeaderImageUrl` values are resolved to absolute URLs before being embedded in email HTML.
-- **HSTS header** — `Strict-Transport-Security` enabled in the production nginx config (was accidentally commented out).
-- **Multi-arch Docker build** — `dotnet publish` runs on the native build platform rather than under QEMU emulation, speeding up arm64 image builds.
-- **Extend Bookings button state** — disabled and dimmed when there are no active bookings or results have already been applied; switching locations resets previous results.
+- Bookings with no end time counted as active forever.
+- The email's "Manage your booking" link opens the booking directly.
+- Header images in emails used relative URLs.
+- HSTS enabled in the production nginx config.
+- Faster arm64 Docker builds.
 
 ## [1.0.0] - 2026-06-17
 
 ### Added
 
-- **Multi-restaurant booking system** — customers browse restaurants, hold tables in real-time, and book instantly. No account required; bookings are identified by a short `BookingRef` code.
-- **Admin dashboard** — manage reservations, tables, floor sections, booking pauses, and branding from a dedicated panel. Supports multiple restaurant locations per instance.
-- **Real-time table holds** — 5-minute in-memory hold placed on a specific table when a customer selects a time slot. The `holdId` is required at booking time, preventing double-bookings during checkout.
-- **IANA timezone-aware availability** — all `DateTime` values stored in UTC; restaurant-local open/close hours are computed via the restaurant's IANA timezone field.
-- **Popular-times categorisation** — every 30-minute slot tagged `Lunch`, `Dinner`, or `Off-Peak` based on industry benchmarks; surfaced as labelled pill tabs in the frontend.
-- **Booking pause** — admins can halt new reservations until a specific date/time without touching config files.
-- **Full white-label branding** — app name, primary color, and favicon icon (10 Lucide icons) configurable from the admin settings panel. PWA identity (manifest name, theme color) updates live.
-- **Dynamic PWA icons** — `/api/brand/pwa-icon.svg` and `/api/brand/pwa-icon-{192|512}.png` generated on-the-fly via Magick.NET (cross-platform, no native deps).
-- **SMTP email notifications** via MailKit (optional — app degrades gracefully without SMTP config).
-- **VAPID push notifications** (optional — app degrades gracefully without VAPID keys). Includes an admin notification inbox with swipe-to-delete (touch devices), pinned-item protection, bulk clear/delete actions, unread badge, and 30-second live polling. Capacity alerts fire when a restaurant reaches 80% of its table capacity.
-- **Location manager as a dedicated nav section** — moved out of Settings into its own admin panel section with smooth accordion animations and persisted expanded state.
-- **GDPR-compliant hard-delete** — admins can permanently purge individual booking records.
-- **Encrypted recent-bookings cookie** — HttpOnly cookie via ASP.NET Data Protection; lets customers look up their recent reservations without an account.
-- **OWASP ZAP API scan in CI** — every push runs a ZAP API scan against the full Docker stack using the OpenAPI spec (`/openapi/v1.json`) for endpoint discovery.
-- **100% frontend test coverage target** — Jest + React Native Testing Library; Playwright E2E tests against the live Docker stack.
-- **Multi-arch Docker images** (linux/amd64 + linux/arm64) published to GHCR on every tag push. Pi and NAS boxes supported out of the box.
-- **Pinned release docker-compose.yml** — attached to every GitHub Release so self-hosters can `docker compose up` without cloning the repository.
-- **Automatic EF Core migrations on startup** — the backend applies any pending schema migrations before accepting traffic. Upgrades from previous releases are safe and require no manual SQL.
-- **SQLite backup and restore documentation** — see [`docs/backup-restore.md`](docs/backup-restore.md) for automated backup scripts and upgrade procedures.
-- **Migration safety CI** — a dedicated GitHub Actions workflow validates that new EF Core migrations produce identical schemas whether applied to a fresh database or an existing one.
+- Multi-restaurant booking with no guest accounts. Guests use a booking reference.
+- Admin dashboard for bookings, tables, sections, pausing and branding.
+- Five-minute table holds during checkout.
+- Timezone-aware availability.
+- Lunch, Dinner and Off-Peak slot labels.
+- White-label branding with dynamic PWA icons.
+- Optional email (SMTP) and push notifications (VAPID).
+- Permanent booking deletion for GDPR.
+- Multi-arch Docker images on GHCR and a pinned `docker-compose.yml` per release.
+- Automatic database migrations on startup. See [`docs/backup-restore.md`](docs/backup-restore.md).
 
 [1.0.0]: https://github.com/karanshukla/openresto/releases/tag/v1.0.0
 [1.1.0]: https://github.com/karanshukla/openresto/releases/tag/v1.1.0
