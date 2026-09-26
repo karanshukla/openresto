@@ -92,6 +92,7 @@
       "expiryNoticeChannel": "Mesas reservadas",
       "expiryNoticeTitle": "Tu mesa sigue reservada",
       "heldLabel": "Mesa retenida",
+      "heldLabelNamed": "Mesa retenida: {{table}}",
       "refreshButton": "Actualizar página",
       "refreshHint": "Vuelve a cargar la disponibilidad de esta fecha",
       "unavailableDefault": "Mesa no disponible para esta fecha. Elige otra."

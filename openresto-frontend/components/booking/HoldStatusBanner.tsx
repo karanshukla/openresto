@@ -12,6 +12,8 @@ interface HoldStatusBannerProps {
   hasSelection: boolean;
   /** Specific rejection reason from the backend (e.g. past time, closed). Falls back to a generic line when absent. */
   holdMessage?: string | null;
+  /** Display name of the held table or group, shown alongside "Table held" once known. */
+  tableName?: string | null;
   onRefresh?: () => void;
 }
 
@@ -20,6 +22,7 @@ export default function HoldStatusBanner({
   secondsLeft,
   hasSelection,
   holdMessage,
+  tableName,
   onRefresh,
 }: HoldStatusBannerProps) {
   const { colors, isDark } = useAppTheme();
@@ -48,7 +51,10 @@ export default function HoldStatusBanner({
             role="status"
             accessibilityLiveRegion="polite"
           >
-            ✓ {t("booking.hold.heldLabel")}
+            ✓{" "}
+            {tableName
+              ? t("booking.hold.heldLabelNamed", { table: tableName })
+              : t("booking.hold.heldLabel")}
           </ThemedText>
           <ThemedText style={[styles.holdHeld, { color: colors.success }]}>
             {" "}

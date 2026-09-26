@@ -55,6 +55,7 @@ export function DockedBookingSubmit() {
         secondsLeft={dock.secondsLeft}
         hasSelection={dock.hasSelection}
         holdMessage={dock.holdMessage}
+        tableName={dock.heldTableName}
         onRefresh={dock.onRefresh}
       />
       <Button

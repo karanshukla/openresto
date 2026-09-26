@@ -11,6 +11,7 @@ export interface BookingDockState {
   secondsLeft: number;
   hasSelection: boolean;
   holdMessage?: string | null;
+  heldTableName?: string | null;
   disabled: boolean;
   submitting: boolean;
   onSubmit: () => void;
@@ -66,7 +67,15 @@ export function usePublishBookingDock(dock: BookingDockState | null) {
   const channel = useContext(BookingDockContext);
   const publish = channel?.publish;
 
-  const { holdStatus, secondsLeft, hasSelection, holdMessage, disabled, submitting } = dock ?? {};
+  const {
+    holdStatus,
+    secondsLeft,
+    hasSelection,
+    holdMessage,
+    heldTableName,
+    disabled,
+    submitting,
+  } = dock ?? {};
   const onSubmit = dock?.onSubmit;
   const onRefresh = dock?.onRefresh;
 
@@ -79,6 +88,7 @@ export function usePublishBookingDock(dock: BookingDockState | null) {
             secondsLeft: secondsLeft as number,
             hasSelection: hasSelection as boolean,
             holdMessage,
+            heldTableName,
             disabled: disabled as boolean,
             submitting: submitting as boolean,
             onSubmit,
@@ -93,6 +103,7 @@ export function usePublishBookingDock(dock: BookingDockState | null) {
     secondsLeft,
     hasSelection,
     holdMessage,
+    heldTableName,
     disabled,
     submitting,
     onSubmit,

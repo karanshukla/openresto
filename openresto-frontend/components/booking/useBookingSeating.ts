@@ -161,6 +161,7 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
 
   return {
     allTables,
+    allGroups,
     sectionId,
     setSectionId,
     tableId,

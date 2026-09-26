@@ -11,6 +11,7 @@ import PopularTimesPicker from "./PopularTimesPicker";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } from "@/utils/date";
 import { isValidEmail } from "@/utils/validation";
+import { groupDisplayName } from "@/utils/tableGroups";
 import { confirm } from "@/utils/confirm";
 import { getHoursForDate } from "@/utils/openingHours";
 import { getRestaurantDate } from "@/utils/restaurantTime";
@@ -150,6 +151,7 @@ export default function BookingForm({
 
   const {
     allTables,
+    allGroups,
     sectionId,
     setSectionId,
     tableId,
@@ -167,19 +169,38 @@ export default function BookingForm({
   // reach back into it. The call order is therefore pinned by the tableId/isAutoAssign reads
   // below rather than by effect timing — swapping the hooks fails to compile instead of silently
   // changing behaviour.
-  const { holdStatus, holdMessage, secondsLeft, holdId, resolvedTableId, setHoldStatus } =
-    useTableHold({
-      restaurantId: restaurant.id,
-      sections: restaurant.sections,
-      tableId,
-      date,
-      time,
-      email: customerEmail,
-      autoAssign: isAutoAssign,
-      seats,
-      tableGroupId,
-      enabled: !bookingBlocked,
-    });
+  const {
+    holdStatus,
+    holdMessage,
+    secondsLeft,
+    holdId,
+    resolvedTableId,
+    resolvedGroupId,
+    setHoldStatus,
+  } = useTableHold({
+    restaurantId: restaurant.id,
+    sections: restaurant.sections,
+    tableId,
+    date,
+    time,
+    email: customerEmail,
+    autoAssign: isAutoAssign,
+    seats,
+    tableGroupId,
+    enabled: !bookingBlocked,
+  });
+
+  /**
+   * What the banner names as held. An auto-assigned or group hold is only known once the server
+   * answers, so its resolved ids win over the form's own pick.
+   */
+  const heldGroup = allGroups.find((g) => g.id === (resolvedGroupId ?? tableGroupId));
+  const heldTable = allTables.find((tbl) => tbl.id === (resolvedTableId ?? tableId));
+  const heldTableName = heldGroup
+    ? groupDisplayName(heldGroup)
+    : heldTable
+      ? (heldTable.name ?? t("booking.seating.tableFallbackName", { id: heldTable.id }))
+      : null;
 
   // When the party size exceeds the largest table, surface the contact-restaurant
   // notice so the user knows why booking is blocked. Re-opens on each over-capacity
@@ -283,6 +304,7 @@ export default function BookingForm({
           secondsLeft,
           hasSelection: (isAutoAssign || !!tableId) && !!date && !!time,
           holdMessage,
+          heldTableName,
           disabled: !isValid || submitting,
           submitting,
           onSubmit: dockedSubmit,
@@ -310,6 +332,7 @@ export default function BookingForm({
       secondsLeft={secondsLeft}
       hasSelection={(isAutoAssign || !!tableId) && !!date && !!time}
       holdMessage={holdMessage}
+      tableName={heldTableName}
       onRefresh={onRefresh}
     />
   );

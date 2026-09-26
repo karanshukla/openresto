@@ -92,6 +92,7 @@
       "expiryNoticeChannel": "Tables réservées",
       "expiryNoticeTitle": "Votre table est toujours réservée",
       "heldLabel": "Table réservée temporairement",
+      "heldLabelNamed": "Table réservée temporairement : {{table}}",
       "refreshButton": "Actualiser la page",
       "refreshHint": "Recharge les disponibilités pour cette date",
       "unavailableDefault": "Table non disponible pour cette date. Veuillez en choisir une autre."
