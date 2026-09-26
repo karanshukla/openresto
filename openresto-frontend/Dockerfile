@@ -8,9 +8,10 @@ WORKDIR /app
 ARG EXPO_PUBLIC_API_URL
 ENV EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL
 
-# Copy package files and install dependencies
+# Copy package files and install dependencies. The cache mount keeps downloaded
+# tarballs between builds, so a lockfile bump only fetches what changed.
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN --mount=type=cache,target=/root/.npm npm ci --legacy-peer-deps
 
 # Copy source and build the web export
 COPY . .

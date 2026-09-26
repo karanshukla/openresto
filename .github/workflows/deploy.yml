@@ -66,6 +66,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || '22' }}
+          # The default 10m is too tight once a flaky build has to retry.
+          command_timeout: 30m
           script: |
             set -e
             cd ${{ secrets.VPS_DEPLOY_PATH }}
@@ -84,8 +86,23 @@ jobs:
             echo "==> Pulling latest code..."
             git pull origin main
 
-            echo "==> Building and starting containers..."
-            docker compose -f docker-compose.vps.yml up -d --build --remove-orphans
+            # The VPS's network drops registry downloads now and then (npm
+            # ETIMEDOUT, MCR connection resets). Build separately so a flake can
+            # be retried without touching the running containers; finished
+            # layers are cached, so a retry only redoes what failed.
+            echo "==> Building images..."
+            for i in 1 2 3; do
+              docker compose -f docker-compose.vps.yml build && break
+              if [ "$i" = "3" ]; then
+                echo "Build failed 3 times, leaving the running containers alone."
+                exit 1
+              fi
+              echo "Build attempt $i failed, retrying in 15s..."
+              sleep 15
+            done
+
+            echo "==> Starting containers..."
+            docker compose -f docker-compose.vps.yml up -d --remove-orphans
 
             echo "==> Waiting for backend to be healthy..."
             for i in $(seq 1 30); do
