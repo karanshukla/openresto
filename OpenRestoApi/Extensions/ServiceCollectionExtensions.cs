@@ -363,6 +363,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<SocialLinkService>();
         services.AddScoped<WaitlistService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
+        services.AddSingleton<IMediaStore, OpenRestoApi.Infrastructure.Media.MediaStore>();
         services.AddScoped<MediaService>();
         services.AddScoped<NativeAppStatusService>();
 
