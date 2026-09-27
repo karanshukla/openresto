@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OpenRestoApi.Controllers;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Tests.Controllers;
@@ -14,9 +14,7 @@ public class MediaControllerUnitTests
 
     public MediaControllerUnitTests()
     {
-        var env = new Mock<IWebHostEnvironment>();
-        env.Setup(e => e.ContentRootPath).Returns(Path.GetTempPath());
-        _mockService = new Mock<MediaService>(null!, null!, env.Object);
+        _mockService = new Mock<MediaService>(null!, null!, Mock.Of<IMediaStore>());
         _controller = new MediaController(_mockService.Object);
     }
 

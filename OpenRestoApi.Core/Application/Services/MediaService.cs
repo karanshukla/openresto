@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Hosting;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
@@ -8,7 +7,7 @@ namespace OpenRestoApi.Core.Application.Services;
 public class MediaService(
     IBrandSettingsRepository brandRepository,
     IRestaurantRepository restaurantRepository,
-    IHostEnvironment env,
+    IMediaStore media,
     IAuditScope? audit = null)
 {
     /// <summary>
@@ -18,23 +17,17 @@ public class MediaService(
     public MediaService(
         IBrandSettingsRepository brand,
         IRestaurantRepository restaurants,
-        IHostEnvironment hostEnvironment)
-        : this(brand, restaurants, hostEnvironment, null) { }
+        IMediaStore mediaStore)
+        : this(brand, restaurants, mediaStore, null) { }
 
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
     private readonly IBrandSettingsRepository _brandRepository = brandRepository;
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
-    private readonly string _mediaDir = Path.Combine(env.ContentRootPath, "wwwroot", "media");
+    private readonly IMediaStore _media = media;
 
     public virtual async Task<string> UploadHeroAsync(Stream fileStream, string contentType)
     {
-        EnsureMediaDir();
-        foreach (string old in Directory.GetFiles(_mediaDir, "hero.*"))
-            System.IO.File.Delete(old);
-
-        string filename = $"hero.{GetExtension(contentType)}";
-        await using (FileStream dest = System.IO.File.Create(Path.Combine(_mediaDir, filename)))
-            await fileStream.CopyToAsync(dest);
+        string filename = await _media.ReplaceAsync(HeroSlot, GetExtension(contentType), fileStream);
 
         string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
 
@@ -83,13 +76,7 @@ public class MediaService(
         Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
         if (restaurant == null) return null;
 
-        EnsureMediaDir();
-        foreach (string old in Directory.GetFiles(_mediaDir, $"location-{id}.*"))
-            System.IO.File.Delete(old);
-
-        string filename = $"location-{id}.{GetExtension(contentType)}";
-        await using (FileStream dest = System.IO.File.Create(Path.Combine(_mediaDir, filename)))
-            await fileStream.CopyToAsync(dest);
+        string filename = await _media.ReplaceAsync(LocationSlot(id), GetExtension(contentType), fileStream);
 
         string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         restaurant.ImageUrl = url;
@@ -124,18 +111,12 @@ public class MediaService(
         Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(id);
         if (restaurant == null) return null;
 
-        EnsureMediaDir();
-        // Only the instance-served menu file occupies the menu-<id>.* slot, so any
+        // Only the instance-served menu file occupies the menu-<id> slot, so any
         // previous upload (regardless of extension) is cleared before writing the
         // new one. External links live in the same MenuUrl column; if the previous
-        // value was a link rather than a served file, TryDeleteFile below is a no-op
-        // (the path won't resolve under _mediaDir) and the link is simply replaced.
-        foreach (string old in Directory.GetFiles(_mediaDir, $"menu-{id}.*"))
-            System.IO.File.Delete(old);
-
-        string filename = $"menu-{id}.pdf";
-        await using (FileStream dest = System.IO.File.Create(Path.Combine(_mediaDir, filename)))
-            await fileStream.CopyToAsync(dest);
+        // value was a link rather than a served file, there is no file to clear and
+        // the link is simply replaced.
+        string filename = await _media.ReplaceAsync(MenuSlot(id), "pdf", fileStream);
 
         string url = $"/media/{filename}?v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         restaurant.MenuUrl = url;
@@ -165,7 +146,7 @@ public class MediaService(
         return true;
     }
 
-    /// <summary>The deterministic on-disk slots an upload writes into, as audit target ids.</summary>
+    /// <summary>The <see cref="IMediaStore"/> slots an upload writes into, also used as audit target ids.</summary>
     private const string HeroSlot = "hero";
     private static string LocationSlot(int restaurantId) => $"location-{restaurantId}";
     private static string MenuSlot(int restaurantId) => $"menu-{restaurantId}";
@@ -173,28 +154,13 @@ public class MediaService(
     private void DescribeMedia(string action, string slot, string label, int? restaurantId, string summary)
         => _audit.Describe(action, AuditTargets.Media, slot, label, restaurantId, summary);
 
-    private void EnsureMediaDir() => Directory.CreateDirectory(_mediaDir);
-
     /// <summary>
-    /// Best-effort physical file deletion. Never throws — used so that removing an
-    /// image always succeeds even when the stored path is invalid, corrupt, or the
-    /// underlying file has already been deleted.
+    /// Best-effort deletion of the file a stored <c>/media/…?v=…</c> URL points at, so that
+    /// removing an image always succeeds even when the stored URL is invalid or the file has
+    /// already been deleted.
     /// </summary>
     private void TryDeleteFile(string url)
-    {
-        try
-        {
-            string pathOnly = url.Contains('?') ? url[..url.IndexOf('?')] : url;
-            string path = Path.Combine(_mediaDir, Path.GetFileName(pathOnly));
-            if (System.IO.File.Exists(path))
-                System.IO.File.Delete(path);
-        }
-        catch
-        {
-            // Intentionally ignored: the DB reference has already been cleared,
-            // so a stray/invalid physical file should not fail the removal.
-        }
-    }
+        => _media.TryDelete(url.Contains('?') ? url[..url.IndexOf('?')] : url);
 
     private static string GetExtension(string contentType) => contentType switch
     {
