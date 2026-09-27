@@ -3,7 +3,6 @@ using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Email;
 
 namespace OpenRestoApi.Core.Application.Services;
 

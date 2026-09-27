@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace OpenRestoApi.Infrastructure.Email;
+namespace OpenRestoApi.Core.Application.Services;
 
 public static class EmailTemplateBuilder
 {

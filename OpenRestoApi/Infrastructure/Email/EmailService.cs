@@ -10,10 +10,10 @@ using OpenRestoApi.Infrastructure.Persistence;
 
 namespace OpenRestoApi.Infrastructure.Email;
 
-public class EmailService(AppDbContext db, CredentialProtector protector, Func<ISmtpClient> clientFactory) : IEmailService
+public class EmailService(AppDbContext db, ICredentialProtector protector, Func<ISmtpClient> clientFactory) : IEmailService
 {
     private readonly AppDbContext _db = db;
-    private readonly CredentialProtector _protector = protector;
+    private readonly ICredentialProtector _protector = protector;
     private readonly Func<ISmtpClient> _clientFactory = clientFactory;
 
     private async Task<EmailSettings?> GetSettingsAsync()

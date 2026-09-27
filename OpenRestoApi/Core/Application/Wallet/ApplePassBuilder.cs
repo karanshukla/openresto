@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using OpenRestoApi.Core.Application;
 
-namespace OpenRestoApi.Infrastructure.Wallet;
+namespace OpenRestoApi.Core.Application.Wallet;
 
 /// <summary>
 /// Everything a pass says, resolved by the caller so this class knows nothing about bookings.

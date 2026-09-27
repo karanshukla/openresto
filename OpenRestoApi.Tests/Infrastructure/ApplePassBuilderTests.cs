@@ -4,7 +4,7 @@ using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using ImageMagick;
-using OpenRestoApi.Infrastructure.Wallet;
+using OpenRestoApi.Core.Application.Wallet;
 using OpenRestoApi.Tests.TestInfrastructure;
 
 namespace OpenRestoApi.Tests.Infrastructure;

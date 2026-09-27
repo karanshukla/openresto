@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace OpenRestoApi.Infrastructure.Wallet;
+namespace OpenRestoApi.Core.Application.Wallet;
 
 /// <summary>The service account a Google Wallet JWT is signed by. Loaded once from <c>WalletSettings</c> by the caller.</summary>
 public sealed record GoogleWalletIssuer(string IssuerId, string ServiceAccountEmail, RSA PrivateKey);

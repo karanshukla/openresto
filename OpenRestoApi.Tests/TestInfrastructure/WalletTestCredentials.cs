@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using OpenRestoApi.Core.Application;
 using OpenRestoApi.Core.Application.Interfaces;
-using OpenRestoApi.Infrastructure.Wallet;
+using OpenRestoApi.Core.Application.Wallet;
 
 namespace OpenRestoApi.Tests.TestInfrastructure;
 

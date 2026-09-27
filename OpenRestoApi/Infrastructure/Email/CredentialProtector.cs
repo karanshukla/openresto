@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.DataProtection;
+using OpenRestoApi.Core.Application.Interfaces;
 
 namespace OpenRestoApi.Infrastructure.Email;
 
-public class CredentialProtector(IDataProtectionProvider provider)
+public class CredentialProtector(IDataProtectionProvider provider) : ICredentialProtector
 {
     private const string _purpose = "EmailSettings.Password";
     private readonly IDataProtector _protector = provider.CreateProtector(_purpose);
 
-    public virtual string Encrypt(string plainText) => _protector.Protect(plainText);
+    public string Encrypt(string plainText) => _protector.Protect(plainText);
 
-    public virtual string Decrypt(string cipherText) => _protector.Unprotect(cipherText);
+    public string Decrypt(string cipherText) => _protector.Unprotect(cipherText);
 }
