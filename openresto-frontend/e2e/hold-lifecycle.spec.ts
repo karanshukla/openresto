@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { futureDateStr } from "./helpers";
+import { futureDateStr, openBookingDrawer, selectBookingDate } from "./helpers";
 
 /**
  * Hold lifecycle: creating a hold marks the slot unavailable; releasing it (or letting it expire)
@@ -110,5 +110,27 @@ test.describe("Hold lifecycle", () => {
     const hasAvailableTable = slots.some((s) => s.availableTableIds.includes(tableId));
 
     expect(hasAvailableTable).toBeTruthy();
+  });
+
+  test("the hold banner names the table the server auto-assigned", async ({ page }) => {
+    await page.goto(`/book?restaurantId=${restaurantId}`);
+    await expect(page.getByTestId("locations-filter-bar")).toBeVisible({ timeout: 20_000 });
+    await selectBookingDate(page, testDate);
+    await openBookingDrawer(page);
+
+    const held = page.waitForResponse(
+      (res) => res.url().endsWith("/api/holds") && res.request().method() === "POST"
+    );
+    await page.getByPlaceholder("Your full name").fill("E2E Hold Banner");
+    await page.getByPlaceholder("your@email.com").fill("e2e-hold-banner@example.com");
+    const hold = (await (await held).json()) as { holdId: string; tableId: number };
+
+    const restaurant = await (await page.request.get(`/api/restaurants/${restaurantId}`)).json();
+    const table = (restaurant.sections as { tables: { id: number; name: string }[] }[])
+      .flatMap((s) => s.tables)
+      .find((t) => t.id === hold.tableId);
+    await expect(page.getByText(`Table held: ${table!.name}`)).toBeVisible();
+
+    await page.request.delete(`/api/holds/${hold.holdId}`);
   });
 });
