@@ -364,6 +364,35 @@ public class WaitlistServiceTests
     }
 
     [Fact]
+    public async Task GetBoardAsync_NamesThePartyASeatableRowSkips()
+    {
+        _bookedTables.Add(1);
+        _inProgress.Add(new Booking { TableId = 1, Date = Now.AddMinutes(-30), EndTime = Now.AddMinutes(30) });
+        WaitlistEntry ahead = Seed(2, minutesAgo: 20);
+        Seed(4);
+
+        WaitlistBoardDto board = await CreateService().GetBoardAsync(1);
+
+        Assert.True(board.Entries[1].CanSeatNow);
+        Assert.Equal(60, board.Entries[1].EstimatedWaitMinutes);
+        Assert.Equal(ahead.Number, board.Entries[1].SkipsNumber);
+        Assert.Null(board.Entries[0].SkipsNumber);
+    }
+
+    [Fact]
+    public async Task GetBoardAsync_NamesNoOneSkipped_WhenTheRowCannotBeSeatedNow()
+    {
+        _bookedTables.Add(2);
+        Seed(4, minutesAgo: 20);
+        Seed(4);
+
+        WaitlistBoardDto board = await CreateService().GetBoardAsync(1);
+
+        Assert.False(board.Entries[1].CanSeatNow);
+        Assert.Null(board.Entries[1].SkipsNumber);
+    }
+
+    [Fact]
     public async Task GetBoardAsync_ReportsWhetherGuestsCanJoin()
     {
         Assert.True((await CreateService().GetBoardAsync(1)).AcceptingGuests);

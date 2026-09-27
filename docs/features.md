@@ -79,6 +79,8 @@ on any day.
   booking on the smallest free table that fits.
 - Estimates replay the queue against the floor: each table frees when its current sitting ends,
   and each party takes the first suitable table to free up, for a sitting of its own length.
+- A party that can be seated now but is quoted a wait, because the replay gave the free table to
+  a party ahead, shows "Free now, skips #N" on the board. API: `skipsNumber` on board entries.
 - An entry still waiting 6 hours after joining expires. Every entry is deleted after 7 days,
   since it holds a name and email.
 - Admin endpoints are under the `bookings` scope, with names and emails withheld from keys

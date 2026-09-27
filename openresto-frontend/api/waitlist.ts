@@ -51,6 +51,7 @@ export interface WaitlistEntry {
   partiesAhead: number;
   estimatedWaitMinutes: number | null;
   canSeatNow: boolean;
+  skipsNumber: number | null;
 }
 
 export interface WaitlistBoard {

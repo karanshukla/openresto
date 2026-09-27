@@ -26,7 +26,10 @@ public class WaitEstimatorTests
     }
 
     private static IReadOnlyList<DateTime?> Estimate(Restaurant r, int[] parties, Dictionary<int, DateTime>? freeAt = null)
-        => WaitEstimator.EstimateSeatingTimes(r, parties, freeAt ?? new Dictionary<int, DateTime>(), Now);
+        => WaitEstimator.EstimateSeatingTimes(r, parties, freeAt ?? new Dictionary<int, DateTime>(), Now).Select(e => e?.SeatAt).ToList();
+
+    private static IReadOnlyList<int?> FreeTableHeldBy(Restaurant r, int[] parties, Dictionary<int, DateTime> freeAt)
+        => WaitEstimator.EstimateSeatingTimes(r, parties, freeAt, Now).Select(e => e?.FreeTableHeldBy).ToList();
 
     [Fact]
     public void Estimate_SeatsAtOnce_WhenAFittingTableIsFree()
@@ -113,6 +116,22 @@ public class WaitEstimatorTests
 
         Assert.Equal(Now, Estimate(Floor(oversizeCap: 3), [1], freeAt)[0]);
         Assert.Equal(Now.AddMinutes(30), Estimate(Floor(oversizeCap: 2), [1], freeAt)[0]);
+    }
+
+    [Fact]
+    public void Estimate_NamesThePartyAhead_HoldingAFreeTableThePartyFits()
+    {
+        var freeAt = new Dictionary<int, DateTime> { [1] = Now.AddMinutes(30) };
+
+        Assert.Equal([null, 0], FreeTableHeldBy(Floor(), [2, 4], freeAt));
+    }
+
+    [Fact]
+    public void Estimate_NamesNoOne_WhenThePartyWaitsOnlyForBusyTables()
+    {
+        var freeAt = new Dictionary<int, DateTime> { [1] = Now.AddMinutes(30), [2] = Now.AddMinutes(15) };
+
+        Assert.Equal([null, null], FreeTableHeldBy(Floor(), [2, 4], freeAt));
     }
 
     [Fact]

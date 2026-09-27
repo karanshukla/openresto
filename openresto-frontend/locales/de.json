@@ -2127,6 +2127,7 @@
       "guests_other": "{{count}} Gäste",
       "waitNow": "Tisch frei",
       "waitMinutes": "~{{minutes}} Min.",
+      "waitSkips": "Frei, überholt Nr. {{number}}",
       "waitUnknown": "Kein Tisch passt",
       "joined": "Eingetragen {{time}}",
       "called": "Aufgerufen {{time}}",

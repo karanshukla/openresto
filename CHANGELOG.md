@@ -10,6 +10,10 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+### Fixed
+
+- **Waitlist board.** A party that can be seated now no longer shows a quoted wait beside an enabled Seat button. It shows "Free now, skips #N", naming the party ahead that the free table was estimated for.
+
 ## [2.3.0] - 2026-09-24
 
 ### Added

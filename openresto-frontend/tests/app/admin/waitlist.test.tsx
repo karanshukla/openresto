@@ -42,6 +42,7 @@ const party = (over: Partial<waitlistApi.WaitlistEntry> = {}): waitlistApi.Waitl
   partiesAhead: 0,
   estimatedWaitMinutes: 0,
   canSeatNow: true,
+  skipsNumber: null,
   ...over,
 });
 

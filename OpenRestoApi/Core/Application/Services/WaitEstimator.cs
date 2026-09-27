@@ -15,7 +15,13 @@ public static class WaitEstimator
     private sealed record Unit(int Seats, bool IsGroup, IReadOnlyList<int> TableIds);
 
     /// <summary>
-    /// The seating instant for each of <paramref name="partySizes"/>, in the same order, or null
+    /// When a party gets a table. <paramref name="FreeTableHeldBy"/> is the index of the first party
+    /// ahead that the replay gave a fitting, currently free table to, when that is why this party waits.
+    /// </summary>
+    public sealed record Estimate(DateTime SeatAt, int? FreeTableHeldBy);
+
+    /// <summary>
+    /// The estimate for each of <paramref name="partySizes"/>, in the same order, or null
     /// for a party no table or group at the location can seat. <paramref name="tableFreeAtUtc"/>
     /// maps each occupied table to when it frees up; a table missing from it is free now.
     /// </summary>
@@ -27,7 +33,9 @@ public static class WaitEstimator
     /// <seealso>WaitEstimatorTests.Estimate_UsesAGroup_OnlyOnceAllItsMembersAreFree</seealso>
     /// <seealso>WaitEstimatorTests.Estimate_RespectsTheOversizeCap</seealso>
     /// <seealso>WaitEstimatorTests.Estimate_HoldsEachTableForThePartysOwnTurnTime</seealso>
-    public static IReadOnlyList<DateTime?> EstimateSeatingTimes(
+    /// <seealso>WaitEstimatorTests.Estimate_NamesThePartyAhead_HoldingAFreeTableThePartyFits</seealso>
+    /// <seealso>WaitEstimatorTests.Estimate_NamesNoOne_WhenThePartyWaitsOnlyForBusyTables</seealso>
+    public static IReadOnlyList<Estimate?> EstimateSeatingTimes(
         Restaurant restaurant,
         IReadOnlyList<int> partySizes,
         IReadOnlyDictionary<int, DateTime> tableFreeAtUtc,
@@ -35,10 +43,12 @@ public static class WaitEstimator
     {
         List<Unit> units = UnitsOf(restaurant);
         var freeAt = new Dictionary<int, DateTime>(tableFreeAtUtc);
+        var heldBy = new Dictionary<int, int>();
 
-        var estimates = new List<DateTime?>(partySizes.Count);
-        foreach (int seats in partySizes)
+        var estimates = new List<Estimate?>(partySizes.Count);
+        for (int party = 0; party < partySizes.Count; party++)
         {
+            int seats = partySizes[party];
             var fitting = units
                 .Where(u => restaurant.CanSeat(u.Seats, seats))
                 .Select(u => (Unit: u, Start: FreeFrom(u, freeAt, nowUtc)))
@@ -54,12 +64,20 @@ public static class WaitEstimator
             }
 
             var chosen = fitting[0];
+            int? freeTableHeldBy = chosen.Start > nowUtc
+                ? fitting
+                    .Where(c => FreeFrom(c.Unit, tableFreeAtUtc, nowUtc) == nowUtc)
+                    .SelectMany(c => c.Unit.TableIds)
+                    .Where(heldBy.ContainsKey)
+                    .Min(tableId => (int?)heldBy[tableId])
+                : null;
 
             foreach (int tableId in chosen.Unit.TableIds)
             {
                 freeAt[tableId] = chosen.Start.AddMinutes(BookingDuration.For(restaurant, seats));
+                heldBy.TryAdd(tableId, party);
             }
-            estimates.Add(chosen.Start);
+            estimates.Add(new Estimate(chosen.Start, freeTableHeldBy));
         }
 
         return estimates;
@@ -89,7 +107,7 @@ public static class WaitEstimator
     public static int? MinutesUntil(DateTime? seatAtUtc, DateTime nowUtc)
         => seatAtUtc is { } at ? Math.Max(0, (int)Math.Ceiling((at - nowUtc).TotalMinutes)) : null;
 
-    private static DateTime FreeFrom(Unit unit, Dictionary<int, DateTime> freeAt, DateTime nowUtc)
+    private static DateTime FreeFrom(Unit unit, IReadOnlyDictionary<int, DateTime> freeAt, DateTime nowUtc)
     {
         DateTime latest = nowUtc;
         foreach (int tableId in unit.TableIds)

@@ -16,7 +16,8 @@ type WaitlistAction = "notify" | "seat" | "remove";
  * this minute, so the button is never a guess that comes back as a 409.
  *
  * @see [WaitlistRow.test.tsx](../../../tests/components/admin/waitlist/WaitlistRow.test.tsx) —
- * pins Seat following `canSeatNow`, the call-again label, and the hidden-guest fallback.
+ * pins Seat following `canSeatNow`, the free-now label naming the party it skips, the call-again
+ * label, and the hidden-guest fallback.
  */
 export default function WaitlistRow({
   entry,
@@ -37,11 +38,13 @@ export default function WaitlistRow({
   const seatColor = isDark ? colors.success : theme.status.arrived.text;
 
   const wait =
-    entry.estimatedWaitMinutes === null
-      ? t("admin.waitlist.waitUnknown")
-      : entry.estimatedWaitMinutes === 0
-        ? t("admin.waitlist.waitNow")
-        : t("admin.waitlist.waitMinutes", { minutes: entry.estimatedWaitMinutes });
+    entry.skipsNumber !== null
+      ? t("admin.waitlist.waitSkips", { number: entry.skipsNumber })
+      : entry.estimatedWaitMinutes === null
+        ? t("admin.waitlist.waitUnknown")
+        : entry.estimatedWaitMinutes === 0
+          ? t("admin.waitlist.waitNow")
+          : t("admin.waitlist.waitMinutes", { minutes: entry.estimatedWaitMinutes });
 
   return (
     <View

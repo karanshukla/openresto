@@ -2127,6 +2127,7 @@
       "guests_other": "{{count}} convives",
       "waitNow": "Table libre",
       "waitMinutes": "~{{minutes}} min",
+      "waitSkips": "Libre, passe devant le n° {{number}}",
       "waitUnknown": "Aucune table adaptée",
       "joined": "Inscrit {{time}}",
       "called": "Appelé {{time}}",

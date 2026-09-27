@@ -90,6 +90,14 @@ public class WaitlistEntryDto
 
     /// <summary>True when a table or group can take the party this minute.</summary>
     public bool CanSeatNow { get; set; }
+
+    /// <summary>
+    /// When the party can be seated now but is quoted a wait, the ticket number of the first party
+    /// ahead it would overtake.
+    /// </summary>
+    /// <seealso>WaitlistServiceTests.GetBoardAsync_NamesThePartyASeatableRowSkips</seealso>
+    /// <seealso>WaitlistServiceTests.GetBoardAsync_NamesNoOneSkipped_WhenTheRowCannotBeSeatedNow</seealso>
+    public int? SkipsNumber { get; set; }
 }
 
 public class WaitlistBoardDto

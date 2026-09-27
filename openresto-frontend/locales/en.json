@@ -2127,6 +2127,7 @@
       "guests_other": "{{count}} guests",
       "waitNow": "Table free now",
       "waitMinutes": "~{{minutes}} min",
+      "waitSkips": "Free now, skips #{{number}}",
       "waitUnknown": "No table fits",
       "joined": "Joined {{time}}",
       "called": "Called {{time}}",
