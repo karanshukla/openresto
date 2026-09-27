@@ -1,6 +1,4 @@
-using OpenRestoApi.Core.Application.Interfaces;
-
-namespace OpenRestoApi.Core.Application.Services;
+namespace OpenRestoApi.Infrastructure.Cookies;
 
 /// <summary>
 /// Writes/clears the <c>openresto_auth</c> cookie. SameSite/Secure flags are derived from

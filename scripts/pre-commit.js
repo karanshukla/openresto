@@ -97,13 +97,13 @@ if (frontendFiles.length > 0) {
 
 // 4. Backend Linter (dotnet format)
 const backendFiles = stagedFiles.filter(
-  (f) => f.startsWith("OpenRestoApi/") && f.endsWith(".cs"),
+  (f) => /^OpenRestoApi(\.Core|\.Infrastructure)?\//.test(f) && f.endsWith(".cs"),
 );
 if (backendFiles.length > 0) {
   console.log("Running Backend Linter...");
   try {
     execSync(
-      `dotnet format OpenRestoApi/OpenRestoApi.csproj --include ${backendFiles.map((f) => `"${f}"`).join(" ")}`,
+      `dotnet format openresto.sln --include ${backendFiles.map((f) => `"${f}"`).join(" ")}`,
       { stdio: "inherit" },
     );
     modified = true;

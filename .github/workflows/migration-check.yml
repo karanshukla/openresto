@@ -4,13 +4,13 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "OpenRestoApi/Migrations/**.cs"
-      - "OpenRestoApi/Infrastructure/Persistence/AppDbContext.cs"
+      - "OpenRestoApi.Infrastructure/Migrations/**.cs"
+      - "OpenRestoApi.Infrastructure/Persistence/AppDbContext.cs"
   push:
     branches: [main]
     paths:
-      - "OpenRestoApi/Migrations/**.cs"
-      - "OpenRestoApi/Infrastructure/Persistence/AppDbContext.cs"
+      - "OpenRestoApi.Infrastructure/Migrations/**.cs"
+      - "OpenRestoApi.Infrastructure/Persistence/AppDbContext.cs"
 
 permissions:
   contents: read
@@ -57,7 +57,7 @@ jobs:
           # Added *or* modified. Editing an existing migration is legitimate while it is
           # unreleased (fixing one before anyone has applied it), and that edit needs checking
           # more than most — it is the case where the migration has already been proven wrong.
-          NEW_FILES=$(git diff "$BASE"...HEAD --name-status -- 'OpenRestoApi/Migrations/*.cs' \
+          NEW_FILES=$(git diff "$BASE"...HEAD --name-status -- 'OpenRestoApi.Infrastructure/Migrations/*.cs' \
             | grep -E "^(A|M)" \
             | grep -v "Designer\.cs\|Snapshot\." \
             | awk '{print $2}' \
@@ -78,7 +78,7 @@ jobs:
           echo "first_new_migration=$FIRST_NEW" >> $GITHUB_OUTPUT
 
           # Find the migration that immediately precedes the first new one
-          ALL_MIGRATIONS=$(ls OpenRestoApi/Migrations/*.cs 2>/dev/null \
+          ALL_MIGRATIONS=$(ls OpenRestoApi.Infrastructure/Migrations/*.cs 2>/dev/null \
             | grep -v "Designer\.cs\|Snapshot\." \
             | sort \
             | xargs -I{} basename {} .cs \
@@ -99,7 +99,7 @@ jobs:
         working-directory: OpenRestoApi
         run: |
           dotnet ef migrations script \
-            --configuration Release --no-build \
+            --project ../OpenRestoApi.Infrastructure --configuration Release --no-build \
             --output /tmp/all-migrations.sql
           echo "=== Full migration SQL preview (first 40 lines) ==="
           head -40 /tmp/all-migrations.sql
@@ -112,7 +112,7 @@ jobs:
         run: |
           BASELINE="${{ steps.detect.outputs.baseline_migration }}"
           dotnet ef migrations script "0" "$BASELINE" \
-            --configuration Release --no-build \
+            --project ../OpenRestoApi.Infrastructure --configuration Release --no-build \
             --output /tmp/baseline-migrations.sql
           echo "=== Baseline SQL preview (first 40 lines) ==="
           head -40 /tmp/baseline-migrations.sql
@@ -125,7 +125,7 @@ jobs:
         run: |
           BASELINE="${{ steps.detect.outputs.baseline_migration }}"
           dotnet ef migrations script "$BASELINE" \
-            --configuration Release --no-build \
+            --project ../OpenRestoApi.Infrastructure --configuration Release --no-build \
             --output /tmp/upgrade-only.sql
           echo "=== Upgrade SQL preview (first 40 lines) ==="
           head -40 /tmp/upgrade-only.sql

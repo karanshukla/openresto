@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Xml.Linq;
-using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Tests.Integration;
 

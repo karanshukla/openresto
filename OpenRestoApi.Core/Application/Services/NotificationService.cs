@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Controllers;
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;

@@ -4325,14 +4325,14 @@ export interface components {
             /**
              * Format: date-time
              * @description An explicit expiry. Omit this to get the safe default (see
-             *         bool CreateApiKeyRequest.NeverExpires); when set, it must be in the future and
-             *         bool CreateApiKeyRequest.NeverExpires must not also be true.
+             *                 bool CreateApiKeyRequest.NeverExpires); when set, it must be in the future and
+             *                 bool CreateApiKeyRequest.NeverExpires must not also be true.
              */
             expiresAt?: null | string;
             /**
              * @description Opts a key out of the default one-year expiry entirely. Only meaningful when
-             *         DateTime? CreateApiKeyRequest.ExpiresAt is omitted — setting both is rejected rather than silently
-             *         preferring one, since a client sending both almost certainly means only one of them.
+             *                 DateTime? CreateApiKeyRequest.ExpiresAt is omitted — setting both is rejected rather than silently
+             *                 preferring one, since a client sending both almost certainly means only one of them.
              */
             neverExpires?: boolean;
         };

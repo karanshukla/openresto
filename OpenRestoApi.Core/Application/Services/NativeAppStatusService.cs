@@ -1,6 +1,6 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.WebUtilities;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
@@ -204,7 +204,7 @@ public class NativeAppStatusService(
                 $"{StatusLine(status)}: the file redirects, and neither verifier follows redirects.", url);
         }
 
-        if (status != StatusCodes.Status200OK)
+        if (status != (int)HttpStatusCode.OK)
         {
             return Check(id, NativeAppChecks.Fail, StatusLine(status), url);
         }
@@ -227,10 +227,14 @@ public class NativeAppStatusService(
     }
 
     private static string StatusLine(int status)
-        => string.Concat(
+    {
+        // An HttpResponseMessage with no reason phrase set reports the standard one for its code.
+        using var response = new HttpResponseMessage((HttpStatusCode)status);
+        return string.Concat(
             status.ToString(CultureInfo.InvariantCulture),
             " ",
-            ReasonPhrases.GetReasonPhrase(status) is { Length: > 0 } phrase ? phrase : "Unknown");
+            response.ReasonPhrase is { Length: > 0 } phrase ? phrase : "Unknown");
+    }
 
     private static bool TryParseJson(string? body, out JsonElement root)
     {

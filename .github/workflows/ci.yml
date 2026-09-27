@@ -43,7 +43,7 @@ jobs:
           # HEAD is the PR's merge commit, whose first parent is the base branch tip.
           changed=$(git diff --name-only HEAD^1 HEAD)
           touches() { grep -qE "$1" <<< "$changed" && echo true || echo false; }
-          echo "backend=$(touches '^(OpenRestoApi(\.Tests)?/|tools/|openresto\.sln$|Directory\.Build\.props$|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
+          echo "backend=$(touches '^(OpenRestoApi(\.Core|\.Infrastructure|\.Tests)?/|tools/|openresto\.sln$|Directory\.Build\.props$|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
           echo "frontend=$(touches '^(openresto-frontend/|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
 
   frontend:
