@@ -20,6 +20,7 @@ const entry = (over: Partial<WaitlistEntry> = {}): WaitlistEntry => ({
   partiesAhead: 0,
   estimatedWaitMinutes: 15,
   canSeatNow: false,
+  skipsNumber: null,
   ...over,
 });
 
@@ -54,6 +55,21 @@ describe("WaitlistRow", () => {
     expect(screen.getByText("Table free now")).toBeTruthy();
     fireEvent.press(screen.getByTestId("waitlist-seat-4"));
     expect(onAction).toHaveBeenCalledWith("seat");
+  });
+
+  it("names the party a free table skips instead of quoting a wait", () => {
+    renderWithProviders(
+      <WaitlistRow
+        entry={entry({ canSeatNow: true, estimatedWaitMinutes: 19, skipsNumber: 3 })}
+        busy={false}
+        isLast={false}
+        onAction={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText("Free now, skips #3")).toBeTruthy();
+    expect(screen.queryByText("~19 min")).toBeNull();
+    expect(screen.getByTestId("waitlist-seat-4")).toBeEnabled();
   });
 
   it("calls, and offers to call again once called", () => {

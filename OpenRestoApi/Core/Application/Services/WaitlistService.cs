@@ -88,14 +88,14 @@ public class WaitlistService(
         DateTime now = _clock.UtcNow;
         List<WaitlistEntry> queue = Order(await _waitlist.GetActiveForRestaurantAsync(restaurantId));
         List<int> parties = queue.Select(e => e.Seats).Append(seats).ToList();
-        IReadOnlyList<DateTime?> seatAt = await EstimateAsync(restaurant, parties, now);
+        IReadOnlyList<WaitEstimator.Estimate?> estimates = await EstimateAsync(restaurant, parties, now);
 
         return new WaitlistQuoteDto
         {
             RestaurantId = restaurantId,
             AcceptingGuests = AcceptsGuestsAt(restaurant, now),
             PartiesWaiting = queue.Count,
-            EstimatedWaitMinutes = WaitEstimator.MinutesUntil(seatAt[^1], now),
+            EstimatedWaitMinutes = WaitEstimator.MinutesUntil(estimates[^1]?.SeatAt, now),
         };
     }
 
@@ -169,7 +169,7 @@ public class WaitlistService(
         Restaurant restaurant = await LoadRestaurantAsync(restaurantId);
         DateTime now = _clock.UtcNow;
         List<WaitlistEntry> queue = Order(await _waitlist.GetActiveForRestaurantAsync(restaurantId));
-        IReadOnlyList<DateTime?> seatAt = await EstimateAsync(restaurant, queue, now);
+        IReadOnlyList<WaitEstimator.Estimate?> estimates = await EstimateAsync(restaurant, queue, now);
 
         var canSeatBySize = new Dictionary<int, bool>();
         foreach (int seats in queue.Select(e => e.Seats).Distinct())
@@ -181,6 +181,7 @@ public class WaitlistService(
         for (int i = 0; i < queue.Count; i++)
         {
             WaitlistEntry e = queue[i];
+            bool canSeatNow = canSeatBySize[e.Seats];
             entries.Add(new WaitlistEntryDto
             {
                 Id = e.Id,
@@ -192,8 +193,9 @@ public class WaitlistService(
                 JoinedAt = e.CreatedAt,
                 NotifiedAt = e.NotifiedAt,
                 PartiesAhead = i,
-                EstimatedWaitMinutes = WaitEstimator.MinutesUntil(seatAt[i], now),
-                CanSeatNow = canSeatBySize[e.Seats],
+                EstimatedWaitMinutes = WaitEstimator.MinutesUntil(estimates[i]?.SeatAt, now),
+                CanSeatNow = canSeatNow,
+                SkipsNumber = canSeatNow && estimates[i]?.FreeTableHeldBy is { } ahead ? queue[ahead].Number : null,
             });
         }
 
@@ -351,17 +353,17 @@ public class WaitlistService(
         DateTime now = _clock.UtcNow;
         List<WaitlistEntry> queue = Order(await _waitlist.GetActiveForRestaurantAsync(restaurant.Id));
         int index = queue.FindIndex(e => e.Id == entry.Id);
-        IReadOnlyList<DateTime?> seatAt = await EstimateAsync(restaurant, queue, now);
+        IReadOnlyList<WaitEstimator.Estimate?> estimates = await EstimateAsync(restaurant, queue, now);
 
         dto.PartiesAhead = index;
-        dto.EstimatedWaitMinutes = index < 0 ? null : WaitEstimator.MinutesUntil(seatAt[index], now);
+        dto.EstimatedWaitMinutes = index < 0 ? null : WaitEstimator.MinutesUntil(estimates[index]?.SeatAt, now);
         return dto;
     }
 
-    private Task<IReadOnlyList<DateTime?>> EstimateAsync(Restaurant restaurant, List<WaitlistEntry> queue, DateTime now)
+    private Task<IReadOnlyList<WaitEstimator.Estimate?>> EstimateAsync(Restaurant restaurant, List<WaitlistEntry> queue, DateTime now)
         => EstimateAsync(restaurant, queue.Select(e => e.Seats).ToList(), now);
 
-    private async Task<IReadOnlyList<DateTime?>> EstimateAsync(Restaurant restaurant, List<int> partySizes, DateTime now)
+    private async Task<IReadOnlyList<WaitEstimator.Estimate?>> EstimateAsync(Restaurant restaurant, List<int> partySizes, DateTime now)
     {
         List<Booking> seated = await _bookings.GetInProgressForRestaurantAsync(restaurant.Id, now, restaurant.DefaultBookingDurationMinutes);
         return WaitEstimator.EstimateSeatingTimes(

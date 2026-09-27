@@ -2127,6 +2127,7 @@
       "guests_other": "{{count}} comensales",
       "waitNow": "Mesa libre ya",
       "waitMinutes": "~{{minutes}} min",
+      "waitSkips": "Libre ya, adelanta al #{{number}}",
       "waitUnknown": "Ninguna mesa sirve",
       "joined": "Llegó {{time}}",
       "called": "Avisado {{time}}",
