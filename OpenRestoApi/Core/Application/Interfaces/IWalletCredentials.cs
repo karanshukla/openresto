@@ -1,4 +1,4 @@
-using OpenRestoApi.Infrastructure.Wallet;
+using OpenRestoApi.Core.Application.Wallet;
 
 namespace OpenRestoApi.Core.Application.Interfaces;
 

@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Email;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
@@ -12,9 +10,9 @@ namespace OpenRestoApi.Tests.Services;
 
 public class EmailSettingsServiceTests
 {
-    private static EmailSettingsService CreateService(AppDbContext db, Mock<CredentialProtector>? protectorMock = null, Mock<IEmailService>? emailMock = null)
+    private static EmailSettingsService CreateService(AppDbContext db, Mock<ICredentialProtector>? protectorMock = null, Mock<IEmailService>? emailMock = null)
     {
-        protectorMock ??= new Mock<CredentialProtector>(Mock.Of<IDataProtectionProvider>());
+        protectorMock ??= new Mock<ICredentialProtector>();
         emailMock ??= new Mock<IEmailService>();
         return new EmailSettingsService(
             new EmailSettingsRepository(db),
@@ -79,7 +77,7 @@ public class EmailSettingsServiceTests
     public async Task SaveAsync_EncryptsPassword_WhenProvided()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_EncryptsPassword_WhenProvided));
-        var protectorMock = new Mock<CredentialProtector>(Mock.Of<IDataProtectionProvider>());
+        var protectorMock = new Mock<ICredentialProtector>();
         protectorMock.Setup(p => p.Encrypt("secret")).Returns("encrypted-secret");
 
         var svc = CreateService(db, protectorMock);
@@ -97,7 +95,7 @@ public class EmailSettingsServiceTests
         db.Set<EmailSettings>().Add(new EmailSettings { Host = "smtp", Port = 587, EncryptedPassword = "existing-encrypted" });
         await db.SaveChangesAsync();
 
-        var protectorMock = new Mock<CredentialProtector>(Mock.Of<IDataProtectionProvider>());
+        var protectorMock = new Mock<ICredentialProtector>();
         var svc = CreateService(db, protectorMock);
         await svc.SaveAsync("smtp", 587, "user", "••••••••", true, null, null);
 
@@ -110,7 +108,7 @@ public class EmailSettingsServiceTests
     public async Task SaveAsync_SkipsEncryption_WhenPasswordIsNull()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_SkipsEncryption_WhenPasswordIsNull));
-        var protectorMock = new Mock<CredentialProtector>(Mock.Of<IDataProtectionProvider>());
+        var protectorMock = new Mock<ICredentialProtector>();
         var svc = CreateService(db, protectorMock);
         await svc.SaveAsync("smtp.test.com", 587, "user", null, true, null, null);
 

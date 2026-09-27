@@ -3,7 +3,7 @@ using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Wallet;
+using OpenRestoApi.Core.Application.Wallet;
 
 namespace OpenRestoApi.Core.Application.Services;
 

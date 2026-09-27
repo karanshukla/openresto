@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.Settings;
+using OpenRestoApi.Core.Application.Wallet;
 using OpenRestoApi.Infrastructure.Wallet;
 using OpenRestoApi.Tests.TestInfrastructure;
 

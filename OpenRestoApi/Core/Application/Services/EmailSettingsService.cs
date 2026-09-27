@@ -1,14 +1,13 @@
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Email;
 
 namespace OpenRestoApi.Core.Application.Services;
 
 public class EmailSettingsService(
     IEmailSettingsRepository settingsRepository,
     IEmailFailureRepository emailFailureRepository,
-    CredentialProtector protector,
+    ICredentialProtector protector,
     IEmailService emailService,
     IAuditScope? audit = null)
 {
@@ -19,14 +18,14 @@ public class EmailSettingsService(
     public EmailSettingsService(
         IEmailSettingsRepository settings,
         IEmailFailureRepository failures,
-        CredentialProtector credentialProtector,
+        ICredentialProtector credentialProtector,
         IEmailService email)
         : this(settings, failures, credentialProtector, email, null) { }
 
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
     private readonly IEmailSettingsRepository _settingsRepository = settingsRepository;
     private readonly IEmailFailureRepository _emailFailureRepository = emailFailureRepository;
-    private readonly CredentialProtector _protector = protector;
+    private readonly ICredentialProtector _protector = protector;
     private readonly IEmailService _emailService = emailService;
 
     public virtual async Task<EmailSettings?> GetAsync()

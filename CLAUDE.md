@@ -209,6 +209,7 @@ OpenRestoApi/
 
 **Key conventions:**
 
+- **`Core` never references `Infrastructure`.** Pure code that `Core` needs lives in `Core` (the wallet pass builders, `EmailTemplateBuilder`); anything that does IO or wraps a framework service sits in `Infrastructure` behind an interface in `Core/Application/Interfaces` (`ICredentialProtector`, `IWalletCredentials`). This is the boundary a later split into separate projects will enforce at compile time.
 - All `DateTime` values are stored and passed as **UTC**. EF Core value converters enforce this globally in `AppDbContext`. Restaurant-local times are converted using the restaurant's IANA `Timezone` field only at display/availability-calculation time.
 - `OpenDays` is a comma-separated string of ISO 8601 day numbers (`1`=Monday … `7`=Sunday).
 - **Per-day opening hours**: `Restaurant.OpenHoursJson` (nullable JSON keyed by ISO day, e.g. `{"6":{"open":"11:00","close":"23:00"}}`) overrides `OpenTime`/`CloseTime` per day; resolve with `OpeningHoursHelper.GetHoursForDay`. `OpenDays` stays the canonical open/closed toggle. When an update sends identical hours for all 7 days they collapse back to `OpenTime`/`CloseTime` and `OpenHoursJson` is cleared. The API exposes a resolved 7-entry `openHours` list on `RestaurantDto`; the frontend mirrors the fallback logic in `utils/openingHours.ts`.

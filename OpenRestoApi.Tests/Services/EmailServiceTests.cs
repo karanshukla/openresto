@@ -4,6 +4,7 @@ using MailKit.Security;
 using MimeKit;
 using Moq;
 using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Email;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -16,7 +17,7 @@ public class EmailServiceTests
     public async Task TestConnectionAsync_ReturnsFalse_WhenNoSettings()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(TestConnectionAsync_ReturnsFalse_WhenNoSettings));
-        var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
+        var protector = new Mock<ICredentialProtector>();
         var clientMock = new Mock<ISmtpClient>();
         var service = new EmailService(db, protector.Object, () => clientMock.Object);
 
@@ -38,7 +39,7 @@ public class EmailServiceTests
         });
         db.SaveChanges();
 
-        var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
+        var protector = new Mock<ICredentialProtector>();
         protector.Setup(p => p.Decrypt("encrypted")).Returns("decrypted");
 
         var clientMock = new Mock<ISmtpClient>();
@@ -66,7 +67,7 @@ public class EmailServiceTests
         });
         db.SaveChanges();
 
-        var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
+        var protector = new Mock<ICredentialProtector>();
         protector.Setup(p => p.Decrypt("encrypted")).Returns("decrypted");
 
         var clientMock = new Mock<ISmtpClient>();
@@ -82,7 +83,7 @@ public class EmailServiceTests
     public async Task SendEmailAsync_Throws_WhenNoSettings()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(SendEmailAsync_Throws_WhenNoSettings));
-        var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
+        var protector = new Mock<ICredentialProtector>();
         var clientMock = new Mock<ISmtpClient>();
         var service = new EmailService(db, protector.Object, () => clientMock.Object);
 
@@ -106,7 +107,7 @@ public class EmailServiceTests
         });
         db.SaveChanges();
 
-        var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
+        var protector = new Mock<ICredentialProtector>();
         protector.Setup(p => p.Decrypt("encrypted")).Returns("decrypted");
 
         var clientMock = new Mock<ISmtpClient>();
@@ -135,7 +136,7 @@ public class EmailServiceTests
         });
         db.SaveChanges();
 
-        var protector = new Mock<CredentialProtector>(new Mock<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>().Object);
+        var protector = new Mock<ICredentialProtector>();
         protector.Setup(p => p.Decrypt("encrypted")).Returns("decrypted");
 
         var clientMock = new Mock<ISmtpClient>();

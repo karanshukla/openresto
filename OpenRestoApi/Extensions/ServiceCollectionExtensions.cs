@@ -389,7 +389,7 @@ public static class ServiceCollectionExtensions
         var dpBuilder = services.AddDataProtection().SetApplicationName("openresto");
         if (!string.IsNullOrEmpty(dpKeysPath))
             dpBuilder.PersistKeysToFileSystem(new DirectoryInfo(dpKeysPath));
-        services.AddSingleton<OpenRestoApi.Infrastructure.Email.CredentialProtector>();
+        services.AddSingleton<ICredentialProtector, OpenRestoApi.Infrastructure.Email.CredentialProtector>();
         services.AddSingleton<OpenRestoApi.Infrastructure.Cookies.RecentBookingsCookie>();
         services.AddSingleton<IAuthCookieService, AuthCookieService>();
         services.AddScoped<Func<ISmtpClient>>(_ => () => new SmtpClient());

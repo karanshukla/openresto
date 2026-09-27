@@ -5,6 +5,7 @@ using CustomAccessibility.Attributes;
 using Microsoft.Extensions.Options;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Settings;
+using OpenRestoApi.Core.Application.Wallet;
 
 namespace OpenRestoApi.Infrastructure.Wallet;
 

@@ -1,4 +1,4 @@
-using OpenRestoApi.Infrastructure.Email;
+using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Tests.Infrastructure;
 

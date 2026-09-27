@@ -10,7 +10,7 @@ using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
-using OpenRestoApi.Infrastructure.Wallet;
+using OpenRestoApi.Core.Application.Wallet;
 using OpenRestoApi.Tests.TestInfrastructure;
 using static OpenRestoApi.Tests.TestInfrastructure.WalletTestCredentials;
 

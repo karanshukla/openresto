@@ -1,5 +1,4 @@
 using OpenRestoApi.Core.Domain;
-using OpenRestoApi.Infrastructure.Email;
 
 namespace OpenRestoApi.Core.Application.Services
 {
