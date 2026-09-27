@@ -4,8 +4,8 @@ volumes:
 services:
   backend:
     build:
-      context: ./OpenRestoApi
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: OpenRestoApi/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080

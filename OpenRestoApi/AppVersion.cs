@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi;
 
 /// <summary>
 /// The server's own version, as set by <c>&lt;Version&gt;</c> in OpenRestoApi.csproj and served

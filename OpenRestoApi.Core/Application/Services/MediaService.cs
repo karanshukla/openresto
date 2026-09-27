@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
@@ -7,7 +8,7 @@ namespace OpenRestoApi.Core.Application.Services;
 public class MediaService(
     IBrandSettingsRepository brandRepository,
     IRestaurantRepository restaurantRepository,
-    IWebHostEnvironment env,
+    IHostEnvironment env,
     IAuditScope? audit = null)
 {
     /// <summary>
@@ -17,7 +18,7 @@ public class MediaService(
     public MediaService(
         IBrandSettingsRepository brand,
         IRestaurantRepository restaurants,
-        IWebHostEnvironment hostEnvironment)
+        IHostEnvironment hostEnvironment)
         : this(brand, restaurants, hostEnvironment, null) { }
 
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;

@@ -4,16 +4,18 @@
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy the project file and restore dependencies
-COPY ["OpenRestoApi.csproj", "."]
-RUN dotnet restore "./OpenRestoApi.csproj"
+# Copy the project files and restore dependencies
+COPY ["OpenRestoApi/OpenRestoApi.csproj", "OpenRestoApi/"]
+COPY ["OpenRestoApi.Core/OpenRestoApi.Core.csproj", "OpenRestoApi.Core/"]
+COPY ["OpenRestoApi.Infrastructure/OpenRestoApi.Infrastructure.csproj", "OpenRestoApi.Infrastructure/"]
+RUN dotnet restore "OpenRestoApi/OpenRestoApi.csproj"
 
 # Copy the remaining source code
 COPY . .
 # Remove local db files so they don't get copied into the image
-RUN rm -f openresto.db*
+RUN rm -f OpenRestoApi/openresto.db*
 
-WORKDIR "/src/."
+WORKDIR "/src/OpenRestoApi"
 RUN dotnet build "OpenRestoApi.csproj" -c Release -o /app/build
 
 FROM build AS publish
@@ -31,7 +33,7 @@ RUN apt-get update && apt-get install -y curl sqlite3 && rm -rf /var/lib/apt/lis
 COPY --from=publish /app/publish .
 
 # Copy and prepare entrypoint (runs as root, fixes volume permissions, drops to app)
-COPY entrypoint.sh /entrypoint.sh
+COPY OpenRestoApi/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Pre-create volume mount points with correct ownership so fresh volumes

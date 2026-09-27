@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;

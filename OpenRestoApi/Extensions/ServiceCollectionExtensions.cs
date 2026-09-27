@@ -11,6 +11,7 @@ using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Infrastructure.Auth;
+using OpenRestoApi.Infrastructure.Cookies;
 using OpenRestoApi.Infrastructure.Holds;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
 using WebPush;

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using Moq;
-using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Infrastructure.Cookies;
 using SameSiteMode = Microsoft.Net.Http.Headers.SameSiteMode;
 
 namespace OpenRestoApi.Tests.Services;

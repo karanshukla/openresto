@@ -14,8 +14,8 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
-          <Include>[OpenRestoApi]*</Include>
-          <Exclude>[OpenRestoApi]OpenRestoApi.Migrations.*,[*]Microsoft.AspNetCore.OpenApi.*,[*]System.Runtime.CompilerServices.*</Exclude>
+          <Include>[OpenRestoApi]*,[OpenRestoApi.Core]*,[OpenRestoApi.Infrastructure]*</Include>
+          <Exclude>[OpenRestoApi.Infrastructure]OpenRestoApi.Migrations.*,[*]Microsoft.AspNetCore.OpenApi.*,[*]System.Runtime.CompilerServices.*</Exclude>
         </Configuration>
       </DataCollector>
     </DataCollectors>

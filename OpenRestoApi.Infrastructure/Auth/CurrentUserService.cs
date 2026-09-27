@@ -1,11 +1,14 @@
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using CustomAccessibility.Attributes;
 using OpenRestoApi.Core.Application.Interfaces;
 
 namespace OpenRestoApi.Infrastructure.Auth;
 
 /// <inheritdoc cref="ICurrentUserService" />
+[OnlyAccessibleBy("OpenRestoApi.Extensions.ServiceCollectionExtensions")]
+[ExternalAccessAllowed]
 internal sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
 {
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;

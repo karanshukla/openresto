@@ -1,4 +1,4 @@
-namespace OpenRestoApi.Core.Application.Interfaces;
+namespace OpenRestoApi.Infrastructure.Cookies;
 
 /// <summary>
 /// Manages the <c>openresto_auth</c> HttpOnly cookie that carries the admin JWT.
