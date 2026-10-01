@@ -10,7 +10,6 @@ namespace OpenRestoApi.Core.Application.Services;
 public class BookingService(
     IBookingRepository bookingRepository,
     ITableRepository tableRepository,
-    ISectionRepository sectionRepository,
     IRestaurantRepository restaurantRepository,
     IHoldService holdService,
     BookingMapper mapper,
@@ -22,7 +21,6 @@ public class BookingService(
 {
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly ITableRepository _tableRepository = tableRepository;
-    private readonly ISectionRepository _sectionRepository = sectionRepository;
     private readonly IRestaurantRepository _restaurantRepository = restaurantRepository;
     private readonly IHoldService _holdService = holdService;
     private readonly BookingMapper _mapper = mapper;
@@ -70,6 +68,9 @@ public class BookingService(
         int sectionId = bookingDto.SectionId!.Value;
         int durationMinutes = BookingDuration.For(restaurant, bookingDto.Seats);
 
+        Table table = await _tableRepository.GetForRestaurantAsync(tableId, sectionId, restaurant.Id)
+            ?? throw new ValidationException("Invalid table for this restaurant.") { Code = ErrorCodes.BookingInvalidTableForRestaurant };
+
         bool alreadyBooked = await _bookingRepository.IsUnitBookedOnDateAsync(
             tableId, tableGroupId: null, bookingDate, durationMinutes);
         if (alreadyBooked)
@@ -85,9 +86,8 @@ public class BookingService(
             throw new ConflictException("This table is currently being held by another user. Please try again shortly.") { Code = ErrorCodes.BookingTableHeld };
         }
 
-        Table? table = await _tableRepository.GetByIdAsync(tableId);
         RejectIfTableCannotSeat(table, restaurant, bookingDto.Seats);
-        if (table?.WalkInOnly == true)
+        if (table.WalkInOnly)
         {
             throw WalkInOnlyTable();
         }
@@ -96,8 +96,8 @@ public class BookingService(
         booking.Date = bookingDate;
         booking.BookingRef = BookingRefFactory.GenerateFor(restaurant);
         booking.EndTime = bookingDate.AddMinutes(durationMinutes);
-        booking.Table = table!;
-        booking.Section = (await _sectionRepository.GetByIdAsync(sectionId))!;
+        booking.Table = table;
+        booking.Section = table.Section;
         booking.Restaurant = restaurant;
 
         Booking newBooking = await _bookingRepository.AddAsync(booking);
