@@ -10,6 +10,13 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-01
+
+### Changed
+
+- The hold banner on the booking form now names the table that was auto-assigned to the guest.
+- Frontend and CLI npm dependencies updated to clear open `npm audit` advisories, and the backend's Magick.NET and MailKit packages moved to their latest patch releases (#479).
+
 ### Fixed
 
 - **Waitlist board.** A party that can be seated now no longer shows a quoted wait beside an enabled Seat button. It shows "Free now, skips #N", naming the party ahead that the free table was estimated for.
@@ -407,4 +414,5 @@ Hello! Thanks for reading, and for the 50 stars on GitHub! This release builds o
 [2.1.0]: https://github.com/karanshukla/openresto/releases/tag/v2.1.0
 [2.2.0]: https://github.com/karanshukla/openresto/releases/tag/v2.2.0
 [2.3.0]: https://github.com/karanshukla/openresto/releases/tag/v2.3.0
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.3.0...HEAD
+[2.3.1]: https://github.com/karanshukla/openresto/releases/tag/v2.3.1
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.3.1...HEAD
