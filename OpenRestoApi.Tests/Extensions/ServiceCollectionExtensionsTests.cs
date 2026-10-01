@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
@@ -197,7 +198,7 @@ public class ServiceCollectionExtensionsTests
     public void AddProjectDependencies_RegistersExpectedServices()
     {
         var services = new ServiceCollection();
-        services.AddProjectDependencies();
+        services.AddProjectDependencies(Mock.Of<IHostEnvironment>());
         // Just verify it doesn't throw
         using ServiceProvider provider = services.BuildServiceProvider();
         Assert.NotNull(provider);
@@ -223,7 +224,7 @@ public class ServiceCollectionExtensionsTests
     public void AddProjectDependencies_HoldServiceSingleton_ResolvesCleanly_WithScopeValidationEnabled()
     {
         var services = new ServiceCollection();
-        services.AddProjectDependencies();
+        services.AddProjectDependencies(Mock.Of<IHostEnvironment>());
 
         using ServiceProvider provider = services.BuildServiceProvider(validateScopes: true);
 
@@ -241,7 +242,7 @@ public class ServiceCollectionExtensionsTests
     public void AddProjectDependencies_ConfiguresSessionCookieOptions()
     {
         var services = new ServiceCollection();
-        services.AddProjectDependencies();
+        services.AddProjectDependencies(Mock.Of<IHostEnvironment>());
         using ServiceProvider provider = services.BuildServiceProvider();
 
         // Resolving IOptions<SessionOptions> triggers the AddSession(...) configure delegate.
@@ -261,7 +262,7 @@ public class ServiceCollectionExtensionsTests
         try
         {
             var services = new ServiceCollection();
-            services.AddProjectDependencies();
+            services.AddProjectDependencies(Mock.Of<IHostEnvironment>());
             using var provider = services.BuildServiceProvider();
             // Calling Protect triggers key ring initialisation, which writes the key XML to disk
             provider.GetRequiredService<Microsoft.AspNetCore.DataProtection.IDataProtectionProvider>()

@@ -153,7 +153,8 @@ public class HoldsController(
             sectionId,
             policy.BookingDate,
             request.CurrentHoldId,
-            BookingDuration.For(restaurant, request.Seats));
+            BookingDuration.For(restaurant, request.Seats),
+            ClientKey);
 
         if (result == null)
         {
@@ -172,6 +173,8 @@ public class HoldsController(
         });
     }
 
+    private string? ClientKey => HttpContext.Connection.RemoteIpAddress?.ToString();
+
     private IActionResult PlaceEligibleHold(PlaceHoldRequest request, HoldPolicyResult policy)
     {
         HoldResult? result = _holdService.PlaceHold(
@@ -180,7 +183,8 @@ public class HoldsController(
             request.SectionId!.Value,
             policy.BookingDate,
             request.CurrentHoldId,
-            BookingDuration.For(policy.Restaurant!, request.Seats));
+            BookingDuration.For(policy.Restaurant!, request.Seats),
+            ClientKey);
 
         if (result == null)
         {
@@ -222,7 +226,8 @@ public class HoldsController(
             candidates,
             policy.BookingDate,
             request.CurrentHoldId,
-            BookingDuration.For(policy.Restaurant!, request.Seats));
+            BookingDuration.For(policy.Restaurant!, request.Seats),
+            ClientKey);
 
         if (result == null)
         {

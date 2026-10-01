@@ -76,6 +76,7 @@ public static class ErrorCodes
     public const string HoldGroupSeatsRequired = "hold.group_seats_required";
     public const string HoldAutoAssignSeatsRequired = "hold.auto_assign_seats_required";
     public const string HoldUnavailable = "hold.unavailable";
+    public const string HoldClientLimit = "hold.client_limit";
 
     // ── Locations ────────────────────────────────────────────────────────────
     public const string RestaurantNotFound = "restaurant.not_found";

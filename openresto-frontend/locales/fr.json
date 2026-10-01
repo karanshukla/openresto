@@ -417,6 +417,7 @@
     "hold": {
       "ambiguous_group_and_table": "Indiquez soit TableId, soit TableGroupId, mais pas les deux.",
       "auto_assign_seats_required": "Le nombre de convives est requis pour l'attribution automatique afin que le serveur choisisse une table adaptée.",
+      "client_limit": "Trop de tables sont bloquées depuis votre connexion. Réessayez dans quelques minutes.",
       "group_seats_required": "Le nombre de convives est requis pour une réservation de groupe afin que le serveur vérifie la capacité combinée.",
       "unavailable": "Réservation temporaire indisponible."
     },

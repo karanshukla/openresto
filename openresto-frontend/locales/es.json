@@ -417,6 +417,7 @@
     "hold": {
       "ambiguous_group_and_table": "Indica TableId o TableGroupId, pero no ambos.",
       "auto_assign_seats_required": "Se necesita el número de comensales para la asignación automática, de modo que el servidor pueda elegir una mesa adecuada.",
+      "client_limit": "Hay demasiadas mesas retenidas desde tu conexión. Inténtalo de nuevo en unos minutos.",
       "group_seats_required": "Se necesita el número de comensales para una retención de grupo, de modo que el servidor pueda validar la capacidad combinada.",
       "unavailable": "Retención no disponible."
     },

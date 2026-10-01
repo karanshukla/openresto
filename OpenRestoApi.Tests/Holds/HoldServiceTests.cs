@@ -1,4 +1,6 @@
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Infrastructure.Holds;
 
 namespace OpenRestoApi.Tests.Holds;
@@ -30,6 +32,76 @@ public class HoldServiceTests
         Assert.NotNull(result);
         Assert.NotEmpty(result.HoldId);
         Assert.Equal(_baseTime.Add(HoldService.HoldDuration), result.ExpiresAt);
+    }
+
+    // ── Per-client cap ───────────────────────────────────────────────────────
+
+    private const string _client = "203.0.113.7";
+
+    private void HoldTables(int count, string? clientKey = _client)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            Assert.NotNull(_svc.PlaceHold(_restaurantId, 100 + i, _sectionId, _bookingDate, clientKey: clientKey));
+        }
+    }
+
+    [Fact]
+    public void PlaceHold_AllowsAClientUpToItsHoldLimit()
+    {
+        HoldTables(HoldService.MaxHoldsPerClient - 1);
+
+        Assert.NotNull(_svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, clientKey: _client));
+    }
+
+    [Fact]
+    public void PlaceHold_RejectsAClientOverItsHoldLimit()
+    {
+        HoldTables(HoldService.MaxHoldsPerClient);
+
+        ConflictException ex = Assert.Throws<ConflictException>(
+            () => _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, clientKey: _client));
+        Assert.Equal(ErrorCodes.HoldClientLimit, ex.Code);
+        Assert.False(_svc.IsTableHeld(_tableId, _bookingDate));
+    }
+
+    [Fact]
+    public void PlaceHold_AtTheLimit_StillReplacesTheClientsCurrentHold()
+    {
+        HoldTables(HoldService.MaxHoldsPerClient - 1);
+        HoldResult current = _svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, clientKey: _client)!;
+
+        HoldResult? moved = _svc.PlaceHold(_restaurantId, _tableId + 1, _sectionId, _bookingDate, current.HoldId, clientKey: _client);
+
+        Assert.NotNull(moved);
+    }
+
+    [Fact]
+    public void PlaceHold_ClientLimit_FreesUpAsHoldsExpire()
+    {
+        HoldTables(HoldService.MaxHoldsPerClient);
+        _clock.Advance(HoldService.HoldDuration + TimeSpan.FromSeconds(1));
+
+        Assert.NotNull(_svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, clientKey: _client));
+    }
+
+    [Fact]
+    public void PlaceHold_ClientLimit_IsPerClient()
+    {
+        HoldTables(HoldService.MaxHoldsPerClient);
+
+        Assert.NotNull(_svc.PlaceHold(_restaurantId, _tableId, _sectionId, _bookingDate, clientKey: "198.51.100.1"));
+    }
+
+    [Fact]
+    public void PlaceGroupHold_And_PlaceAutoHold_CountTowardTheClientLimit()
+    {
+        HoldTables(HoldService.MaxHoldsPerClient);
+
+        Assert.Throws<ConflictException>(() => _svc.PlaceGroupHold(
+            _restaurantId, 9, [_tableId], _sectionId, _bookingDate, clientKey: _client));
+        Assert.Throws<ConflictException>(() => _svc.PlaceAutoHold(
+            _restaurantId, [new TableCandidate(_tableId, _sectionId, 4)], _bookingDate, clientKey: _client));
     }
 
     [Fact]
