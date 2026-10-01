@@ -500,6 +500,39 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
     }
 
     [Fact]
+    public async Task PvqVerify_WhileLockedOut_Returns429_EvenForTheRightAnswer()
+    {
+        const string email = "pvq-locked@test.com";
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            IPasswordService passwords = scope.ServiceProvider.GetRequiredService<IPasswordService>();
+            (string hash, string salt) = passwords.Hash("LockedPass123!");
+            (string answerHash, string answerSalt) = passwords.Hash("blue");
+            db.AdminCredentials.Add(new AdminCredential
+            {
+                Email = email,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                Role = UserRoles.Manager,
+                PvqQuestion = "What color?",
+                PvqAnswerHash = answerHash,
+                PvqAnswerSalt = answerSalt,
+                PvqLockedUntil = DateTime.UtcNow.AddMinutes(10),
+            });
+            await db.SaveChangesAsync();
+        }
+
+        HttpResponseMessage response = await _factory.CreateClient().PostAsJsonAsync("/api/admin/auth/pvq/verify", new
+        {
+            email,
+            answer = "Blue"
+        });
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PvqSetup_WithEmptyFields_Returns400()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();

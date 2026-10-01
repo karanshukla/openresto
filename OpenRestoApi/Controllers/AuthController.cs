@@ -133,6 +133,8 @@ public class AuthController(
         {
             PvqVerifyStatus.NotConfigured => throw new ValidationException("Security question not configured for this account.") { Code = ErrorCodes.AuthPvqNotConfigured },
             PvqVerifyStatus.WrongAnswer => Unauthorized(new { message = "Incorrect answer." }),
+            PvqVerifyStatus.LockedOut => StatusCode(StatusCodes.Status429TooManyRequests,
+                new { message = "Too many incorrect answers. Try again later." }),
             _ => Ok(new { resetToken = outcome.ResetToken })
         };
     }

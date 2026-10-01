@@ -6,7 +6,7 @@ using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Services;
 
-public enum PvqVerifyStatus { NotConfigured, WrongAnswer, Success }
+public enum PvqVerifyStatus { NotConfigured, WrongAnswer, LockedOut, Success }
 public record PvqVerifyOutcome(PvqVerifyStatus Status, string? ResetToken = null);
 
 /// <inheritdoc cref="ISecurityQuestionsService" />
@@ -16,6 +16,13 @@ public sealed class SecurityQuestionsService(
     ICurrentUserService currentUser,
     IAuditScope? audit = null) : ISecurityQuestionsService
 {
+    /// <seealso>SecurityQuestionsServiceTests.VerifyAsync_Allows_Attempts_Up_To_The_Limit</seealso>
+    /// <seealso>SecurityQuestionsServiceTests.VerifyAsync_Locks_The_Account_After_Too_Many_Wrong_Answers</seealso>
+    public const int MaxFailedAttempts = 5;
+
+    /// <seealso>SecurityQuestionsServiceTests.VerifyAsync_Accepts_Answers_Again_Once_The_Lockout_Expires</seealso>
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     private readonly IAdminCredentialRepository _credentialRepository = credentialRepository;
     private readonly IPasswordService _passwordService = passwordService;
     private readonly ICurrentUserService _currentUser = currentUser;
@@ -59,14 +66,34 @@ public sealed class SecurityQuestionsService(
         if (cred?.IsActive != true || cred.PvqAnswerHash == null || cred.PvqAnswerSalt == null)
             return new PvqVerifyOutcome(PvqVerifyStatus.NotConfigured);
 
-        if (!_passwordService.Verify(NormaliseAnswer(answer), cred.PvqAnswerHash, cred.PvqAnswerSalt))
-            return new PvqVerifyOutcome(PvqVerifyStatus.WrongAnswer);
+        DateTime now = DateTime.UtcNow;
+        if (cred.PvqLockedUntil > now)
+            return new PvqVerifyOutcome(PvqVerifyStatus.LockedOut);
 
+        if (!_passwordService.Verify(NormaliseAnswer(answer), cred.PvqAnswerHash, cred.PvqAnswerSalt))
+        {
+            await RecordFailedAttemptAsync(cred, now);
+            return new PvqVerifyOutcome(PvqVerifyStatus.WrongAnswer);
+        }
+
+        cred.PvqFailedAttempts = 0;
+        cred.PvqLockedUntil = null;
         string token = Guid.NewGuid().ToString("N");
         cred.ResetToken = token;
         cred.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
         await _credentialRepository.SaveChangesAsync();
         return new PvqVerifyOutcome(PvqVerifyStatus.Success, token);
+    }
+
+    private async Task RecordFailedAttemptAsync(AdminCredential cred, DateTime now)
+    {
+        cred.PvqFailedAttempts++;
+        if (cred.PvqFailedAttempts >= MaxFailedAttempts)
+        {
+            cred.PvqFailedAttempts = 0;
+            cred.PvqLockedUntil = now + LockoutDuration;
+        }
+        await _credentialRepository.SaveChangesAsync();
     }
 
     private static PvqStatusDto ToStatus(AdminCredential? cred) => new()
