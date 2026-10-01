@@ -8,7 +8,7 @@
 # To pin a specific release version instead of latest:
 #   OPENRESTO_VERSION=1.0.0 docker compose -f docker-compose.release.yml up -d
 #
-# Backup: see docs/backup-restore.md
+# Backup: see https://docs.openres.to/self-hosting/backup-restore/
 # This file uses pre-built images from GHCR — no local build required.
 
 volumes:
@@ -34,7 +34,7 @@ services:
       - Vapid__PublicKey=${VAPID_PUBLIC_KEY:-}
       - Vapid__PrivateKey=${VAPID_PRIVATE_KEY:-}
       - Vapid__Subject=${VAPID_SUBJECT:-}
-      # Optional guest booking reminders — see docs/native-app.md
+      # Optional guest booking reminders — see https://docs.openres.to/guides/native-app/
       - GuestPush__ReminderLeadHours=${GUEST_PUSH_REMINDER_LEAD_HOURS:-24,2}
       - GuestPush__ExpoAccessToken=${EXPO_ACCESS_TOKEN:-}
       # Optional wallet passes — mount the certificate files under ./wallet and name them here
@@ -68,7 +68,7 @@ services:
       - db_data:/data
       - media_data:/app/wwwroot/media
       # Wallet signing material (Apple .p12 + WWDR .cer, Google service-account JSON) —
-      # optional; see docs/native-app.md
+      # optional; see https://docs.openres.to/guides/native-app/
       - ./wallet:/wallet:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
@@ -104,7 +104,7 @@ services:
     volumes:
       - media_data:/usr/share/nginx/html/media:ro
       # Universal Links / App Links verification files for a native guest app you publish
-      # yourself (see docs/native-app.md). Leave the directory empty if you have no app.
+      # yourself (see https://docs.openres.to/guides/native-app/). Leave the directory empty if you have no app.
       - ./well-known:/usr/share/nginx/html/.well-known:ro
     depends_on:
       backend:

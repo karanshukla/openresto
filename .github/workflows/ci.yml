@@ -26,6 +26,7 @@ jobs:
     outputs:
       backend: ${{ steps.diff.outputs.backend }}
       frontend: ${{ steps.diff.outputs.frontend }}
+      docs: ${{ steps.diff.outputs.docs }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
@@ -38,6 +39,7 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
             echo "backend=true" >> "$GITHUB_OUTPUT"
             echo "frontend=true" >> "$GITHUB_OUTPUT"
+            echo "docs=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           # HEAD is the PR's merge commit, whose first parent is the base branch tip.
@@ -45,6 +47,7 @@ jobs:
           touches() { grep -qE "$1" <<< "$changed" && echo true || echo false; }
           echo "backend=$(touches '^(OpenRestoApi(\.Core|\.Infrastructure|\.Tests)?/|tools/|openresto\.sln$|Directory\.Build\.props$|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
           echo "frontend=$(touches '^(openresto-frontend/|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
+          echo "docs=$(touches '^(docs-site/|openresto-cli/openapi/|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
 
   frontend:
     name: Frontend CI
@@ -176,7 +179,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # Self-hosters build the guest app for iOS/Android themselves (docs/native-app.md), so no
+      # Self-hosters build the guest app for iOS/Android themselves (docs-site, native app guide), so no
       # release job ever runs a native build. Bundling the JS for both platforms is the cheapest
       # check that a web-only import or a module without a native entry has not crept into the
       # guest routes; it needs no SDK, just Metro, and fails the way `eas build` would.
@@ -202,6 +205,33 @@ jobs:
       # behind it, so a renamed test rots it silently and the rule goes undocumented.
       - name: Check Doc Links
         run: npm run check:doc-links
+
+  docs:
+    name: Docs Build
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.docs != 'false' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs-site
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # The API reference renders openresto-cli/openapi/v1.json, so this also fails when the
+      # committed contract stops parsing.
+      - name: Build
+        run: npm run build
 
   root-scripts:
     name: Root Scripts

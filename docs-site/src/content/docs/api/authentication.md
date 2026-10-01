@@ -1,4 +1,6 @@
-# Calling the OpenResto API with an API key
+---
+title: Calling the API with an API key
+---
 
 The [`openresto-cli`](https://www.npmjs.com/package/openresto-cli) wraps the admin API in a
 terminal client, but nothing about the API needs it: an admin API key is presented on a plain
@@ -74,10 +76,11 @@ curl -X POST -H "X-API-Key: $OPENRESTO_API_KEY" -H "Content-Type: application/js
   https://bookings.example.com/api/admin/bookings
 ```
 
-The complete endpoint list, with every parameter and response shape, is the OpenAPI document
-committed at [`openresto-cli/openapi/v1.json`](../openresto-cli/openapi/v1.json). It is generated
-from the running API and CI fails if it drifts, so it is the reference — import it into Postman,
-Insomnia, or your own client generator.
+The complete endpoint list, with every parameter and response shape, is the
+[API reference](/api/reference/). It is generated from the running API and CI fails if it
+drifts, so it is the source of truth. The same OpenAPI document is committed at
+[`openresto-cli/openapi/v1.json`](https://github.com/karanshukla/openresto/blob/main/openresto-cli/openapi/v1.json)
+if you want to import it into Postman, Insomnia or your own client generator.
 
 ## Permissions
 
@@ -177,6 +180,6 @@ back off instead.
 
 ## See also
 
-- [`openresto-cli`](../openresto-cli/README.md) — the maintained client, if a terminal or a
+- [`openresto-cli`](https://github.com/karanshukla/openresto/tree/main/openresto-cli) — the maintained client, if a terminal or a
   scripted host will do. It handles profiles, hidden-input login and pretty/JSON output.
-- [`openresto-cli/openapi/v1.json`](../openresto-cli/openapi/v1.json) — the generated contract.
+- [API reference](/api/reference/) — every endpoint, parameter and response, generated from the API's OpenAPI document.

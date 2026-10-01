@@ -1,0 +1,25 @@
+---
+title: OpenResto documentation
+description: Run your own restaurant booking system, and build on top of it.
+template: splash
+hero:
+  tagline: A self-hosted restaurant booking system. Run it on your own server, then script it, extend it or ship your own app.
+  actions:
+    - text: Install with Docker
+      link: /self-hosting/installation/
+      icon: right-arrow
+    - text: API reference
+      link: /api/reference/
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+<CardGrid>
+  <LinkCard title="Install" href="/self-hosting/installation/" description="Docker Compose, pre-built images, no external services." />
+  <LinkCard title="Configuration" href="/self-hosting/configuration/" description="Every environment variable, grouped by what it does." />
+  <LinkCard title="HTTPS and reverse proxies" href="/self-hosting/https/" description="Put a TLS terminator in front, or run the bundled VPS nginx." />
+  <LinkCard title="Backup and restore" href="/self-hosting/backup-restore/" description="What to back up and how to get it back." />
+  <LinkCard title="Feature reference" href="/guides/features/" description="How each booking feature behaves and the fields behind it." />
+  <LinkCard title="Calling the API" href="/api/authentication/" description="API keys, scopes and curl examples." />
+</CardGrid>

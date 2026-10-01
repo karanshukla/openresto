@@ -1,0 +1,6 @@
+{
+  "name": "openresto-docs",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./dist" },
+  "routes": [{ "pattern": "docs.openres.to", "custom_domain": true }]
+}

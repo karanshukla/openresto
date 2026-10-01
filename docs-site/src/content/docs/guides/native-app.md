@@ -1,4 +1,6 @@
-# Publishing the guest app to the stores yourself
+---
+title: Publishing the guest app
+---
 
 OpenResto's guest surface (browse locations, book a table, find a booking) also builds as a
 native iOS and Android app. **You** publish it under **your own** Apple and Google developer
