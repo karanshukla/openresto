@@ -4,7 +4,7 @@ sidebar:
   order: 9
 ---
 
-OpenResto is designed for zero-dependency self-hosting. All persistent data lives in Docker volumes — no external database or storage service to back up separately.
+This page shows what to back up and how to restore it. Everything OpenResto saves lives in Docker volumes (storage areas managed by Docker), so there's no separate database or storage service to back up.
 
 ## What to back up
 
@@ -12,21 +12,21 @@ OpenResto is designed for zero-dependency self-hosting. All persistent data live
 |---|---|---|
 | `/data/openresto.db` (volume `db_data`) | All bookings, restaurants, tables, sections, admin credentials, brand settings, push subscriptions | **Critical** |
 | `/app/wwwroot/media` (volume `media_data`) | Uploaded images | Medium |
-| `/data/dp-keys` (inside `db_data`) | ASP.NET Data Protection keys (encrypt the recent-bookings cookie) | Low — losing these clears the "my recent bookings" lookup but no booking data is lost |
+| `/data/dp-keys` (inside `db_data`) | ASP.NET Data Protection keys (encrypt the recent-bookings cookie) | Low. Losing these clears the "my recent bookings" lookup, but no booking data is lost |
 
 ## Before you back up
 
-Checkpoint the SQLite WAL so the backup file is self-consistent:
+First, flush pending writes (the SQLite WAL) so the backup is complete:
 
 ```bash
 docker compose exec backend sqlite3 /data/openresto.db "PRAGMA wal_checkpoint(TRUNCATE);"
 ```
 
-The backend also checkpoints automatically on graceful shutdown (`docker compose stop`), so stopping before copying is equally valid.
+This also happens automatically when you stop the backend with `docker compose stop`, so stopping before you copy works too.
 
 ## Backing up named volumes (default install)
 
-The release `docker-compose.yml` uses named volumes (`db_data`, `media_data`). Back them up by spinning up a temporary Alpine container that reads the volume and writes a tarball:
+The release `docker-compose.yml` uses named volumes (`db_data`, `media_data`). Back them up with a temporary Alpine container that reads the volume and saves a `.tar.gz` file:
 
 ```bash
 # Backup the database volume
@@ -42,11 +42,11 @@ docker run --rm \
   alpine tar czf /backups/openresto-media-$(date +%Y%m%d-%H%M%S).tar.gz -C /media .
 ```
 
-> Replace `db_data` / `media_data` with the actual Docker volume names if you changed the project name (check with `docker volume ls`). The default names are `<project-directory-name>_db_data`.
+> If you changed the project name, use your real volume names instead of `db_data` / `media_data` (check with `docker volume ls`). The default names are `<project-directory-name>_db_data`.
 
 ## Backing up bind mounts (VPS/custom install)
 
-If you mounted `./data:/data` directly (as in the `docker-compose.vps.yml`), just copy the directory:
+If you mounted `./data:/data` directly (as in the `docker-compose.vps.yml`), copy the directory:
 
 ```bash
 cp -r ./data ./backups/openresto-data-$(date +%Y%m%d-%H%M%S)
@@ -55,7 +55,7 @@ cp -r ./data ./backups/openresto-data-$(date +%Y%m%d-%H%M%S)
 ## Restore
 
 ```bash
-# 1. Stop the backend to avoid write conflicts
+# 1. Stop the backend so nothing is written during the restore
 docker compose stop backend
 
 # 2. Restore the database volume (replace TIMESTAMP with your backup's timestamp)
@@ -73,6 +73,10 @@ docker run --rm \
 # 4. Start everything back up
 docker compose start backend
 ```
+
+:::caution
+The restore replaces what is currently in the volumes. If you are unsure, take a fresh backup first.
+:::
 
 ## Automated daily backups
 
@@ -112,7 +116,7 @@ echo "$DATE backup complete: $BACKUP_DIR/db-$DATE.tar.gz"
 
 ## Point-in-time online backup
 
-For a live backup without stopping the backend, use SQLite's online backup API via the CLI:
+To back up while OpenResto keeps running, use SQLite's online backup:
 
 ```bash
 docker compose exec backend sqlite3 /data/openresto.db \
@@ -130,13 +134,13 @@ docker run --rm \
 
 ## Upgrading between versions
 
-OpenResto applies EF Core database migrations automatically on startup — your data is safe across upgrades.
+The database updates itself when OpenResto starts, and your data is kept. Still, please back up first. See also [Upgrading](/self-hosting/upgrading/).
 
 ```bash
 # 1. Back up first (see above)
 # 2. Pull the new images
 OPENRESTO_VERSION=v1.x.x docker compose -f docker-compose.yml pull
-# 3. Restart — migrations run automatically before the health check passes
+# 3. Restart (the database updates itself before the health check passes)
 OPENRESTO_VERSION=v1.x.x docker compose -f docker-compose.yml up -d
 ```
 
@@ -145,13 +149,13 @@ The backend logs will show lines like:
 Applying migration '20260604104824_NullableBookingTableSection'...
 ```
 
-If a migration fails, the container exits with a non-zero status and the health check will not pass, so your reverse proxy keeps serving a meaningful error rather than a broken app. Restore from backup, report the issue, and wait for a patch.
+If the update fails, the backend stops and you see an error page instead of a broken app. Restore from your backup and report the issue.
 
 ## Checking database integrity
 
-After a restore or before an upgrade:
+Run this after a restore or before an upgrade:
 
 ```bash
 docker compose exec backend sqlite3 /data/openresto.db "PRAGMA integrity_check;"
-# Expected output: ok
+# You should see: ok
 ```

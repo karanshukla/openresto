@@ -5,7 +5,8 @@ sidebar:
   order: 10
 ---
 
-Start with the logs. They name most problems directly:
+This page helps you find out what's wrong when something doesn't work. Start with the logs,
+which usually name the problem:
 
 ```bash
 docker compose ps
@@ -17,24 +18,22 @@ docker compose logs reverse-proxy --tail 100
 
 Look at the first error in `docker compose logs backend`.
 
-- **A message about `Jwt:Key` or `JWT_KEY`**: it is missing or shorter than 32 characters.
+- **A message about `Jwt:Key` or `JWT_KEY`**: it's missing or shorter than 32 characters.
   Generate one with `openssl rand -base64 48`.
-- **A message about CORS origins**: `CORS_ORIGINS` is missing, or contains a wildcard, which is
-  not allowed.
+- **A message about CORS origins**: `CORS_ORIGINS` is missing, or contains a wildcard (`*`), which isn't allowed.
 - **`Admin:Password must be configured`**: the database is empty and `ADMIN_PASSWORD` is unset.
 - **A permissions error writing `/data`**: the volume is a bind mount owned by another user.
-  Named volumes avoid this; the container fixes ownership of `/data` and the media directory on
-  start.
+  Named volumes avoid this, because the container fixes ownership of `/data` and the media
+  directory when it starts.
 
 ## I cannot sign in to the admin
 
 - Confirm you are using `ADMIN_EMAIL` and `ADMIN_PASSWORD` **from the first boot**. Editing them
-  later does nothing. See [Admin accounts](/self-hosting/admin-accounts/) to reset.
+  later has no effect. See [Admin accounts](/self-hosting/admin-accounts/) to reset.
 - If the page loads but sign-in fails, check `CORS_ORIGINS` matches the address in your
   browser's address bar exactly: same scheme, host and port.
 - Behind a proxy, check it forwards `X-Forwarded-Proto`, see [HTTPS](/self-hosting/https/).
-- Sign-in attempts are rate limited per IP address per minute, so a burst of failures blocks
-  you until the minute passes.
+- Sign-in attempts are rate limited per IP address per minute, so after several failed tries you may need to wait a minute.
 
 ## 502 from the reverse proxy
 
@@ -44,8 +43,8 @@ backend logs.
 
 ## Uploads fail
 
-Hero images are limited to 5 MB and menu PDFs to 10 MB. The bundled proxy allows 12 MB request
-bodies, and a proxy of your own in front must allow at least that.
+Hero images can be up to 5 MB and menu PDFs up to 10 MB. The bundled proxy allows 12 MB
+uploads. If you use your own proxy, please allow at least that.
 
 ## No emails
 
@@ -58,10 +57,10 @@ Push needs HTTPS and all three VAPID values. The settings card's message tells y
 
 ## Emails or passes link to localhost
 
-The server is falling back to its development address. Set `CORS_ORIGINS`, see [Which URL goes where](/self-hosting/domains-and-urls/).
+The server is using its development address. Set `CORS_ORIGINS` to your public address, see [Which URL goes where](/self-hosting/domains-and-urls/).
 
 ## Still stuck
 
-Search the [issues](https://github.com/karanshukla/openresto/issues), and if there is nothing,
-open one with your version (`docker compose images`), what you expected, and the relevant log lines.
-Remove secrets from anything you paste.
+Search the [issues](https://github.com/karanshukla/openresto/issues). If you can't find your
+problem, please open one with your version (`docker compose images`), what you expected, and the relevant log lines.
+Please remove secrets from anything you paste.

@@ -5,15 +5,17 @@ sidebar:
   order: 1
 ---
 
-OpenResto ships as three pre-built, multi-arch images (`linux/amd64` and `linux/arm64`) on
-GHCR: the API, the web app and an nginx that fronts both. There is no external database or
-storage service. Everything persistent lives in two Docker volumes, so a Raspberry Pi, a NAS or
-a small VPS is enough.
+This page gets OpenResto running on your own server with Docker Compose.
+
+OpenResto comes as three pre-built images (`linux/amd64` and `linux/arm64`) on GHCR: the API,
+the web app and an nginx that sits in front of both. You don't need a separate database or
+storage service. Everything is kept in two Docker volumes, so a Raspberry Pi, a NAS or a small
+VPS is enough.
 
 ## Requirements
 
 - Docker with the Compose plugin (`docker compose version` should work).
-- A server you can reach on a port (80 by default). For a public site you also want a domain
+- A server you can reach on a port (80 by default). For a public site you will also want a domain
   name and HTTPS, covered in [HTTPS and reverse proxies](/self-hosting/https/).
 - Optional: an SMTP account if you want booking confirmation emails.
 
@@ -32,14 +34,14 @@ curl -fsSLo .env https://raw.githubusercontent.com/karanshukla/openresto/main/.e
 
 ## 2. Fill in `.env`
 
-Three values are required. The API refuses to start without a usable `JWT_KEY` and
-`CORS_ORIGINS`, and the first boot needs an `ADMIN_PASSWORD` to create your account.
+Three values are needed. The API won't start without a valid `JWT_KEY` and `CORS_ORIGINS`, and
+the first start needs an `ADMIN_PASSWORD` to create your account.
 
 ```dotenv
 # At least 32 characters, unique to this deployment: openssl rand -base64 48
 JWT_KEY=...
 
-# The public address people will type, with scheme and no trailing slash. No wildcards.
+# The public address people will type, with https:// and no trailing slash. No wildcards (*).
 CORS_ORIGINS=https://bookings.example.com
 
 # Seeds the first Owner account. Only read while the database has no accounts.
@@ -47,7 +49,7 @@ ADMIN_EMAIL=you@example.com
 ADMIN_PASSWORD=a-long-unique-passphrase
 ```
 
-Everything else is optional. See [Configuration](/self-hosting/configuration/) for the full list.
+Everything else is optional. Please keep `.env` private, since it holds your secrets. See [Configuration](/self-hosting/configuration/) for the full list.
 
 ## 3. Start it
 
@@ -55,8 +57,9 @@ Everything else is optional. See [Configuration](/self-hosting/configuration/) f
 docker compose up -d
 ```
 
-The backend applies any pending database migrations before it accepts traffic, and the reverse
-proxy waits for the backend and frontend health checks, so the first start takes a short while.
+The first start takes a short while. The backend updates its database first, and the reverse
+proxy (the front door that sends visitors to the right place) waits until the backend and web
+app are ready.
 
 ```bash
 docker compose ps          # backend, frontend and reverse-proxy should be running
@@ -64,7 +67,9 @@ curl -f http://localhost/api/health
 ```
 
 Open `http://your-server` and sign in at `/admin` with the email and password from `.env`.
-The site is plain HTTP until you put TLS in front of it.
+The site uses plain HTTP until you add HTTPS (TLS, the lock icon in the browser).
+
+If the health check fails, wait a minute and try again, then look at `docker compose logs backend`.
 
 ## What the stack contains
 
@@ -83,8 +88,8 @@ Only the reverse proxy publishes a port. Change it with `HOST_PORT` in `.env`.
 
 ## Pinning a version
 
-`latest` follows the newest release. To stay on one version, set it on every command (or in
-`.env`):
+`latest` follows the newest release. To stay on one version, set it on every command, or in
+`.env`:
 
 ```bash
 OPENRESTO_VERSION=2.3.1 docker compose up -d

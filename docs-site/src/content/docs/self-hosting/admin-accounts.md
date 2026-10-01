@@ -5,14 +5,16 @@ sidebar:
   order: 7
 ---
 
+This page covers your admin accounts: the first one, adding staff, API keys and getting back in
+if you're locked out.
+
 ## The first account
 
-On first boot, when the database has no accounts, the backend creates an **Owner** from
-`ADMIN_EMAIL` and `ADMIN_PASSWORD`. After that these two variables are ignored, so changing
-`ADMIN_PASSWORD` in `.env` does not change your password. Change it from the admin, or use the
-recovery script below.
+The first time OpenResto starts with no accounts, it creates an **Owner** from `ADMIN_EMAIL`
+and `ADMIN_PASSWORD`. After that, these two settings are ignored, so changing `ADMIN_PASSWORD`
+in `.env` won't change your password. Change it from the admin, or use the recovery script below.
 
-Use a long, unique password. Anyone who can reach `/admin` can try it.
+Please choose a long, unique password, since anyone who can reach `/admin` can try to sign in.
 
 ## More people
 
@@ -21,15 +23,15 @@ and can be deactivated without being deleted.
 
 ## API keys
 
-Owners can mint API keys under **Settings → API Keys** for scripts, integrations and the
+Owners can create API keys under **Settings → API Keys** for scripts, integrations and the
 [`openresto-cli`](https://github.com/karanshukla/openresto/tree/main/openresto-cli). Each key is
-tied to the person who made it and carries only the permissions you grant. See
+tied to the person who made it and only has the permissions you give it. See
 [Calling the API](/api/authentication/).
 
 ## Locked out
 
-`scripts/reset-admin.sh` from the repository resets one account's login and forces it back to an
-active Owner. It touches nothing else: bookings, locations and media are left alone. Run it on
+`scripts/reset-admin.sh` from the repository resets one account's login and makes it an
+active Owner again. Your bookings, locations and media are left alone. Run it on
 the server that hosts the containers. It needs `python3` and Docker on the host.
 
 ```bash
@@ -46,10 +48,10 @@ defaults to `docker-compose.vps.yml`. For a release install, point it at your co
 ./reset-admin.sh --compose-file docker-compose.yml
 ```
 
-Leave out `--password` and the script generates a random one and prints it once. Passing
-`--password` on the command line works, but the value is visible to other users via `ps`, so
-prefer `.env` or the generated password.
+If you leave out `--password`, the script makes a random password and shows it once, so note it
+down. You can pass `--password` on the command line, but other users on the server could see it,
+so `.env` or the generated password is safer.
 
-It rewrites the account whose email matches `--email`, or the lowest-numbered account if none
-does, and clears its security question and any pending reset token. Other accounts are
-untouched.
+It resets the account whose email matches `--email`, or the lowest-numbered account if none
+matches, and clears its security question and any pending reset token. Other accounts are not
+changed.
