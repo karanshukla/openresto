@@ -608,8 +608,22 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         int id = await CreateRestaurantAsync(owner, "Manager Cannot Delete");
         await owner.PatchAsJsonAsync($"/api/admin/restaurants/{id}", new { isArchived = true });
 
+        AdminCredential managerAccount;
+        using (IServiceScope scope = _factory.Services.CreateScope())
+        {
+            AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            managerAccount = new AdminCredential
+            {
+                Email = "manager-cannot-delete@test.com",
+                PasswordHash = "unused",
+                PasswordSalt = "unused",
+                Role = UserRoles.Manager,
+            };
+            db.AdminCredentials.Add(managerAccount);
+            await db.SaveChangesAsync();
+        }
         HttpClient manager = _factory.CreateClientWithToken(
-            TestWebAppFactory.GenerateJwt(999, "manager@test.com", UserRoles.Manager));
+            TestWebAppFactory.GenerateJwt(managerAccount.Id, managerAccount.Email, managerAccount.Role));
 
         Assert.Equal(HttpStatusCode.Forbidden, (await manager.DeleteAsync($"/api/admin/restaurants/{id}")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await manager.GetAsync($"/api/admin/restaurants/{id}/delete-preview")).StatusCode);

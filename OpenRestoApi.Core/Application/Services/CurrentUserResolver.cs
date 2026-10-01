@@ -16,17 +16,23 @@ public static class CurrentUserResolver
     /// multi-user support carry no id claim, so the email claim is honoured as a fallback
     /// rather than logging those in-flight sessions out.
     /// </summary>
-    public static async Task<AdminCredential?> ResolveAsync(
+    public static Task<AdminCredential?> ResolveAsync(
         ICurrentUserService currentUser,
         IAdminCredentialRepository credentialRepository)
+        => ResolveAsync(currentUser.UserId, currentUser.Email, credentialRepository);
+
+    /// <inheritdoc cref="ResolveAsync(ICurrentUserService, IAdminCredentialRepository)"/>
+    public static async Task<AdminCredential?> ResolveAsync(
+        int? userId,
+        string? email,
+        IAdminCredentialRepository credentialRepository)
     {
-        int? userId = currentUser.UserId;
         AdminCredential? cred = userId.HasValue
             ? await credentialRepository.GetByIdAsync(userId.Value)
             : null;
 
-        if (cred == null && !string.IsNullOrWhiteSpace(currentUser.Email))
-            cred = await credentialRepository.GetByEmailAsync(currentUser.Email);
+        if (cred == null && !string.IsNullOrWhiteSpace(email))
+            cred = await credentialRepository.GetByEmailAsync(email);
 
         return cred?.IsActive == true ? cred : null;
     }
