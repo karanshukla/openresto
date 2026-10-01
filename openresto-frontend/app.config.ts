@@ -8,7 +8,7 @@ import { version } from "./package.json";
  * Per-publisher settings for a self-hoster's own native build of the guest app (issue #388),
  * written by `npm run native:init` into the gitignored `native/` directory and read here at
  * config time. The web build never has one, and without one this config is unchanged.
- * See docs/native-app.md.
+ * See https://docs.openres.to/guides/native-app/.
  */
 export interface NativeAppConfig {
   /** The instance the binary talks to, e.g. `https://bookings.example.com`. Also the deep-link host. */

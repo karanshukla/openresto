@@ -552,7 +552,7 @@ public class BrandServiceTests
         Assert.Equal("https://github.com/karanshukla/openresto", svc.GetRepositoryUrl());
         Assert.Equal("https://www.npmjs.com/package/openresto-cli", svc.GetCliPackageUrl());
         Assert.Equal(
-            "https://github.com/karanshukla/openresto/blob/main/docs/http-api.md",
+            "https://docs.openres.to/api/authentication/",
             svc.GetApiDocsUrl());
     }
 

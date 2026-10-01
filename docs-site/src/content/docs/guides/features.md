@@ -1,9 +1,11 @@
-# Feature reference
+---
+title: Feature reference
+---
 
 How OpenResto's booking features behave, and the API fields, error codes and settings behind
-them. [`CHANGELOG.md`](../CHANGELOG.md) says when each one arrived; this page says how it
-works. For calling the API see [`http-api.md`](http-api.md); for the native app, reminders
-and Wallet passes see [`native-app.md`](native-app.md).
+them. [changelog](https://github.com/karanshukla/openresto/blob/main/CHANGELOG.md) says when each one arrived; this page says how it
+works. For calling the API see [API guide](/api/authentication/); for the native app, reminders
+and Wallet passes see [native app guide](/guides/native-app/).
 
 Error codes below come back in the `code` field of a rejected request, alongside a message in
 the caller's language.
@@ -177,7 +179,7 @@ app also follows the phone's language.
 | `OPENRESTO_DEFAULT_LOCALE` / `Locale:Default`                                     | Default language (`en`, `fr`, `es`, `de`)                    |
 | `Audit:RetentionDays`                                                             | Days to keep activity log entries (default 365)              |
 | `GuestPush__ReminderLeadHours`                                                    | Reminder times before a booking, in hours (default `24,2`)   |
-| `Wallet__Apple__*`, `Wallet__Google__*`                                           | Wallet pass issuers, see [`native-app.md`](native-app.md)    |
+| `Wallet__Apple__*`, `Wallet__Google__*`                                           | Wallet pass issuers, see [native app guide](/guides/native-app/)    |
 | `Vapid__*`                                                                        | Web Push keys for admin notifications and browser reminders  |
 | `OPENRESTO_CLI_PACKAGE_URL`, `OPENRESTO_API_DOCS_URL`, `OPENRESTO_REPOSITORY_URL` | Where the API Keys screen links, for forks                   |
 | `WEBSITE_URL`                                                                     | Public address for email links, if not set in brand settings |

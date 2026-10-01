@@ -6,9 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 How each feature behaves, its API fields and its error codes are in
-[`docs/features.md`](docs/features.md).
+[feature reference](https://docs.openres.to/guides/features/).
 
 ## [Unreleased]
+
+### Added
+
+- **Documentation site** at [docs.openres.to](https://docs.openres.to), built from `docs-site/` in this repository. It adds a self-hosting guide (install, configuration reference, HTTPS, email, push notifications, admin recovery, upgrading, troubleshooting) and renders the API reference from the committed OpenAPI contract.
+
+### Changed
+
+- The feature reference, API guide, native app guide and backup guide moved from `docs/` into the documentation site. The API Keys screen's default guide link now points at the site.
 
 ## [2.3.1] - 2026-10-01
 
@@ -80,7 +88,7 @@ I think I've fully realised the vision I had for it, and it will keep being main
 
 ### Added
 
-- **Native guest app** that self-hosters can build and publish to the App Store and Play Store under their own accounts (#388). See [`docs/native-app.md`](docs/native-app.md).
+- **Native guest app** that self-hosters can build and publish to the App Store and Play Store under their own accounts (#388). See [native app guide](https://docs.openres.to/guides/native-app/).
 - **Booking reminders** by push notification, in the native app and in browsers (#419).
 - **Apple Wallet and Google Wallet passes** for bookings (#420).
 - **Settings → Native app page** that checks whether the server is ready for the app and shows which app versions are in use. You can also set a minimum app version.
@@ -88,7 +96,7 @@ I think I've fully realised the vision I had for it, and it will keep being main
 - **CLI:** `status`, `bookings extend`, `bookings email`, `locations extend` and `locations conflicts`.
 - **CLI on npm:** `npm install -g openresto-cli`. The Docker image still ships.
 - **Read-only `email` API key scope** to check whether mail is configured and delivering.
-- **API Keys screen** now shows how to use a key, with a curl example and links to the CLI and [`docs/http-api.md`](docs/http-api.md) (#409).
+- **API Keys screen** now shows how to use a key, with a curl example and links to the CLI and [API guide](https://docs.openres.to/api/authentication/) (#409).
 
 ### Changed
 
@@ -392,7 +400,7 @@ Hello! Thanks for reading, and for the 50 stars on GitHub! This release builds o
 - Optional email (SMTP) and push notifications (VAPID).
 - Permanent booking deletion for GDPR.
 - Multi-arch Docker images on GHCR and a pinned `docker-compose.yml` per release.
-- Automatic database migrations on startup. See [`docs/backup-restore.md`](docs/backup-restore.md).
+- Automatic database migrations on startup. See [backup and restore guide](https://docs.openres.to/self-hosting/backup-restore/).
 
 [1.0.0]: https://github.com/karanshukla/openresto/releases/tag/v1.0.0
 [1.1.0]: https://github.com/karanshukla/openresto/releases/tag/v1.1.0

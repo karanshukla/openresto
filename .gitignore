@@ -75,13 +75,6 @@ bookings-table-*.png
 page-*.png
 # Session handoff notes
 .remember/
-docs/*
-# Track user-facing docs explicitly
-!docs/backup-restore.md
-!docs/features.md
-!docs/http-api.md
-!docs/native-app.md
-!docs/screenshots/
 
 #Claude
 .claude/investigations

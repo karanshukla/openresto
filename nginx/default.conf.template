@@ -49,7 +49,7 @@ server {
     }
 
     # Universal Links / App Links verification for a self-hoster's native guest app
-    # (docs/native-app.md). Served from a directory mounted into this container so the
+    # (https://docs.openres.to/guides/native-app/). Served from a directory mounted into this container so the
     # prebuilt frontend image never has to change. Apple's file has no extension and must
     # come back as application/json, hence the default_type; ^~ keeps the dotfile deny
     # regex above from being consulted for this prefix.

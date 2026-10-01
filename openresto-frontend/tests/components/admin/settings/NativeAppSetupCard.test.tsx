@@ -146,7 +146,7 @@ describe("NativeAppSetupCard", () => {
 
     fireEvent.press(screen.getByTestId("native-app-guide-link"));
     expect(openURL).toHaveBeenCalledWith(
-      "https://github.com/karanshukla/openresto/blob/main/docs/native-app.md"
+      "https://github.com/karanshukla/openresto/blob/main/docs-site/src/content/docs/guides/native-app.md"
     );
   });
 

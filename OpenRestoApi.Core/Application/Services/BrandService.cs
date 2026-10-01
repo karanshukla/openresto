@@ -18,7 +18,7 @@ public class BrandService(
 
     private const string DefaultCliPackageUrl = "https://www.npmjs.com/package/openresto-cli";
     private const string DefaultApiDocsUrl =
-        "https://github.com/karanshukla/openresto/blob/main/docs/http-api.md";
+        "https://docs.openres.to/api/authentication/";
     private const string DefaultRepositoryUrl = "https://github.com/karanshukla/openresto";
 
     /// <summary>

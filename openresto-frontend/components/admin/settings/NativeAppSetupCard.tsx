@@ -16,7 +16,7 @@ import { styles } from "./NativeAppSetupCard.styles";
 
 /** Shown in place of an address when the deployment has told us none. */
 const EXAMPLE_SERVER = "https://bookings.example.com";
-const GUIDE_PATH = "/blob/main/docs/native-app.md";
+const GUIDE_PATH = "/blob/main/docs-site/src/content/docs/guides/native-app.md";
 
 /**
  * The trailing segment of a bundle id: letters and digits only, starting with a letter, which
