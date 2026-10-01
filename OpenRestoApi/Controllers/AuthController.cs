@@ -42,11 +42,12 @@ public class AuthController(
     /// <seealso>AuditTrailTests.Logout_IsRecordedForASessionAndIgnoredWithoutOne</seealso>
     /// </summary>
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
         _cookies.Clear(Response);
         if (User.Identity?.IsAuthenticated == true)
         {
+            await _authService.LogoutAsync();
             _audit.Describe(AuditActions.AuthLogout, summary: "Signed out");
         }
         return Ok(new { message = "Logged out." });
@@ -72,9 +73,10 @@ public class AuthController(
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req)
     {
         // ValidationException (short password) → 400 is mapped by GlobalExceptionHandler.
-        bool ok = await _authService.ChangePasswordAsync(req.CurrentPassword, req.NewPassword);
-        if (!ok)
+        string? jwt = await _authService.ChangePasswordAsync(req.CurrentPassword, req.NewPassword);
+        if (jwt == null)
             return Unauthorized(new { message = "Current password is incorrect." });
+        _cookies.SetCookie(Response, jwt);
         return Ok(new { message = "Password changed successfully." });
     }
 

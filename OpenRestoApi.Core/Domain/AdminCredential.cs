@@ -28,6 +28,14 @@ public class AdminCredential
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// Stamped into every token minted for this account. A token carrying an older value is
+    /// refused, so raising it signs the account out everywhere.
+    /// </summary>
+    public int SessionVersion { get; set; }
+
+    public void RevokeSessions() => SessionVersion++;
+
     // ── Personal Verification Question ──────────────────────────────────────
     public string? PvqQuestion { get; set; }
     public string? PvqAnswerHash { get; set; }

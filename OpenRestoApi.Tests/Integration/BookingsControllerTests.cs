@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Cookies;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -53,6 +54,47 @@ public class BookingsControllerTests(TestWebAppFactory factory) : IClassFixture<
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.False(string.IsNullOrEmpty(body.GetProperty("bookingRef").GetString()));
+    }
+
+    [Theory]
+    [InlineData("customerName", BookingLimits.MaxCustomerNameLength, 41)]
+    [InlineData("specialRequests", BookingLimits.MaxSpecialRequestsLength, 42)]
+    public async Task CreateBooking_AcceptsAFieldAtItsLengthCap(string field, int cap, int daysAhead)
+    {
+        HttpResponseMessage response = await PostBookingWithFieldAsync(field, new string('a', cap), daysAhead);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("customerName", BookingLimits.MaxCustomerNameLength)]
+    [InlineData("specialRequests", BookingLimits.MaxSpecialRequestsLength)]
+    [InlineData("customerEmail", ContactLimits.MaxEmailLength)]
+    public async Task CreateBooking_RejectsAFieldOneOverItsLengthCap(string field, int cap)
+    {
+        string value = field == "customerEmail"
+            ? new string('a', cap - "@test.com".Length + 1) + "@test.com"
+            : new string('a', cap + 1);
+
+        HttpResponseMessage response = await PostBookingWithFieldAsync(field, value, daysAhead: 50);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task<HttpResponseMessage> PostBookingWithFieldAsync(string field, string value, int daysAhead)
+    {
+        (int restaurantId, int sectionId, int tableId) = GetSeededIds();
+        var body = new Dictionary<string, object>
+        {
+            ["restaurantId"] = restaurantId,
+            ["sectionId"] = sectionId,
+            ["tableId"] = tableId,
+            ["date"] = DateTime.UtcNow.AddDays(daysAhead).ToString("yyyy-MM-ddT12:00:00"),
+            ["customerEmail"] = "capped@test.com",
+            ["seats"] = 2,
+        };
+        body[field] = value;
+        return await _factory.CreateClient().PostAsJsonAsync("/api/bookings", body);
     }
 
     [Fact]

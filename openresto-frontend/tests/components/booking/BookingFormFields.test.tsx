@@ -8,7 +8,12 @@
 import React from "react";
 import { render, screen } from "@testing-library/react-native";
 import { Platform } from "react-native";
-import { EmailField, GuestsField, NameField } from "@/components/booking/BookingFormFields";
+import {
+  EmailField,
+  GuestsField,
+  NameField,
+  RequestsField,
+} from "@/components/booking/BookingFormFields";
 
 jest.mock("@/context/BrandContext", () => ({
   useBrand: () => ({ primaryColor: "#0a7ea4", appName: "Open Resto" }),
@@ -69,5 +74,20 @@ describe("autofill hints", () => {
     const input = screen.getByLabelText("Email address");
     expect(input.props.textContentType).toBe("emailAddress");
     expect(input.props.autoComplete).toBe("email");
+  });
+});
+
+describe("length caps", () => {
+  it("stops each field at the length the server accepts", () => {
+    render(
+      <>
+        <NameField value="" onChange={jest.fn()} />
+        <EmailField value="" onChange={jest.fn()} />
+        <RequestsField label="Requests" value="" onChange={jest.fn()} />
+      </>
+    );
+    expect(screen.getByLabelText("Full name").props.maxLength).toBe(100);
+    expect(screen.getByLabelText("Email address").props.maxLength).toBe(254);
+    expect(screen.getByLabelText("Special requests or allergies").props.maxLength).toBe(500);
   });
 });

@@ -19,4 +19,12 @@ public static class BookingLimits
     /// location's effective capacity, which is always &lt;= this ceiling).
     /// </summary>
     public const int MaxSeats = 50;
+
+    /// <seealso>BookingsControllerTests.CreateBooking_AcceptsAFieldAtItsLengthCap</seealso>
+    /// <seealso>BookingsControllerTests.CreateBooking_RejectsAFieldOneOverItsLengthCap</seealso>
+    public const int MaxCustomerNameLength = 100;
+
+    /// <seealso>BookingsControllerTests.CreateBooking_AcceptsAFieldAtItsLengthCap</seealso>
+    /// <seealso>BookingsControllerTests.CreateBooking_RejectsAFieldOneOverItsLengthCap</seealso>
+    public const int MaxSpecialRequestsLength = 500;
 }

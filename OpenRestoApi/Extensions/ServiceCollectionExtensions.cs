@@ -296,10 +296,15 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// A token outlives the account state it was signed with by up to 30 days, so the account is
     /// read back on every request, as the API-key handler does: a deactivated account is refused,
-    /// and the role comes from the row rather than the token, so a demotion applies at once.
+    /// and the role comes from the row rather than the token, so a demotion applies at once. A token
+    /// minted before the account's sessions were revoked (password change or reset, sign-out) is
+    /// refused too.
     /// </summary>
     /// <seealso>UsersControllerTests.Session_StopsWorking_OnceTheAccountIsDeactivated</seealso>
     /// <seealso>UsersControllerTests.Session_LosesOwnerAccess_OnceTheAccountIsDemoted</seealso>
+    /// <seealso>UsersControllerTests.Session_StopsWorking_OnceAnOwnerResetsThePassword</seealso>
+    /// <seealso>AuthControllerTests.Logout_EndsTheSession</seealso>
+    /// <seealso>AuthControllerTests.ChangePassword_EndsOtherSessions_AndReissuesThisOne</seealso>
     private static async Task ResolveSessionAccountAsync(TokenValidatedContext context)
     {
         ClaimsPrincipal principal = context.Principal!;
@@ -308,6 +313,11 @@ public static class ServiceCollectionExtensions
         if (account is null)
         {
             context.Fail("Session no longer matches an active account.");
+            return;
+        }
+        if (principal.SessionVersion() != account.SessionVersion)
+        {
+            context.Fail("Session has been signed out.");
             return;
         }
 

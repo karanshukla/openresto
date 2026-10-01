@@ -52,6 +52,7 @@ public static class ErrorCodes
     public const string BookingStatusTransitionInvalid = "booking.status_transition_invalid";
     public const string BookingNoShowBeforeStart = "booking.no_show_before_start";
     public const string BookingPacingFull = "booking.pacing_full";
+    public const string BookingEmailInvalid = "booking.email_invalid";
 
     public const string TableSeatsExceeded = "table.seats_exceeded";
     public const string TableOversizeCap = "table.oversize_cap";
