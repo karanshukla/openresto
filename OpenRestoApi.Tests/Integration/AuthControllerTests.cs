@@ -109,8 +109,8 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         });
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
-        // Reset password back for other tests
-        await client.PostAsJsonAsync("/api/admin/auth/change-password", new
+        // Reset password back for other tests. The change revoked this client's token.
+        await _factory.CreateAuthenticatedClient().PostAsJsonAsync("/api/admin/auth/change-password", new
         {
             currentPassword = "NewPass123!",
             newPassword = TestWebAppFactory.AdminPassword
@@ -469,8 +469,8 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
         });
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
-        // Reset password back for other tests
-        await client.PostAsJsonAsync("/api/admin/auth/change-password", new
+        // Reset password back for other tests. The reset revoked this client's token.
+        await _factory.CreateAuthenticatedClient().PostAsJsonAsync("/api/admin/auth/change-password", new
         {
             currentPassword = "ResetPass123!",
             newPassword = TestWebAppFactory.AdminPassword
@@ -539,6 +539,48 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
 
         // Note: We can't easily verify the cookie is deleted in this test client setup without more complex logic, 
         // but we verify the endpoint responds correctly.
+    }
+
+    private async Task<string> SeedSessionAsync(string email, string password)
+    {
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        (string hash, string salt) = scope.ServiceProvider.GetRequiredService<IPasswordService>().Hash(password);
+        var cred = new AdminCredential { Email = email, PasswordHash = hash, PasswordSalt = salt, Role = UserRoles.Manager };
+        db.AdminCredentials.Add(cred);
+        await db.SaveChangesAsync();
+        return TestWebAppFactory.GenerateJwt(cred.Id, cred.Email, cred.Role);
+    }
+
+    [Fact]
+    public async Task Logout_EndsTheSession()
+    {
+        string jwt = await SeedSessionAsync("logout-session@test.com", "SessionPass123!");
+        HttpClient session = _factory.CreateClientWithToken(jwt);
+        Assert.Equal(HttpStatusCode.OK, (await session.GetAsync("/api/admin/overview")).StatusCode);
+
+        await session.PostAsync("/api/admin/auth/logout", null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await session.GetAsync("/api/admin/overview")).StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangePassword_EndsOtherSessions_AndReissuesThisOne()
+    {
+        string jwt = await SeedSessionAsync("change-pw-session@test.com", "SessionPass123!");
+        HttpClient other = _factory.CreateClientWithToken(jwt);
+
+        HttpResponseMessage response = await _factory.CreateClientWithToken(jwt).PostAsJsonAsync(
+            "/api/admin/auth/change-password",
+            new { currentPassword = "SessionPass123!", newPassword = "ChangedPass123!" });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await other.GetAsync("/api/admin/overview")).StatusCode);
+        string reissued = response.Headers.GetValues("Set-Cookie")
+            .Single(c => c.StartsWith("openresto_auth=", StringComparison.Ordinal))
+            .Split(';')[0]["openresto_auth=".Length..];
+        HttpClient renewed = _factory.CreateClientWithToken(reissued);
+        Assert.Equal(HttpStatusCode.OK, (await renewed.GetAsync("/api/admin/overview")).StatusCode);
     }
 
     [Fact]
@@ -647,14 +689,16 @@ public class AuthControllerTests(TestWebAppFactory factory) : IClassFixture<Test
     public async Task Me_WithAPreMultiUserToken_StillResolvesTheAccount()
     {
         // A 30-day token minted before the upgrade carries no user id and the retired "Admin"
-        // role — it must keep working rather than silently signing the operator out.
-        HttpClient client = _factory.CreateClientWithToken(TestWebAppFactory.GenerateLegacyJwt());
+        // role — it must keep working rather than silently signing the operator out. A fresh
+        // account, because other tests here revoke the seeded admin's sessions.
+        await SeedSessionAsync("legacy-session@test.com", "LegacyPass123!");
+        HttpClient client = _factory.CreateClientWithToken(TestWebAppFactory.GenerateLegacyJwt("legacy-session@test.com"));
 
         HttpResponseMessage response = await client.GetAsync("/api/admin/auth/me");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(TestWebAppFactory.AdminEmail, body.GetProperty("email").GetString());
+        Assert.Equal("legacy-session@test.com", body.GetProperty("email").GetString());
     }
 
     [Fact]

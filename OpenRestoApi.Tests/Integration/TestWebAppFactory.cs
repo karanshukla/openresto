@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
@@ -89,7 +90,7 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
     public string GenerateTestJwt()
     {
         AdminCredential admin = GetSeededAdmin();
-        return GenerateJwt(admin.Id, admin.Email, admin.Role);
+        return GenerateJwt(admin.Id, admin.Email, admin.Role, admin.SessionVersion);
     }
 
     /// <summary>
@@ -100,12 +101,13 @@ public class TestWebAppFactory : WebApplicationFactory<Program>
     public static string GenerateLegacyJwt(string email = AdminEmail)
         => BuildToken([new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Role, UserRoles.LegacyAdmin)]);
 
-    public static string GenerateJwt(int userId, string email, string role)
+    public static string GenerateJwt(int userId, string email, string role, int sessionVersion = 0)
         => BuildToken(
         [
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString(System.Globalization.CultureInfo.InvariantCulture)),
             new Claim(ClaimTypes.Email, email),
             new Claim(ClaimTypes.Role, role),
+            new Claim(JwtTokenService.SessionVersionClaim, sessionVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)),
         ]);
 
     private static string BuildToken(Claim[] claims)

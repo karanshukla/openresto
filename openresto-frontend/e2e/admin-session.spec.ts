@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from "./helpers";
+import { ADMIN_STATE_FILE } from "./global-setup";
 
 /**
  * The admin auth-session lifecycle. Every admin spec implicitly depends on the
@@ -15,19 +16,22 @@ import { ADMIN_EMAIL, ADMIN_PASSWORD } from "./helpers";
  *      `me` is 401 and /dashboard bounces to /login.
  *
  * Runs under the chromium-admin project (page carries the storageState cookie).
- * afterAll re-seeds the cookie by logging in again so the order-independent
- * storageState shared with the rest of the suite is valid for later specs.
+ * afterAll signs in again and rewrites the shared storageState so later specs
+ * still have a live session.
  */
 test.describe("Admin session lifecycle", { tag: "@smoke" }, () => {
   test.describe.configure({ mode: "serial" });
 
-  test.afterAll(async ({ request }) => {
-    // Other admin specs reuse the storageState cookie written by global-setup;
-    // logout (test 3) clears it for this context only, but re-login here keeps
-    // the shared cookie file's session alive regardless of run order.
-    await request.post("/api/admin/auth/login", {
+  test.afterAll(async ({ browser }) => {
+    // Logout (test 3) ends every session of the account, including the one in
+    // the storageState file written by global-setup, so sign in again and
+    // rewrite that file for the admin specs that run after this one.
+    const ctx = await browser.newContext();
+    await ctx.request.post("/api/admin/auth/login", {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     });
+    await ctx.storageState({ path: ADMIN_STATE_FILE });
+    await ctx.close();
   });
 
   test("me returns the authenticated admin's email", async ({ request }) => {

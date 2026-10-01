@@ -34,7 +34,7 @@ public class JwtTokenServiceTests
     {
         var svc = new JwtTokenService(BuildConfig());
 
-        string token = svc.Generate(7, "admin@example.com", UserRoles.Manager);
+        string token = svc.Generate(7, "admin@example.com", UserRoles.Manager, 0);
 
         Assert.False(string.IsNullOrWhiteSpace(token));
     }
@@ -44,7 +44,7 @@ public class JwtTokenServiceTests
     {
         var svc = new JwtTokenService(BuildConfig());
 
-        JwtSecurityToken jwt = Decode(svc.Generate(7, "admin@example.com", UserRoles.Manager));
+        JwtSecurityToken jwt = Decode(svc.Generate(7, "admin@example.com", UserRoles.Manager, 0));
 
         Assert.Equal("HS256", jwt.SignatureAlgorithm);
     }
@@ -54,7 +54,7 @@ public class JwtTokenServiceTests
     {
         var svc = new JwtTokenService(BuildConfig());
 
-        JwtSecurityToken jwt = Decode(svc.Generate(42, "boss@openresto.com", UserRoles.Owner));
+        JwtSecurityToken jwt = Decode(svc.Generate(42, "boss@openresto.com", UserRoles.Owner, 0));
 
         Claim subject = Assert.Single(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.Sub);
         Assert.Equal("42", subject.Value);
@@ -65,11 +65,22 @@ public class JwtTokenServiceTests
     }
 
     [Fact]
+    public void Generate_Carries_The_Accounts_Session_Version()
+    {
+        var svc = new JwtTokenService(BuildConfig());
+
+        JwtSecurityToken jwt = Decode(svc.Generate(3, "manager@openresto.com", UserRoles.Manager, 4));
+
+        Claim version = Assert.Single(jwt.Claims, c => c.Type == JwtTokenService.SessionVersionClaim);
+        Assert.Equal("4", version.Value);
+    }
+
+    [Fact]
     public void Generate_Carries_The_Users_Own_Role_Not_A_Hardcoded_One()
     {
         var svc = new JwtTokenService(BuildConfig());
 
-        JwtSecurityToken jwt = Decode(svc.Generate(3, "manager@openresto.com", UserRoles.Manager));
+        JwtSecurityToken jwt = Decode(svc.Generate(3, "manager@openresto.com", UserRoles.Manager, 0));
 
         Claim role = Assert.Single(jwt.Claims, c => c.Type == ClaimTypes.Role);
         Assert.Equal(UserRoles.Manager, role.Value);
@@ -81,7 +92,7 @@ public class JwtTokenServiceTests
         var svc = new JwtTokenService(BuildConfig());
         DateTime before = DateTime.UtcNow;
 
-        JwtSecurityToken jwt = Decode(svc.Generate(7, "admin@example.com", UserRoles.Manager));
+        JwtSecurityToken jwt = Decode(svc.Generate(7, "admin@example.com", UserRoles.Manager, 0));
 
         // Allow 5-second skew; assert it's ~30 days from now, not unbounded.
         Assert.InRange(jwt.ValidTo, before.AddDays(30).AddSeconds(-5), before.AddDays(30).AddSeconds(5));
@@ -92,7 +103,7 @@ public class JwtTokenServiceTests
     {
         var svc = new JwtTokenService(BuildConfig());
 
-        JwtSecurityToken jwt = Decode(svc.Generate(7, "admin@example.com", UserRoles.Manager));
+        JwtSecurityToken jwt = Decode(svc.Generate(7, "admin@example.com", UserRoles.Manager, 0));
 
         Assert.Equal(TestIssuer, jwt.Issuer);
         Assert.Contains(TestAudience, jwt.Audiences);
@@ -110,7 +121,7 @@ public class JwtTokenServiceTests
             // Config has no Jwt:Key — env fallback must kick in.
             var svc = new JwtTokenService(BuildConfig(key: null));
 
-            string token = svc.Generate(7, "admin@example.com", UserRoles.Manager);
+            string token = svc.Generate(7, "admin@example.com", UserRoles.Manager, 0);
 
             Assert.False(string.IsNullOrWhiteSpace(token));
         }
@@ -126,7 +137,7 @@ public class JwtTokenServiceTests
         IConfiguration cfg = BuildConfig();
         var svc = new JwtTokenService(cfg);
 
-        string token = svc.Generate(7, "admin@example.com", UserRoles.Manager);
+        string token = svc.Generate(7, "admin@example.com", UserRoles.Manager, 0);
 
         var validation = new TokenValidationParameters
         {

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using OpenRestoApi.Core.Application.Services;
 
 namespace OpenRestoApi.Infrastructure.Auth;
 
@@ -20,6 +21,12 @@ public static class SessionClaims
             ? id
             : null;
     }
+
+    /// <summary>Tokens minted before session versions existed carry none, and read as 0.</summary>
+    public static int SessionVersion(this ClaimsPrincipal user)
+        => int.TryParse(user.FindFirst(JwtTokenService.SessionVersionClaim)?.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int version)
+            ? version
+            : 0;
 
     public static string? Email(this ClaimsPrincipal user)
         => user.FindFirst(ClaimTypes.Email)?.Value ?? user.FindFirst(JwtRegisteredClaimNames.Email)?.Value;

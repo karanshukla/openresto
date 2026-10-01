@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using OpenRestoApi.Core.Application.DTOs;
@@ -200,9 +202,10 @@ public class AuthServiceTests
         AdminCredential cred = SeedCredential(db, "admin@example.com", "old");
         AuthService svc = CreateService(db, FakeCurrentUser.For(cred));
 
-        bool ok = await svc.ChangePasswordAsync("wrong", "newpass");
+        string? jwt = await svc.ChangePasswordAsync("wrong", "newpass");
 
-        Assert.False(ok);
+        Assert.Null(jwt);
+        Assert.Equal(0, cred.SessionVersion);
         // Old password still works after failed change attempt.
         Assert.NotNull(await svc.LoginAsync("admin@example.com", "old"));
     }
@@ -214,9 +217,9 @@ public class AuthServiceTests
         AdminCredential cred = SeedCredential(db, "admin@example.com", "old");
         AuthService svc = CreateService(db, FakeCurrentUser.For(cred));
 
-        bool ok = await svc.ChangePasswordAsync("old", "newpass");
+        string? jwt = await svc.ChangePasswordAsync("old", "newpass");
 
-        Assert.True(ok);
+        Assert.NotNull(jwt);
         Assert.Null(await svc.LoginAsync("admin@example.com", "old"));
         Assert.NotNull(await svc.LoginAsync("admin@example.com", "newpass"));
     }
@@ -229,7 +232,7 @@ public class AuthServiceTests
         AdminCredential manager = SeedCredential(db, "manager@example.com", "manager-pw", role: UserRoles.Manager);
         AuthService svc = CreateService(db, FakeCurrentUser.For(manager));
 
-        Assert.True(await svc.ChangePasswordAsync("manager-pw", "manager-new"));
+        Assert.NotNull(await svc.ChangePasswordAsync("manager-pw", "manager-new"));
 
         Assert.NotNull(await svc.LoginAsync("manager@example.com", "manager-new"));
         Assert.NotNull(await svc.LoginAsync("owner@example.com", "owner-pw"));
@@ -242,17 +245,17 @@ public class AuthServiceTests
         SeedCredential(db, "legacy@example.com", "old");
         AuthService svc = CreateService(db, FakeCurrentUser.ForLegacyToken("legacy@example.com"));
 
-        Assert.True(await svc.ChangePasswordAsync("old", "newpass"));
+        Assert.NotNull(await svc.ChangePasswordAsync("old", "newpass"));
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_Returns_False_When_The_Token_Names_No_Live_Account()
+    public async Task ChangePasswordAsync_Returns_Null_When_The_Token_Names_No_Live_Account()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(ChangePasswordAsync_Returns_False_When_The_Token_Names_No_Live_Account));
+        using AppDbContext db = TestDbFactory.Create(nameof(ChangePasswordAsync_Returns_Null_When_The_Token_Names_No_Live_Account));
         SeedCredential(db, "admin@example.com", "old");
         AuthService svc = CreateService(db, FakeCurrentUser.ForLegacyToken("ghost@example.com"));
 
-        Assert.False(await svc.ChangePasswordAsync("old", "newpass"));
+        Assert.Null(await svc.ChangePasswordAsync("old", "newpass"));
     }
 
     [Theory]
@@ -267,6 +270,21 @@ public class AuthServiceTests
 
         var ex = await Assert.ThrowsAsync<ValidationException>(() => svc.ChangePasswordAsync("pw", weak));
         Assert.Contains("at least 6 characters", ex.Message);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_Revokes_Sessions_And_Mints_A_Token_At_The_New_Version()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ChangePasswordAsync_Revokes_Sessions_And_Mints_A_Token_At_The_New_Version));
+        AdminCredential cred = SeedCredential(db, "admin@example.com", "old");
+        AuthService svc = CreateService(db, FakeCurrentUser.For(cred));
+
+        string? jwt = await svc.ChangePasswordAsync("old", "newpass");
+
+        Assert.Equal(1, cred.SessionVersion);
+        Claim version = Assert.Single(new JwtSecurityTokenHandler().ReadJwtToken(jwt).Claims,
+            c => c.Type == JwtTokenService.SessionVersionClaim);
+        Assert.Equal("1", version.Value);
     }
 
     // ── ChangeEmailAsync ────────────────────────────────────────────────────────
@@ -337,6 +355,34 @@ public class AuthServiceTests
         Assert.Contains("valid email", ex.Message);
     }
 
+    // ── LogoutAsync ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task LogoutAsync_Revokes_The_Callers_Sessions_Only()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(LogoutAsync_Revokes_The_Callers_Sessions_Only));
+        AdminCredential owner = SeedCredential(db, "owner@example.com", "pw");
+        AdminCredential manager = SeedCredential(db, "manager@example.com", "pw", role: UserRoles.Manager);
+        AuthService svc = CreateService(db, FakeCurrentUser.For(manager));
+
+        await svc.LogoutAsync();
+
+        Assert.Equal(1, manager.SessionVersion);
+        Assert.Equal(0, owner.SessionVersion);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_Leaves_Sessions_Alone_For_An_Api_Key()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(LogoutAsync_Leaves_Sessions_Alone_For_An_Api_Key));
+        AdminCredential cred = SeedCredential(db, "admin@example.com", "pw");
+        AuthService svc = CreateService(db, new FakeCurrentUser { IsApiKeyAuthenticated = true, UserId = cred.Id });
+
+        await svc.LogoutAsync();
+
+        Assert.Equal(0, cred.SessionVersion);
+    }
+
     // ── ResetPasswordAsync ──────────────────────────────────────────────────────
 
     [Fact]
@@ -385,6 +431,7 @@ public class AuthServiceTests
         AdminCredential after = await db.AdminCredentials.SingleAsync();
         Assert.Null(after.ResetToken);
         Assert.Null(after.ResetTokenExpiry);
+        Assert.Equal(1, after.SessionVersion);
         Assert.Null(await svc.LoginAsync("admin@example.com", "pw"));
         Assert.NotNull(await svc.LoginAsync("admin@example.com", "freshpw"));
     }
