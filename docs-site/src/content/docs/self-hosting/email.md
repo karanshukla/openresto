@@ -2,7 +2,7 @@
 title: Email
 description: Connect an SMTP account so guests get booking confirmations.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 OpenResto sends mail through any SMTP account you give it. Email is optional: with none

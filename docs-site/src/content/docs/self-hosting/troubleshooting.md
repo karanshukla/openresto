@@ -2,7 +2,7 @@
 title: Troubleshooting
 description: Common problems when running OpenResto, and where to look first.
 sidebar:
-  order: 9
+  order: 10
 ---
 
 Start with the logs. They name most problems directly:
@@ -54,7 +54,11 @@ not in `.env`.
 
 ## No push notifications
 
-Push needs HTTPS and VAPID keys. See [Push notifications](/self-hosting/push-notifications/).
+Push needs HTTPS and all three VAPID values. The settings card's message tells you which is missing, see [Push notifications](/self-hosting/push-notifications/#what-the-toggle-is-telling-you).
+
+## Emails or passes link to localhost
+
+The server is falling back to its development address. Set `CORS_ORIGINS`, see [Which URL goes where](/self-hosting/domains-and-urls/).
 
 ## Still stuck
 

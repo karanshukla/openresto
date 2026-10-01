@@ -12,7 +12,7 @@ How each feature behaves, its API fields and its error codes are in
 
 ### Added
 
-- **Documentation site** at [docs.openres.to](https://docs.openres.to), built from `docs-site/` in this repository. It adds a self-hosting guide (install, configuration reference, HTTPS, email, push notifications, admin recovery, upgrading, troubleshooting) and renders the API reference from the committed OpenAPI contract.
+- **Documentation site** at [docs.openres.to](https://docs.openres.to), built from `docs-site/` in this repository. It adds a self-hosting guide (install, configuration reference, HTTPS, email, push notifications, admin recovery, upgrading, troubleshooting) and renders the API reference from the committed OpenAPI contract. Setup guides cover VAPID keys, which URL setting does what, and a native app overview.
 
 ### Changed
 

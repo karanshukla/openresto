@@ -2,7 +2,7 @@
 title: Admin accounts and recovery
 description: The first Owner account, adding staff, API keys, and getting back in when locked out.
 sidebar:
-  order: 6
+  order: 7
 ---
 
 ## The first account
