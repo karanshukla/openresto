@@ -362,6 +362,7 @@
       "ambiguous_table_selection": "Indica tanto TableId como SectionId, u omite ambos para la asignación automática.",
       "cancel_email_required": "Se necesita un correo electrónico para cancelar una reserva.",
       "email_fields_required": "El asunto y el mensaje son obligatorios.",
+      "email_invalid": "Esa dirección de correo no parece correcta.",
       "email_send_failed": "Error al enviar: {{detail}}",
       "invalid_table_for_restaurant": "Mesa no válida para este restaurante.",
       "lookup_email_required": "Se necesita un correo electrónico para buscar una reserva.",

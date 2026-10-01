@@ -362,6 +362,7 @@
       "ambiguous_table_selection": "Indiquez à la fois TableId et SectionId, ou aucun des deux pour l'attribution automatique.",
       "cancel_email_required": "Une adresse e-mail est requise pour annuler une réservation.",
       "email_fields_required": "L'objet et le message sont obligatoires.",
+      "email_invalid": "Cette adresse e-mail ne semble pas valide.",
       "email_send_failed": "Échec de l'envoi : {{detail}}",
       "invalid_table_for_restaurant": "Table invalide pour ce restaurant.",
       "lookup_email_required": "Une adresse e-mail est requise pour retrouver une réservation.",

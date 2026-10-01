@@ -362,6 +362,7 @@
       "ambiguous_table_selection": "Specify both TableId and SectionId, or omit both for auto-assign.",
       "cancel_email_required": "Email is required to cancel a booking.",
       "email_fields_required": "Subject and body are required.",
+      "email_invalid": "That email address doesn't look right.",
       "email_send_failed": "Failed to send: {{detail}}",
       "invalid_table_for_restaurant": "Invalid table for this restaurant.",
       "lookup_email_required": "Email is required to look up a booking.",

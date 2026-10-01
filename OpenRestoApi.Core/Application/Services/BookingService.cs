@@ -32,6 +32,11 @@ public class BookingService(
 
     public virtual async Task<BookingDto> CreateBookingAsync(BookingDto bookingDto)
     {
+        if (!EmailValidator.IsValid(bookingDto.CustomerEmail))
+        {
+            throw new ValidationException("That email address doesn't look right.") { Code = ErrorCodes.BookingEmailInvalid };
+        }
+
         Restaurant restaurant = await _restaurantRepository.GetByIdAsync(bookingDto.RestaurantId)
             ?? throw new NotFoundException("Restaurant not found.") { Code = ErrorCodes.RestaurantNotFound };
 

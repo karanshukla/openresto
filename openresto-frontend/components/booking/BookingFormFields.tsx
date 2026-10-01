@@ -14,6 +14,11 @@ import { styles } from "./BookingForm.styles";
  * value in, change out.
  */
 
+/** Mirror `BookingLimits` and `ContactLimits` on the server, which rejects anything longer. */
+const MAX_NAME_LENGTH = 100;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_REQUESTS_LENGTH = 500;
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.field}>
@@ -198,6 +203,7 @@ export function NameField({
         accessibilityLabel={t("booking.form.fullNameAccessibilityLabel")}
         value={value}
         onChangeText={onChange}
+        maxLength={MAX_NAME_LENGTH}
         autoCapitalize="words"
         textContentType="name"
         autoComplete="name"
@@ -225,6 +231,7 @@ export function EmailField({
         accessibilityLabel={t("booking.form.emailAccessibilityLabel")}
         value={value}
         onChangeText={onChange}
+        maxLength={MAX_EMAIL_LENGTH}
         keyboardType="email-address"
         autoCapitalize="none"
         textContentType="emailAddress"
@@ -253,6 +260,7 @@ export function RequestsField({
         accessibilityLabel={t("booking.form.requestsAccessibilityLabel")}
         value={value}
         onChangeText={onChange}
+        maxLength={MAX_REQUESTS_LENGTH}
         multiline
         numberOfLines={3}
         style={styles.textarea}
