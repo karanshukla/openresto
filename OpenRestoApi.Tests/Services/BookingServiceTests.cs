@@ -33,7 +33,6 @@ public partial class BookingServiceTests
         return new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
-            new SectionRepository(db),
             new RestaurantRepository(db),
             holdService,
             new BookingMapper(),
@@ -100,6 +99,55 @@ public partial class BookingServiceTests
         Assert.Equal("guest@example.com", result.CustomerEmail);
         Assert.Equal(2, result.Seats);
         Assert.NotEmpty(result.BookingRef!);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_RejectsATableFromAnotherLocation()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_RejectsATableFromAnotherLocation));
+        TestSeed.BasicRestaurant(db);
+        db.Restaurants.Add(new Restaurant { Id = 2, Name = "Walk-ins Only", WalkInOnly = true });
+        db.Sections.Add(new Section { Id = 2, Name = "Deck", RestaurantId = 2 });
+        db.Tables.Add(new Table { Id = 2, Name = "D1", Seats = 4, SectionId = 2 });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 2,
+            TableId = 2,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        };
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateBookingAsync(dto));
+        Assert.Equal(ErrorCodes.BookingInvalidTableForRestaurant, ex.Code);
+        Assert.Empty(db.Bookings);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_RejectsASectionThatDoesNotHoldTheTable()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_RejectsASectionThatDoesNotHoldTheTable));
+        TestSeed.BasicRestaurant(db);
+        db.Sections.Add(new Section { Id = 2, Name = "Patio", RestaurantId = 1 });
+        db.SaveChanges();
+
+        BookingService svc = CreateService(db);
+        var dto = new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 2,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(7)
+        };
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateBookingAsync(dto));
+        Assert.Equal(ErrorCodes.BookingInvalidTableForRestaurant, ex.Code);
     }
 
     [Fact]
@@ -731,13 +779,9 @@ public partial class BookingServiceTests
     }
 
     [Fact]
-    public async Task CreateBookingAsync_SkipsCapacityChecks_WhenTableIdNoLongerExists()
+    public async Task CreateBookingAsync_RejectsATableThatNoLongerExists()
     {
-        // TableId/SectionId were explicitly supplied (skipping auto-assign), but the table row
-        // has since vanished (e.g. deleted between page load and submit) — GetByIdAsync returns
-        // null, so both the lower-bound and oversize capacity guards must short-circuit false
-        // rather than throwing, and the booking still lands with the caller-supplied TableId.
-        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_SkipsCapacityChecks_WhenTableIdNoLongerExists));
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_RejectsATableThatNoLongerExists));
         TestSeed.BasicRestaurant(db);
         BookingService svc = CreateService(db);
         var dto = new BookingDto
@@ -750,10 +794,8 @@ public partial class BookingServiceTests
             Date = DateTime.UtcNow.AddDays(7)
         };
 
-        BookingDto result = await svc.CreateBookingAsync(dto);
-
-        Assert.Equal(999, result.TableId);
-        Assert.NotEmpty(result.BookingRef!);
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateBookingAsync(dto));
+        Assert.Equal(ErrorCodes.BookingInvalidTableForRestaurant, ex.Code);
     }
 
     [Fact]
@@ -783,7 +825,6 @@ public partial class BookingServiceTests
         BookingService svc = new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
-            new SectionRepository(db),
             new RestaurantRepository(db),
             holdMock.Object,
             new BookingMapper(),
@@ -825,7 +866,6 @@ public partial class BookingServiceTests
         BookingService svc = new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
-            new SectionRepository(db),
             new RestaurantRepository(db),
             holdMock.Object,
             new BookingMapper(),
@@ -1110,7 +1150,6 @@ public partial class BookingServiceTests
         BookingService svc = new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
-            new SectionRepository(db),
             new RestaurantRepository(db),
             holdSvc,
             new BookingMapper(),
@@ -1150,7 +1189,6 @@ public partial class BookingServiceTests
         BookingService svc = new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
-            new SectionRepository(db),
             new RestaurantRepository(db),
             holdSvc,
             new BookingMapper(),
@@ -1649,7 +1687,6 @@ public partial class BookingServiceTests
         BookingService svc = new BookingService(
             new BookingRepository(db),
             new TableRepository(db),
-            new SectionRepository(db),
             new RestaurantRepository(db),
             holdMock.Object,
             new BookingMapper(),

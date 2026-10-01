@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using CustomAccessibility.Attributes;
@@ -10,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Auth;
 using OpenRestoApi.Infrastructure.Cookies;
 using OpenRestoApi.Infrastructure.Holds;
@@ -271,7 +273,8 @@ public static class ServiceCollectionExtensions
                             context.Token = cookie;
                         }
                         return Task.CompletedTask;
-                    }
+                    },
+                    OnTokenValidated = ResolveSessionAccountAsync,
                 };
             });
 
@@ -288,6 +291,32 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    /// <summary>
+    /// A token outlives the account state it was signed with by up to 30 days, so the account is
+    /// read back on every request, as the API-key handler does: a deactivated account is refused,
+    /// and the role comes from the row rather than the token, so a demotion applies at once.
+    /// </summary>
+    /// <seealso>UsersControllerTests.Session_StopsWorking_OnceTheAccountIsDeactivated</seealso>
+    /// <seealso>UsersControllerTests.Session_LosesOwnerAccess_OnceTheAccountIsDemoted</seealso>
+    private static async Task ResolveSessionAccountAsync(TokenValidatedContext context)
+    {
+        ClaimsPrincipal principal = context.Principal!;
+        IAdminCredentialRepository credentials = context.HttpContext.RequestServices.GetRequiredService<IAdminCredentialRepository>();
+        AdminCredential? account = await CurrentUserResolver.ResolveAsync(principal.UserId(), principal.Email(), credentials);
+        if (account is null)
+        {
+            context.Fail("Session no longer matches an active account.");
+            return;
+        }
+
+        var identity = (ClaimsIdentity)principal.Identity!;
+        foreach (Claim role in identity.FindAll(identity.RoleClaimType).ToList())
+        {
+            identity.RemoveClaim(role);
+        }
+        identity.AddClaim(new Claim(identity.RoleClaimType, account.Role));
     }
 
     /// <summary>How long the native-app readiness checks wait on one <c>/.well-known/</c> fetch

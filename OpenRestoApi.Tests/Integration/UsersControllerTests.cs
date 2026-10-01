@@ -197,6 +197,32 @@ public class UsersControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
+    public async Task Session_StopsWorking_OnceTheAccountIsDeactivated()
+    {
+        AdminCredential target = await SeedUserAsync("deactivated-session@test.com", UserRoles.Manager);
+        HttpClient session = _factory.CreateClientWithToken(
+            TestWebAppFactory.GenerateJwt(target.Id, target.Email, target.Role));
+        Assert.Equal(HttpStatusCode.OK, (await session.GetAsync("/api/admin/overview")).StatusCode);
+
+        await OwnerClient().PatchAsJsonAsync($"/api/admin/users/{target.Id}/active", new { isActive = false });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await session.GetAsync("/api/admin/overview")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Session_LosesOwnerAccess_OnceTheAccountIsDemoted()
+    {
+        AdminCredential target = await SeedUserAsync("demoted-session@test.com", UserRoles.Owner);
+        HttpClient session = _factory.CreateClientWithToken(
+            TestWebAppFactory.GenerateJwt(target.Id, target.Email, target.Role));
+        Assert.Equal(HttpStatusCode.OK, (await session.GetAsync("/api/admin/users")).StatusCode);
+
+        await OwnerClient().PatchAsJsonAsync($"/api/admin/users/{target.Id}/role", new { role = UserRoles.Manager });
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await session.GetAsync("/api/admin/users")).StatusCode);
+    }
+
+    [Fact]
     public async Task ResetPassword_LetsTheUserLogInWithTheNewPassword()
     {
         HttpClient owner = OwnerClient();
