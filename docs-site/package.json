@@ -12,5 +12,8 @@
     "astro": "^7.3.5",
     "sharp": "^0.35.5",
     "starlight-openapi": "^0.26.3"
+  },
+  "overrides": {
+    "form-data": "^4.0.6"
   }
 }
