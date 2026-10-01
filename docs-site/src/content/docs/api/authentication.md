@@ -2,37 +2,39 @@
 title: Calling the API with an API key
 ---
 
+This page shows you how to call the OpenResto admin API directly over HTTP, using an API key.
 The [`openresto-cli`](https://www.npmjs.com/package/openresto-cli) wraps the admin API in a
-terminal client, but nothing about the API needs it: an admin API key is presented on a plain
-HTTP header, so `curl`, a cron script, a Zapier webhook or your own backend can call the same
-endpoints. This page is the direct-HTTP path.
+terminal client, but you don't need it. The key goes in a plain HTTP header, so `curl`, a cron
+script, a Zapier webhook or your own backend can call the same endpoints.
 
-Everything below assumes your server is at `https://bookings.example.com`. Substitute your own
-origin — the API lives under `/api` on the same origin the admin UI is served from.
+The examples assume your server is at `https://bookings.example.com`. Swap in your own origin.
+The API lives under `/api` on the same origin as the admin UI.
 
 ## 1. Mint a key
 
-In the admin UI, go to **Settings → API Keys** (Owner role required), press **Add API key**, name
-it after the thing that will hold it, and grant the narrowest set of permissions that does the
-job. The secret (`orst_<id>_<secret>`) is shown exactly once, on creation — the server stores only
-a hash of it and can never show it again. Store it the way you store a password.
+"Minting" a key just means creating it. In the admin UI, go to **Settings → API Keys** (Owner
+role required) and press **Add API key**. Name it after the thing that will use it, and grant
+only the permissions it needs. The secret (`orst_<id>_<secret>`) is shown once, when you create
+it. The server stores only a hash of it, so it can't show it again. Store it the way you store a
+password.
 
-Keys are per-user and self-scoped: you see, mint and revoke only your own. Revoking is immediate
-and permanent; there is no un-revoke, so rotation means minting a new key and deleting the old
-one from wherever it is configured.
+Keys belong to one user: you see, mint and revoke only your own. Revoking is immediate and
+permanent. To rotate a key, mint a new one and delete the old one from wherever it is
+configured.
 
 ## 2. Present it
 
-Send the raw secret on the `X-API-Key` header. **Not** `Authorization` — that header is for the
-browser session's JWT, and a key sent there is ignored.
+Send the raw secret in the `X-API-Key` header. Don't use `Authorization`: that header is for the
+browser session's JWT (a signed login token), and a key sent there is ignored.
 
 ```bash
 curl -H "X-API-Key: orst_1_your-secret" \
   https://bookings.example.com/api/admin/bookings
 ```
 
-Confirm a key works, and see what it is allowed to do, with the one endpoint every key can reach
-regardless of its scopes:
+To check that a key works and see what it can do, call the one endpoint every key can reach,
+whatever its scopes. If you get a `401`, check that the key is copied in full and sent in
+`X-API-Key`.
 
 ```bash
 curl -H "X-API-Key: orst_1_your-secret" \
@@ -57,8 +59,8 @@ curl -H "X-API-Key: orst_1_your-secret" \
 
 ## 3. Read and write
 
-Query parameters, request bodies and responses are identical to the ones the admin UI uses — the
-key only changes how the request authenticates.
+Query parameters, request bodies and responses are the same as the ones the admin UI uses. The
+key only changes how the request signs in.
 
 ```bash
 # Today's bookings at location 2
@@ -76,15 +78,16 @@ curl -X POST -H "X-API-Key: $OPENRESTO_API_KEY" -H "Content-Type: application/js
   https://bookings.example.com/api/admin/bookings
 ```
 
-The complete endpoint list, with every parameter and response shape, is the
-[API reference](/api/reference/). It is generated from the running API and CI fails if it
-drifts, so it is the source of truth. The same OpenAPI document is committed at
+The [API reference](/api/reference/) lists every endpoint, with all parameters and response
+shapes. It is generated from the running API, and CI fails if it drifts, so you can rely on it.
+The same OpenAPI document is committed at
 [`openresto-cli/openapi/v1.json`](https://github.com/karanshukla/openresto/blob/main/openresto-cli/openapi/v1.json)
 if you want to import it into Postman, Insomnia or your own client generator.
 
 ## Permissions
 
-Every admin endpoint is gated on a `{resource}:{access}` scope:
+Every admin endpoint needs a `{resource}:{access}` scope. Pick the smallest set your integration
+needs.
 
 | Resource    | Access         | Covers                                                    |
 | ----------- | -------------- | --------------------------------------------------------- |
@@ -97,18 +100,18 @@ Every admin endpoint is gated on a `{resource}:{access}` scope:
 | `guests`    | `read`         | Customer names and emails on bookings and the waitlist    |
 | `email`     | `read`         | Whether outgoing mail is configured and delivering        |
 
-A `write` grant satisfies a `read` requirement; the reverse is never true. `audit`, `guests` and
-`email` are read-only, so `audit:write`, `guests:write` and `email:write` are rejected at mint
-time rather than accepted as scopes nothing checks.
+A `write` grant also covers `read`, but not the other way round. `audit`, `guests` and `email`
+are read-only, so `audit:write`, `guests:write` and `email:write` are rejected when you create
+the key.
 
-`guests` is a redaction, not a gate: a key with `bookings:read` but no `guests:read` still gets
-every booking, with the customer's name and email blanked. Grant it only where the caller
-genuinely needs to identify people. The same redaction covers the recipient on an email
-delivery failure.
+`guests` hides data rather than blocking access. A key with `bookings:read` but no
+`guests:read` still gets every booking, with the customer's name and email blanked. Grant
+`guests:read` only where the caller needs to identify people. The same blanking applies to the
+recipient on an email delivery failure.
 
-`email` answers whether guests are receiving anything at all. Booking confirmations are
-best-effort — a send failure is recorded and the booking goes through regardless — so a script
-creating bookings otherwise has no way to notice that none of them are being delivered:
+`email` tells you whether guests are receiving anything at all. Booking confirmations are
+best-effort: if a send fails, the failure is recorded and the booking still goes through. So a
+script that creates bookings has no other way to notice that none of them are being delivered:
 
 ```bash
 # Is mail configured, and are confirmations switched on? Two causes, one visible effect.
@@ -125,61 +128,62 @@ curl -H "X-API-Key: $OPENRESTO_API_KEY" \
   https://bookings.example.com/api/admin/email-settings/preview
 ```
 
-Some of the admin surface is deliberately out of reach of any key, no matter its scopes: auth
+Some admin features are out of reach of any key, whatever its scopes. These are auth
 self-service (password, email, security question), the SMTP settings themselves, push
-notifications, API key management itself, and creating an account, changing a role or resetting a
-password. Those need a browser session. There is no `email:write` for the same reason: a key that
-could rewrite the SMTP host, username and password would be a mail-interception tool sitting in a
-CI secret.
+notifications, API key management itself, and creating an account, changing a role or resetting
+a password. Those need a browser session. There is no `email:write` for the same reason: a key
+that could rewrite the SMTP host, username and password could be used to intercept mail, and it
+would be sitting in a CI secret.
 
-The three excluded `users` verbs are the same argument one step further back. A key that could
-mint a login, or take over an existing one, would not be confined by its scopes at all: its holder
-signs into the admin UI as that account and reaches every endpoint above, including minting
-themselves an unscoped key. Restricting which role a key may create would not close it, because
-the excluded surface is gated on being an admin rather than on being an Owner, so a Manager login
-is enough. `users:write` therefore reaches activation only, which grants no session.
+The three excluded `users` actions follow the same logic. A key that could create a login, or
+take over an existing one, wouldn't be limited by its scopes at all. Its holder could sign in to
+the admin UI as that account and reach every endpoint above, including minting themselves an
+unscoped key. Limiting which role a key may create wouldn't fix this, because that part of the
+admin is open to any admin, not only an Owner, so a Manager login is enough. That is why
+`users:write` covers activation only, which doesn't start a session.
 
 ## What a key cannot do
 
-- **The guest-facing endpoints need no key at all.** Browsing locations, checking availability,
-  holding a table and booking are public; sending a key with them changes nothing.
-- **Keys carry no role of their own.** A key resolves to the account that minted it, live on
-  every request, so demoting or deactivating that account immediately narrows or kills the key.
-- **Every call is audited.** Mutations land in the admin activity trail with the key's name
-  attached, which is why the name is required at mint. `GET /api/admin/audit` (with `audit:read`)
-  reads it back.
+- **Guest-facing endpoints need no key.** Browsing locations, checking availability, holding a
+  table and booking are public. Sending a key with them changes nothing.
+- **Keys have no role of their own.** A key uses the account that created it, checked on every
+  request. If you demote or deactivate that account, the key is narrowed or stops working
+  straight away.
+- **Every call is audited.** Changes appear in the admin activity trail with the key's name
+  attached, which is why a name is required when you create a key. Read the trail back with
+  `GET /api/admin/audit` (needs `audit:read`).
 
 ## Responses and errors
 
-Success is a normal `200`/`201` with a JSON body. Failures are a JSON object carrying a `message`
-and usually a machine-readable `code`:
+A success is a normal `200` or `201` with a JSON body. A failure is a JSON object with a
+`message` and, usually, a machine-readable `code`:
 
 | Status | Meaning                                                                                               |
 | ------ | ----------------------------------------------------------------------------------------------------- |
-| `401`  | Missing, unknown, revoked or expired key — or the account behind it is inactive                       |
+| `401`  | Missing, unknown, revoked or expired key, or the account behind it is inactive                        |
 | `403`  | Valid key, missing scope. The message names it: `This API key is missing the 'bookings:write' scope.` |
 | `404`  | No such record                                                                                        |
 | `409`  | The request conflicts with existing state (an overlapping booking, a full table)                      |
 | `429`  | Rate limited                                                                                          |
 
-Keyed requests get a higher rate-limit ceiling than browser traffic (1000/minute per client IP in
-production, against 300 for unkeyed). The limiter runs before authentication and buckets on the
-caller's IP, so retrying a rejected request from the same host will not find a fresh allowance —
-back off instead.
+Keyed requests get a higher rate limit than browser traffic (1000/minute per client IP in
+production, against 300 for unkeyed). The limit is checked before the key is read and counted per
+caller IP, so retrying a rejected request from the same host won't give you a fresh allowance.
+If you get a `429`, wait a little before trying again.
 
 ## Handling the secret
 
-- Keep it out of URLs and out of command arguments; anything on a process's argv is visible to
-  every other user on the box via `ps`. Use an environment variable or a secrets file, as the
-  examples above do with `$OPENRESTO_API_KEY`.
-- Give each integration its own key. Shared keys cannot be revoked independently, and the audit
-  trail cannot tell you which caller did what.
-- Set an expiry unless the integration genuinely outlives the plan for rotating it.
+- Keep it out of URLs and command arguments. Anything in a process's arguments is visible to
+  every other user on the machine via `ps`. Use an environment variable or a secrets file, as
+  the examples above do with `$OPENRESTO_API_KEY`.
+- Give each integration its own key. A shared key can't be revoked separately, and the audit
+  trail can't tell you which caller did what.
+- Set an expiry, unless the integration will outlast your plan for rotating the key.
 - Serve the API over HTTPS. The key is a bearer credential: anything that can read the header can
-  replay it until it is revoked.
+  reuse it until it is revoked.
 
 ## See also
 
-- [`openresto-cli`](https://github.com/karanshukla/openresto/tree/main/openresto-cli) — the maintained client, if a terminal or a
+- [`openresto-cli`](https://github.com/karanshukla/openresto/tree/main/openresto-cli): the maintained client, if a terminal or a
   scripted host will do. It handles profiles, hidden-input login and pretty/JSON output.
-- [API reference](/api/reference/) — every endpoint, parameter and response, generated from the API's OpenAPI document.
+- [API reference](/api/reference/): every endpoint, parameter and response, generated from the API's OpenAPI document.
