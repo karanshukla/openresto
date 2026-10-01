@@ -40,6 +40,8 @@ public class AdminCredential
     public string? PvqQuestion { get; set; }
     public string? PvqAnswerHash { get; set; }
     public string? PvqAnswerSalt { get; set; }
+    public int PvqFailedAttempts { get; set; }
+    public DateTime? PvqLockedUntil { get; set; }
 
     // ── Password reset ───────────────────────────────────────────────────────
     public string? ResetToken { get; set; }

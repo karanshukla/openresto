@@ -281,4 +281,91 @@ public class SecurityQuestionsServiceTests
         AdminCredential after = await db.AdminCredentials.SingleAsync();
         Assert.InRange(after.ResetTokenExpiry!.Value, before.AddMinutes(15).AddSeconds(-5), before.AddMinutes(15).AddSeconds(5));
     }
+
+    // ── VerifyAsync lockout ─────────────────────────────────────────────────────
+
+    private static async Task<SecurityQuestionsService> ServiceWithAnswerAsync(AppDbContext db, string answer)
+    {
+        AdminCredential cred = SeedCredential(db);
+        (SecurityQuestionsService svc, _) = CreateService(db, FakeCurrentUser.For(cred));
+        await svc.SetupAsync("Q?", answer);
+        return svc;
+    }
+
+    private static async Task AnswerWrongAsync(SecurityQuestionsService svc, int times)
+    {
+        for (int i = 0; i < times; i++)
+            await svc.VerifyAsync("admin@openresto.com", "wrong");
+    }
+
+    [Fact]
+    public async Task VerifyAsync_Allows_Attempts_Up_To_The_Limit()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Allows_Attempts_Up_To_The_Limit));
+        SecurityQuestionsService svc = await ServiceWithAnswerAsync(db, "answer");
+        await AnswerWrongAsync(svc, SecurityQuestionsService.MaxFailedAttempts - 1);
+
+        PvqVerifyOutcome outcome = await svc.VerifyAsync("admin@openresto.com", "answer");
+
+        Assert.Equal(PvqVerifyStatus.Success, outcome.Status);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_Locks_The_Account_After_Too_Many_Wrong_Answers()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Locks_The_Account_After_Too_Many_Wrong_Answers));
+        SecurityQuestionsService svc = await ServiceWithAnswerAsync(db, "answer");
+        await AnswerWrongAsync(svc, SecurityQuestionsService.MaxFailedAttempts);
+
+        PvqVerifyOutcome outcome = await svc.VerifyAsync("admin@openresto.com", "answer");
+
+        Assert.Equal(PvqVerifyStatus.LockedOut, outcome.Status);
+        Assert.Null(outcome.ResetToken);
+        Assert.Null((await db.AdminCredentials.SingleAsync()).ResetToken);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_Accepts_Answers_Again_Once_The_Lockout_Expires()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Accepts_Answers_Again_Once_The_Lockout_Expires));
+        SecurityQuestionsService svc = await ServiceWithAnswerAsync(db, "answer");
+        await AnswerWrongAsync(svc, SecurityQuestionsService.MaxFailedAttempts);
+        AdminCredential cred = await db.AdminCredentials.SingleAsync();
+        cred.PvqLockedUntil = DateTime.UtcNow.AddSeconds(-1);
+        await db.SaveChangesAsync();
+
+        PvqVerifyOutcome outcome = await svc.VerifyAsync("admin@openresto.com", "answer");
+
+        Assert.Equal(PvqVerifyStatus.Success, outcome.Status);
+        Assert.Null(cred.PvqLockedUntil);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_Correct_Answer_Resets_The_Failure_Count()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Correct_Answer_Resets_The_Failure_Count));
+        SecurityQuestionsService svc = await ServiceWithAnswerAsync(db, "answer");
+        await AnswerWrongAsync(svc, SecurityQuestionsService.MaxFailedAttempts - 1);
+        await svc.VerifyAsync("admin@openresto.com", "answer");
+        await AnswerWrongAsync(svc, SecurityQuestionsService.MaxFailedAttempts - 1);
+
+        PvqVerifyOutcome outcome = await svc.VerifyAsync("admin@openresto.com", "answer");
+
+        Assert.Equal(PvqVerifyStatus.Success, outcome.Status);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_Lockout_Is_Per_Account()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(VerifyAsync_Lockout_Is_Per_Account));
+        SecurityQuestionsService svc = await ServiceWithAnswerAsync(db, "answer");
+        AdminCredential other = SeedCredential(db, "other@openresto.com");
+        (SecurityQuestionsService otherSvc, _) = CreateService(db, FakeCurrentUser.For(other));
+        await otherSvc.SetupAsync("Q?", "other");
+        await AnswerWrongAsync(svc, SecurityQuestionsService.MaxFailedAttempts);
+
+        PvqVerifyOutcome outcome = await svc.VerifyAsync("other@openresto.com", "other");
+
+        Assert.Equal(PvqVerifyStatus.Success, outcome.Status);
+    }
 }
