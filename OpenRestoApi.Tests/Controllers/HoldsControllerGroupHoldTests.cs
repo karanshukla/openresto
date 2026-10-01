@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OpenRestoApi.Controllers;
@@ -26,7 +27,10 @@ public class HoldsControllerGroupHoldTests
         // TableAutoAssigner is sealed, so it is composed from mocked dependencies rather than mocked.
         TableAutoAssigner autoAssigner = new(_mockBookingRepository.Object, _mockHoldService.Object);
         _controller = new HoldsController(
-            _mockHoldService.Object, _mockPolicy.Object, autoAssigner, _mockTableGroupRepository.Object);
+            _mockHoldService.Object, _mockPolicy.Object, autoAssigner, _mockTableGroupRepository.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
     }
 
     private static readonly DateTime BookingDate = DateTime.UtcNow.Date.AddDays(1).AddHours(19);
@@ -155,7 +159,7 @@ public class HoldsControllerGroupHoldTests
             Assert.IsType<MessageResponse>(conflict.Value).Message);
         _mockHoldService.Verify(
             s => s.PlaceGroupHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()),
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()),
             Times.Never);
     }
 
@@ -209,7 +213,7 @@ public class HoldsControllerGroupHoldTests
             .ReturnsAsync(GroupWithMembers(8, (1, 1), (2, 1)));
         _mockHoldService.Setup(s => s.PlaceGroupHold(
                 It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()))
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()))
             .Returns((HoldResult?)null);
 
         var result = await _controller.PlaceHold(GroupRequest(seats: 6));
@@ -231,8 +235,8 @@ public class HoldsControllerGroupHoldTests
         int capturedSectionId = -1;
         _mockHoldService.Setup(s => s.PlaceGroupHold(
                 1, 10, It.IsAny<IReadOnlyList<int>>(), It.IsAny<int>(), BookingDate, It.IsAny<string?>(), 90))
-            .Callback<int, int, IReadOnlyList<int>, int, DateTime, string?, int>(
-                (_, _, members, sectionId, _, _, _) => { capturedMembers = members; capturedSectionId = sectionId; })
+            .Callback<int, int, IReadOnlyList<int>, int, DateTime, string?, int, string?>(
+                (_, _, members, sectionId, _, _, _, _) => { capturedMembers = members; capturedSectionId = sectionId; })
             .Returns(new HoldResult("group-hold-1", expiry));
 
         var result = await _controller.PlaceHold(GroupRequest(seats: 6));
@@ -267,9 +271,9 @@ public class HoldsControllerGroupHoldTests
         int capturedSectionId = -1;
         _mockHoldService.Setup(s => s.PlaceGroupHold(
                 It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()))
-            .Callback<int, int, IReadOnlyList<int>, int, DateTime, string?, int>(
-                (_, _, _, sectionId, _, _, _) => capturedSectionId = sectionId)
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()))
+            .Callback<int, int, IReadOnlyList<int>, int, DateTime, string?, int, string?>(
+                (_, _, _, sectionId, _, _, _, _) => capturedSectionId = sectionId)
             .Returns(new HoldResult("group-hold-1", BookingDate.AddMinutes(5)));
 
         var result = await _controller.PlaceHold(GroupRequest(seats: 6));
@@ -286,7 +290,7 @@ public class HoldsControllerGroupHoldTests
             .ReturnsAsync(GroupWithMembers(8, (1, 1), (2, 1)));
         _mockHoldService.Setup(s => s.PlaceGroupHold(
                 It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()))
+                It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()))
             .Returns(new HoldResult("group-hold-2", BookingDate.AddMinutes(5)));
 
         PlaceHoldRequest request = GroupRequest(seats: 6);
@@ -355,7 +359,7 @@ public class HoldsControllerGroupHoldTests
         SetupEligiblePolicy(RestaurantWithOneTable());
         _mockHoldService.Setup(s => s.PlaceAutoHold(
                 It.IsAny<int>(), It.IsAny<IReadOnlyList<TableCandidate>>(),
-                It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()))
+                It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()))
             .Returns((AutoAssignResult?)null);
 
         var result = await _controller.PlaceHold(AutoAssignRequest(seats: 4));

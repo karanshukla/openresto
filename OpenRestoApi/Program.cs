@@ -22,7 +22,7 @@ builder.WebHost.ConfigureKestrel(options =>
 // handler) and owns the {message: "..."} body shape for OpenRestoException types.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProjectDependencies();
+builder.Services.AddProjectDependencies(builder.Environment);
 builder.Services.AddCustomCors(builder.Configuration);
 builder.Services.AddCustomRateLimiting(builder.Environment);
 builder.Services.AddCustomAuthentication(builder.Configuration);

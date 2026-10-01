@@ -1,3 +1,5 @@
+using System.Net;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OpenRestoApi.Controllers;
@@ -23,7 +25,10 @@ public class HoldsControllerUnitTests
         // under test never invokes it; the auto-assign tests below substitute via the policy mock.
         TableAutoAssigner autoAssigner = new(new Mock<IBookingRepository>().Object, _mockHoldService.Object);
         _mockTableGroupRepository = new Mock<ITableGroupRepository>();
-        _controller = new HoldsController(_mockHoldService.Object, _mockPolicy.Object, autoAssigner, _mockTableGroupRepository.Object);
+        _controller = new HoldsController(_mockHoldService.Object, _mockPolicy.Object, autoAssigner, _mockTableGroupRepository.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
     }
 
     private readonly Mock<ITableGroupRepository> _mockTableGroupRepository;
@@ -99,8 +104,24 @@ public class HoldsControllerUnitTests
         Assert.Equal("taken.", msg.Message);
         // HoldService must not be touched when policy already rejected.
         _mockHoldService.Verify(
-            s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()),
+            s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task PlaceHold_KeysTheHoldToTheCallersIp()
+    {
+        var restaurant = new Restaurant { Id = 1, DefaultBookingDurationMinutes = 60 };
+        var date = DateTime.UtcNow.AddDays(1);
+        _mockPolicy.Setup(p => p.ValidateAsync(1, 1, date, It.IsAny<int>()))
+            .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, date));
+        _mockHoldService.Setup(s => s.PlaceHold(1, 1, 1, date, null, It.IsAny<int>(), "203.0.113.7"))
+            .Returns(new HoldResult("h1", date));
+        _controller.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.7");
+
+        var result = await _controller.PlaceHold(ExplicitRequest(date));
+
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -146,7 +167,7 @@ public class HoldsControllerUnitTests
         ConflictObjectResult conflict = Assert.IsType<ConflictObjectResult>(result);
         Assert.Equal(ErrorCodes.TableWalkInOnly, Assert.IsType<MessageResponse>(conflict.Value).Code);
         _mockHoldService.Verify(
-            s => s.PlaceGroupHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()),
+            s => s.PlaceGroupHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()),
             Times.Never);
     }
 
@@ -157,7 +178,7 @@ public class HoldsControllerUnitTests
         var date = DateTime.UtcNow.AddDays(1);
         _mockPolicy.Setup(p => p.ValidateAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, date));
-        _mockHoldService.Setup(s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()))
+        _mockHoldService.Setup(s => s.PlaceHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()))
             .Returns((HoldResult?)null);
 
         var result = await _controller.PlaceHold(ExplicitRequest(date));

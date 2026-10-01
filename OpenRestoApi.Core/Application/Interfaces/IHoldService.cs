@@ -17,7 +17,8 @@ public record HoldEntry(
     DateTime ExpiresAt,
     int? TableGroupId = null,
     IReadOnlyList<int>? MemberTableIds = null,
-    int DurationMinutes = 60
+    int DurationMinutes = 60,
+    string? ClientKey = null
 )
 {
     /// <summary>True when this hold reserves a combinable-table group rather than one table.</summary>
@@ -67,9 +68,15 @@ public record AutoAssignResult(
     public IReadOnlyList<int> Members => MemberTableIds ?? Array.Empty<int>();
 }
 
+/// <summary>
+/// The place methods take the caller's <c>clientKey</c> (its IP) and throw a
+/// <c>ConflictException</c> with <c>hold.client_limit</c> once that client already holds the
+/// maximum number of tables, not counting the <c>currentHoldId</c> being replaced. A null key is
+/// not limited.
+/// </summary>
 public interface IHoldService
 {
-    HoldResult? PlaceHold(int restaurantId, int tableId, int sectionId, DateTime bookingDate, string? currentHoldId = null, int durationMinutes = 60);
+    HoldResult? PlaceHold(int restaurantId, int tableId, int sectionId, DateTime bookingDate, string? currentHoldId = null, int durationMinutes = 60, string? clientKey = null);
 
     /// <summary>
     /// Place a hold on every member table of a combinable group as a single atomic entry, so the
@@ -84,7 +91,8 @@ public interface IHoldService
         int sectionId,
         DateTime bookingDate,
         string? currentHoldId = null,
-        int durationMinutes = 60);
+        int durationMinutes = 60,
+        string? clientKey = null);
 
     void ReleaseHold(string holdId);
     /// <summary>
@@ -113,5 +121,6 @@ public interface IHoldService
         IReadOnlyList<TableCandidate> candidates,
         DateTime bookingDate,
         string? currentHoldId = null,
-        int durationMinutes = 60);
+        int durationMinutes = 60,
+        string? clientKey = null);
 }

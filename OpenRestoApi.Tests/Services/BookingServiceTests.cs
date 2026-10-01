@@ -818,7 +818,7 @@ public partial class BookingServiceTests
             .Returns(new HoldEntry("hold-T2", TableId: 2, SectionId: 1, RestaurantId: 1, Date: date, ExpiresAt: DateTime.UtcNow.AddMinutes(5)));
         holdMock.Setup(h => h.IsTableHeld(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>())).Returns(false);
         holdMock
-            .Setup(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "hold-T2", It.IsAny<int>()))
+            .Setup(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "hold-T2", It.IsAny<int>(), It.IsAny<string?>()))
             .Returns(new AutoAssignResult("hold-fresh", DateTime.UtcNow.AddMinutes(5), 1, 1));
         holdMock.Setup(h => h.ReleaseHold(It.IsAny<string>()));
 
@@ -842,7 +842,7 @@ public partial class BookingServiceTests
 
         // The candidate search ran and assigned Table 1 (fresh hold), not the already-booked Table 2.
         Assert.Equal(1, result.TableId);
-        holdMock.Verify(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "hold-T2", It.IsAny<int>()), Times.Once);
+        holdMock.Verify(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "hold-T2", It.IsAny<int>(), It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
@@ -859,7 +859,7 @@ public partial class BookingServiceTests
         holdMock.Setup(h => h.GetHold("stale-hold")).Returns((HoldEntry?)null);
         holdMock.Setup(h => h.IsTableHeld(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>())).Returns(false);
         holdMock
-            .Setup(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "stale-hold", It.IsAny<int>()))
+            .Setup(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "stale-hold", It.IsAny<int>(), It.IsAny<string?>()))
             .Returns(new AutoAssignResult("hold-fresh", DateTime.UtcNow.AddMinutes(5), 1, 1));
         holdMock.Setup(h => h.ReleaseHold(It.IsAny<string>()));
 
@@ -882,7 +882,7 @@ public partial class BookingServiceTests
         });
 
         Assert.Equal(1, result.TableId);
-        holdMock.Verify(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "stale-hold", It.IsAny<int>()), Times.Once);
+        holdMock.Verify(h => h.PlaceAutoHold(1, It.IsAny<IReadOnlyList<TableCandidate>>(), date, "stale-hold", It.IsAny<int>(), It.IsAny<string?>()), Times.Once);
     }
 
     [Theory]
@@ -1722,7 +1722,7 @@ public partial class BookingServiceTests
         Assert.Equal(2, result.TableId); // adopted from the hold
         Assert.Equal(1, result.SectionId);
         // The candidate path must not have been invoked.
-        holdMock.Verify(h => h.PlaceAutoHold(It.IsAny<int>(), It.IsAny<IReadOnlyList<TableCandidate>>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>()), Times.Never);
+        holdMock.Verify(h => h.PlaceAutoHold(It.IsAny<int>(), It.IsAny<IReadOnlyList<TableCandidate>>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()), Times.Never);
     }
 
     [Fact]

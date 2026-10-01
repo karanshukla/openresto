@@ -418,6 +418,7 @@
     "hold": {
       "ambiguous_group_and_table": "Geben Sie entweder TableId oder TableGroupId an, nicht beides.",
       "auto_assign_seats_required": "Für die automatische Zuweisung ist die Personenzahl erforderlich, damit der Server einen passenden Tisch wählen kann.",
+      "client_limit": "Von Ihrer Verbindung aus sind zu viele Tische vorgemerkt. Bitte versuchen Sie es in ein paar Minuten erneut.",
       "group_seats_required": "Für eine Gruppenreservierung ist die Personenzahl erforderlich, damit der Server die kombinierte Kapazität prüfen kann.",
       "unavailable": "Reservierung nicht verfügbar."
     },

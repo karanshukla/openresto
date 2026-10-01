@@ -138,8 +138,9 @@ public static class ServiceCollectionExtensions
     [ExternalAccessAllowed]
     internal const int BookingLookupLimit = 10;
 
-    /// <summary>Ceiling every policy is raised to under <c>ASPNETCORE_ENVIRONMENT=Testing</c>, so
-    /// the Playwright suite can drive hundreds of requests from one address.</summary>
+    /// <summary>Ceiling every policy, and the per-client hold cap, is raised to under
+    /// <c>ASPNETCORE_ENVIRONMENT=Testing</c>, so the Playwright suite can drive hundreds of
+    /// requests from one address.</summary>
     [OnlyAccessibleBy("OpenRestoApi.Extensions.*")]
     [OnlyAccessibleBy("OpenRestoApi.Tests.Extensions.ServiceCollectionExtensionsTests")]
     [ExternalAccessAllowed]
@@ -333,7 +334,7 @@ public static class ServiceCollectionExtensions
     /// before reporting it unreachable — the admin screen blocks on them, so this is short.</summary>
     private static readonly TimeSpan WellKnownProbeTimeout = TimeSpan.FromSeconds(5);
 
-    public static IServiceCollection AddProjectDependencies(this IServiceCollection services)
+    public static IServiceCollection AddProjectDependencies(this IServiceCollection services, IHostEnvironment env)
     {
         services.Configure<ForwardedHeadersOptions>(options =>
         {
@@ -352,7 +353,8 @@ public static class ServiceCollectionExtensions
 
         // HoldService must be Singleton — the in-memory dictionary must survive across requests
         services.AddSingleton<ISystemClock, SystemClock>();
-        services.AddSingleton<IHoldService, HoldService>();
+        int maxHoldsPerClient = env.IsEnvironment("Testing") ? TestingLimit : HoldService.MaxHoldsPerClient;
+        services.AddSingleton<IHoldService>(sp => new HoldService(sp.GetRequiredService<ISystemClock>(), maxHoldsPerClient));
         services.AddScoped<IHoldPolicyService, HoldPolicyService>();
         services.AddScoped<TableAutoAssigner>();
 

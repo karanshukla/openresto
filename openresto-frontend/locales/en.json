@@ -418,6 +418,7 @@
     "hold": {
       "ambiguous_group_and_table": "Specify either TableId or TableGroupId, not both.",
       "auto_assign_seats_required": "Seats is required for auto-assign so the server can pick a table that fits your party.",
+      "client_limit": "Too many tables are on hold from your connection. Please try again in a few minutes.",
       "group_seats_required": "Seats is required for a group hold so the server can validate combined capacity.",
       "unavailable": "Hold not available."
     },

@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using CustomAccessibility.Attributes;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Infrastructure.Holds;
 
@@ -16,21 +18,30 @@ namespace OpenRestoApi.Infrastructure.Holds;
 [OnlyAccessibleBy("OpenRestoApi.Tests.Services.AvailabilityServiceTests")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Services.TableAutoAssignerTests")]
 [ExternalAccessAllowed]
-internal class HoldService(ISystemClock clock) : IHoldService
+internal class HoldService(ISystemClock clock, int maxHoldsPerClient = HoldService.MaxHoldsPerClient) : IHoldService
 {
     private const int _holdDurationMinutes = 5;
     public static readonly TimeSpan HoldDuration = TimeSpan.FromMinutes(_holdDurationMinutes);
 
+    /// <summary>Active holds one client (IP) may have at once. A guest replaces their hold as
+    /// they change table or time, so a real booking only ever needs one; the rest is headroom
+    /// for several guests behind one address.</summary>
+    /// <seealso>HoldServiceTests.PlaceHold_AllowsAClientUpToItsHoldLimit</seealso>
+    /// <seealso>HoldServiceTests.PlaceHold_RejectsAClientOverItsHoldLimit</seealso>
+    public const int MaxHoldsPerClient = 5;
+
     private readonly ISystemClock _clock = clock;
+    private readonly int _maxHoldsPerClient = maxHoldsPerClient;
     private readonly ConcurrentDictionary<string, HoldEntry> _holds = new();
 
     private readonly object _placeLock = new();
 
-    public HoldResult? PlaceHold(int restaurantId, int tableId, int sectionId, DateTime bookingDate, string? currentHoldId = null, int durationMinutes = 60)
+    public HoldResult? PlaceHold(int restaurantId, int tableId, int sectionId, DateTime bookingDate, string? currentHoldId = null, int durationMinutes = 60, string? clientKey = null)
     {
         lock (_placeLock)
         {
             Cleanup();
+            RejectIfClientAtLimit(clientKey, currentHoldId);
 
             // Pessimistic: assume held; only proceed if the sole blocker is the caller's own current hold
             if (IsTableHeld(tableId, bookingDate, excludeHoldId: currentHoldId, durationMinutes: durationMinutes))
@@ -47,7 +58,7 @@ internal class HoldService(ISystemClock clock) : IHoldService
             string holdId = Guid.NewGuid().ToString("N");
             DateTime expiresAt = _clock.UtcNow.Add(HoldDuration);
             var entry = new HoldEntry(holdId, tableId, sectionId, restaurantId, bookingDate, expiresAt,
-                DurationMinutes: durationMinutes);
+                DurationMinutes: durationMinutes, ClientKey: clientKey);
 
             _holds[holdId] = entry;
 
@@ -63,13 +74,15 @@ internal class HoldService(ISystemClock clock) : IHoldService
         int sectionId,
         DateTime bookingDate,
         string? currentHoldId = null,
-        int durationMinutes = 60)
+        int durationMinutes = 60,
+        string? clientKey = null)
     {
         // The all-members-free check + the place must share the placement lock so two concurrent
         // group/individual submissions can't both observe a member as free and grab it (TOCTOU).
         lock (_placeLock)
         {
             Cleanup();
+            RejectIfClientAtLimit(clientKey, currentHoldId);
 
             // A group hold requires every member table free (no overlapping hold other than the
             // caller's own current hold). Any member already held → reject.
@@ -99,7 +112,8 @@ internal class HoldService(ISystemClock clock) : IHoldService
                 expiresAt,
                 TableGroupId: tableGroupId,
                 MemberTableIds: memberTableIds,
-                DurationMinutes: durationMinutes);
+                DurationMinutes: durationMinutes,
+                ClientKey: clientKey);
 
             _holds[holdId] = entry;
 
@@ -112,7 +126,8 @@ internal class HoldService(ISystemClock clock) : IHoldService
         IReadOnlyList<TableCandidate> candidates,
         DateTime bookingDate,
         string? currentHoldId = null,
-        int durationMinutes = 60)
+        int durationMinutes = 60,
+        string? clientKey = null)
     {
         // The candidate scan + the place must happen under the same lock so two concurrent
         // "any" submissions can't both observe the same table as free and grab it (TOCTOU).
@@ -121,6 +136,7 @@ internal class HoldService(ISystemClock clock) : IHoldService
         lock (_placeLock)
         {
             Cleanup();
+            RejectIfClientAtLimit(clientKey, currentHoldId);
 
             foreach (TableCandidate candidate in candidates)
             {
@@ -159,7 +175,8 @@ internal class HoldService(ISystemClock clock) : IHoldService
                         groupExpiresAt,
                         TableGroupId: candidate.TableGroupId,
                         MemberTableIds: candidate.Members,
-                        DurationMinutes: durationMinutes);
+                        DurationMinutes: durationMinutes,
+                        ClientKey: clientKey);
 
                     _holds[groupHoldId] = groupEntry;
 
@@ -188,7 +205,7 @@ internal class HoldService(ISystemClock clock) : IHoldService
                 string singleHoldId = Guid.NewGuid().ToString("N");
                 DateTime singleExpiresAt = _clock.UtcNow.Add(HoldDuration);
                 var entry = new HoldEntry(singleHoldId, candidate.TableId, candidate.SectionId, restaurantId, bookingDate, singleExpiresAt,
-                    DurationMinutes: durationMinutes);
+                    DurationMinutes: durationMinutes, ClientKey: clientKey);
 
                 _holds[singleHoldId] = entry;
 
@@ -253,6 +270,20 @@ internal class HoldService(ISystemClock clock) : IHoldService
     {
         Cleanup();
         return _holds.Count;
+    }
+
+    private void RejectIfClientAtLimit(string? clientKey, string? currentHoldId)
+    {
+        if (clientKey == null)
+        {
+            return;
+        }
+        int held = _holds.Values.Count(h => h.ClientKey == clientKey && h.HoldId != currentHoldId);
+        if (held >= _maxHoldsPerClient)
+        {
+            throw new ConflictException("Too many tables are on hold from your connection. Please try again in a few minutes.")
+            { Code = ErrorCodes.HoldClientLimit };
+        }
     }
 
     private void Cleanup()
