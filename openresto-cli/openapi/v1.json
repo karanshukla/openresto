@@ -4073,12 +4073,16 @@
             "format": "date-time"
           },
           "customerEmail": {
+            "maxLength": 254,
+            "minLength": 0,
             "type": [
               "null",
               "string"
             ]
           },
           "customerName": {
+            "maxLength": 100,
+            "minLength": 0,
             "type": [
               "null",
               "string"
@@ -4099,6 +4103,8 @@
             "type": "boolean"
           },
           "specialRequests": {
+            "maxLength": 500,
+            "minLength": 0,
             "type": [
               "null",
               "string"

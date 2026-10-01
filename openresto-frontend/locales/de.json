@@ -362,6 +362,7 @@
       "ambiguous_table_selection": "Geben Sie sowohl TableId als auch SectionId an – oder keines von beiden für die automatische Zuweisung.",
       "cancel_email_required": "Für die Stornierung einer Buchung ist eine E-Mail-Adresse erforderlich.",
       "email_fields_required": "Betreff und Nachricht sind erforderlich.",
+      "email_invalid": "Diese E-Mail-Adresse scheint nicht zu stimmen.",
       "email_send_failed": "Senden fehlgeschlagen: {{detail}}",
       "invalid_table_for_restaurant": "Ungültiger Tisch für dieses Restaurant.",
       "lookup_email_required": "Für die Suche nach einer Buchung ist eine E-Mail-Adresse erforderlich.",

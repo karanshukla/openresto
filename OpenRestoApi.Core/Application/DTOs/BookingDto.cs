@@ -30,12 +30,15 @@ public class BookingDto
 
     public int RestaurantId { get; set; }
     public DateTime Date { get; set; }
+    [StringLength(ContactLimits.MaxEmailLength)]
     public string? CustomerEmail { get; set; }
+    [StringLength(BookingLimits.MaxCustomerNameLength)]
     public string? CustomerName { get; set; }
     /// <summary>Party size. Bounded to [<see cref="BookingLimits.MinSeats"/>, <see cref="BookingLimits.MaxSeats"/>] on create.</summary>
     [Range(BookingLimits.MinSeats, BookingLimits.MaxSeats)]
     public int Seats { get; set; }
     public bool isHeld { get; set; }
+    [StringLength(BookingLimits.MaxSpecialRequestsLength)]
     public string? SpecialRequests { get; set; }
     public string? BookingRef { get; set; }
     public DateTime? EndTime { get; set; }
