@@ -2,7 +2,7 @@
 title: Upgrading
 description: Move to a new OpenResto release safely.
 sidebar:
-  order: 7
+  order: 8
 ---
 
 Database migrations run automatically when the backend starts, so an upgrade is pulling the new

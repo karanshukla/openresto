@@ -1,7 +1,7 @@
 ---
 title: Backup and restore
 sidebar:
-  order: 8
+  order: 9
 ---
 
 OpenResto is designed for zero-dependency self-hosting. All persistent data lives in Docker volumes — no external database or storage service to back up separately.

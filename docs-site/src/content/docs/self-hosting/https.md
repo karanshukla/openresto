@@ -2,7 +2,7 @@
 title: HTTPS and reverse proxies
 description: Terminate TLS in front of OpenResto, or use the bundled VPS nginx.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 The release stack serves plain HTTP on `HOST_PORT`. Guests and admins should only ever reach it
