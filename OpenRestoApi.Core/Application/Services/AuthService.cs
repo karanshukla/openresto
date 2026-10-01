@@ -40,7 +40,7 @@ public class AuthService(
 
         AttributeTo(cred);
         Describe(AuditActions.AuthLogin, cred, "Signed in");
-        return _jwtTokenService.Generate(cred.Id, cred.Email, cred.Role);
+        return Mint(cred);
     }
 
     /// <summary>
@@ -61,19 +61,21 @@ public class AuthService(
         return cred == null ? null : UserMapper.ToCurrentUserDto(cred);
     }
 
-    public virtual async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
+    public virtual async Task<string?> ChangePasswordAsync(string currentPassword, string newPassword)
     {
         UserFields.ValidatePassword(newPassword);
         AdminCredential? cred = await ResolveCurrentUserAsync();
         if (cred == null || !CredentialHelper.VerifyPassword(cred, currentPassword, _passwordService))
-            return false;
+            return null;
         string previousHash = cred.PasswordHash;
         (cred.PasswordHash, cred.PasswordSalt) = _passwordService.Hash(newPassword);
+        cred.RevokeSessions();
         await _credentialRepository.SaveChangesAsync();
 
         _audit.RecordChange("passwordHash", previousHash, cred.PasswordHash);
         Describe(AuditActions.AuthPasswordChange, cred, $"Changed the password for {cred.Email}");
-        return true;
+        // Every other session is now refused; this one carries on under a fresh token.
+        return Mint(cred);
     }
 
     public virtual async Task<string?> ChangeEmailAsync(string currentPassword, string newEmail)
@@ -97,7 +99,7 @@ public class AuthService(
         Describe(AuditActions.AuthEmailChange, cred,
             $"Changed the sign-in email from {previousEmail} to {normalizedEmail}");
         // Re-mint so the token's email claim matches the row it identifies.
-        return _jwtTokenService.Generate(cred.Id, cred.Email, cred.Role);
+        return Mint(cred);
     }
 
     public virtual async Task<bool> ResetPasswordAsync(string resetToken, string newPassword)
@@ -110,6 +112,7 @@ public class AuthService(
         (cred.PasswordHash, cred.PasswordSalt) = _passwordService.Hash(newPassword);
         cred.ResetToken = null;
         cred.ResetTokenExpiry = null;
+        cred.RevokeSessions();
         await _credentialRepository.SaveChangesAsync();
 
         // The reset arrives with a token rather than a session, so the actor is whoever the token
@@ -119,6 +122,20 @@ public class AuthService(
         Describe(AuditActions.AuthPasswordReset, cred, $"Reset the password for {cred.Email}");
         return true;
     }
+
+    public virtual async Task LogoutAsync()
+    {
+        if (_currentUser.IsApiKeyAuthenticated)
+            return;
+        AdminCredential? cred = await ResolveCurrentUserAsync();
+        if (cred == null)
+            return;
+        cred.RevokeSessions();
+        await _credentialRepository.SaveChangesAsync();
+    }
+
+    private string Mint(AdminCredential cred)
+        => _jwtTokenService.Generate(cred.Id, cred.Email, cred.Role, cred.SessionVersion);
 
     private void AttributeTo(AdminCredential cred)
         => _audit.AttributeTo(cred.Id, cred.Email, cred.DisplayName, cred.Role);

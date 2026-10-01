@@ -11,9 +11,11 @@ namespace OpenRestoApi.Core.Application.Services;
 /// <inheritdoc cref="IJwtTokenService" />
 public sealed class JwtTokenService(IConfiguration config) : IJwtTokenService
 {
+    public const string SessionVersionClaim = "session_version";
+
     private readonly IConfiguration _config = config;
 
-    public string Generate(int userId, string email, string role)
+    public string Generate(int userId, string email, string role, int sessionVersion)
     {
         string? configKey = _config["Jwt:Key"];
         string jwtKey = string.IsNullOrWhiteSpace(configKey)
@@ -32,6 +34,7 @@ public sealed class JwtTokenService(IConfiguration config) : IJwtTokenService
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString(CultureInfo.InvariantCulture)),
                 new Claim(ClaimTypes.Email, email),
                 new Claim(ClaimTypes.Role, role),
+                new Claim(SessionVersionClaim, sessionVersion.ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer32),
             ],
             expires: DateTime.UtcNow.AddDays(30),
             signingCredentials: credentials);

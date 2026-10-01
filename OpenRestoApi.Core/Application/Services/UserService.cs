@@ -132,6 +132,7 @@ public class UserService(
         (user.PasswordHash, user.PasswordSalt) = _passwordService.Hash(req.NewPassword);
         user.ResetToken = null;
         user.ResetTokenExpiry = null;
+        user.RevokeSessions();
         await _credentialRepository.SaveChangesAsync();
 
         _audit.RecordChange("passwordHash", previousHash, user.PasswordHash);

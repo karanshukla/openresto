@@ -359,6 +359,7 @@ public class UserServiceTests
         Assert.True(new PasswordService().Verify("issued-by-owner", after.PasswordHash, after.PasswordSalt));
         Assert.Null(after.ResetToken);
         Assert.Null(after.ResetTokenExpiry);
+        Assert.Equal(1, after.SessionVersion);
     }
 
     [Fact]

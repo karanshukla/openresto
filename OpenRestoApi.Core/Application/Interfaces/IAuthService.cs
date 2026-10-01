@@ -16,7 +16,11 @@ public interface IAuthService
     /// <summary>The signed-in caller's identity, or null when the token names no live account.</summary>
     Task<CurrentUserDto?> GetCurrentUserAsync();
 
-    Task<bool> ChangePasswordAsync(string currentPassword, string newPassword);
+    /// <summary>Returns a fresh token for the caller, or null when the current password is wrong.</summary>
+    Task<string?> ChangePasswordAsync(string currentPassword, string newPassword);
     Task<string?> ChangeEmailAsync(string currentPassword, string newEmail);
     Task<bool> ResetPasswordAsync(string resetToken, string newPassword);
+
+    /// <summary>Ends every session of the signed-in account. A no-op without one.</summary>
+    Task LogoutAsync();
 }

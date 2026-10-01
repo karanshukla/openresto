@@ -223,6 +223,19 @@ public class UsersControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
+    public async Task Session_StopsWorking_OnceAnOwnerResetsThePassword()
+    {
+        AdminCredential target = await SeedUserAsync("reset-session@test.com", UserRoles.Manager);
+        HttpClient session = _factory.CreateClientWithToken(
+            TestWebAppFactory.GenerateJwt(target.Id, target.Email, target.Role));
+        Assert.Equal(HttpStatusCode.OK, (await session.GetAsync("/api/admin/overview")).StatusCode);
+
+        await OwnerClient().PostAsJsonAsync($"/api/admin/users/{target.Id}/reset-password", new { newPassword = "owner-issued-pw" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await session.GetAsync("/api/admin/overview")).StatusCode);
+    }
+
+    [Fact]
     public async Task ResetPassword_LetsTheUserLogInWithTheNewPassword()
     {
         HttpClient owner = OwnerClient();
