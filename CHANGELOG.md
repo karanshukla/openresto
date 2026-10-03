@@ -10,6 +10,8 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-03
+
 ### Added
 
 - **Documentation site** at [docs.openres.to](https://docs.openres.to), built from `docs-site/` in this repository. It adds a self-hosting guide (install, configuration reference, HTTPS, email, push notifications, admin recovery, upgrading, troubleshooting) and renders the API reference from the committed OpenAPI contract. Setup guides cover VAPID keys, which URL setting does what, and a native app overview.
@@ -17,6 +19,15 @@ How each feature behaves, its API fields and its error codes are in
 ### Changed
 
 - The feature reference, API guide, native app guide and backup guide moved from `docs/` into the documentation site. The API Keys screen's default guide link now points at the site.
+
+### Security
+
+- Sessions end on password change, password reset and sign-out, and the account behind a session is resolved on every request.
+- The security question locks after repeated wrong answers.
+- A booking can only take a table that belongs to the location being booked.
+- A guest booking's email is validated and its free-text fields are capped.
+- One client can only hold a limited number of tables at once.
+- The docs site overrides `form-data` to 4.0.6, and the deploy's SSH action is pinned to a commit.
 
 ## [2.3.1] - 2026-10-01
 
@@ -423,4 +434,5 @@ Hello! Thanks for reading, and for the 50 stars on GitHub! This release builds o
 [2.2.0]: https://github.com/karanshukla/openresto/releases/tag/v2.2.0
 [2.3.0]: https://github.com/karanshukla/openresto/releases/tag/v2.3.0
 [2.3.1]: https://github.com/karanshukla/openresto/releases/tag/v2.3.1
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/karanshukla/openresto/compare/v2.3.1...v2.4.0
