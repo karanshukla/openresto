@@ -1,4 +1,9 @@
-import { SHEET_CLAIM_DISTANCE, shouldClaimSheetDrag } from "@/utils/panelMotion";
+import {
+  HANDLE_CLAIM_DISTANCE,
+  SHEET_CLAIM_DISTANCE,
+  shouldClaimHandleDrag,
+  shouldClaimSheetDrag,
+} from "@/utils/panelMotion";
 
 /**
  * Which drags the bottom sheet takes away from the list inside it. `shouldDismissSheet` is
@@ -40,5 +45,23 @@ describe("shouldClaimSheetDrag", () => {
 
   it("takes a diagonal one that is still mostly vertical", () => {
     expect(shouldClaimSheetDrag(40, 20, atTop)).toBe(true);
+  });
+});
+
+describe("shouldClaimHandleDrag", () => {
+  it("leaves a drag exactly at the claim distance alone, so a tap stays a tap", () => {
+    expect(shouldClaimHandleDrag(HANDLE_CLAIM_DISTANCE, 0)).toBe(false);
+  });
+
+  it("takes one a single pixel past it", () => {
+    expect(shouldClaimHandleDrag(HANDLE_CLAIM_DISTANCE + 1, 0)).toBe(true);
+  });
+
+  it("never takes an upward drag", () => {
+    expect(shouldClaimHandleDrag(-40, 0)).toBe(false);
+  });
+
+  it("never takes a mostly sideways drag", () => {
+    expect(shouldClaimHandleDrag(20, 40)).toBe(false);
   });
 });

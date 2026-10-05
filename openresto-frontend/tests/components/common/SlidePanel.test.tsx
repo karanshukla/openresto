@@ -3,7 +3,15 @@
  */
 import React from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react-native";
-import { Platform, StyleSheet, Text } from "react-native";
+import {
+  PanResponder,
+  Platform,
+  StyleSheet,
+  Text,
+  type GestureResponderEvent,
+  type PanResponderCallbacks,
+  type PanResponderGestureState,
+} from "react-native";
 import SlidePanel from "@/components/common/SlidePanel";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
@@ -121,6 +129,57 @@ describe("SlidePanel", () => {
       expect(
         screen.getByTestId("result-panel").props.onMoveShouldSetResponderCapture
       ).toBeDefined();
+    });
+
+    /**
+     * The browser scrolls the body natively and never hands it the responder, so the bubble
+     * phase is asked too. Ungated, a mid-booking "scroll back up" moved the sheet and the list
+     * under the same finger.
+     */
+    describe("who owns a downward drag on the body", () => {
+      const drag = { dy: 40, dx: 0 } as PanResponderGestureState;
+      const event = {} as GestureResponderEvent;
+      let created: PanResponderCallbacks[];
+      const scrollBodyTo = (y: number) =>
+        fireEvent.scroll(screen.getByTestId("result-panel-body"), {
+          nativeEvent: { contentOffset: { y } },
+        });
+      /** The body's responder is the one that asks in the capture phase; the handle's does not. */
+      const claims = () => {
+        const body = created.find((c) => c.onMoveShouldSetPanResponderCapture)!;
+        return [
+          body.onMoveShouldSetPanResponderCapture!(event, drag),
+          body.onMoveShouldSetPanResponder!(event, drag),
+        ];
+      };
+
+      beforeEach(() => {
+        created = [];
+        const create = PanResponder.create.bind(PanResponder);
+        jest.spyOn(PanResponder, "create").mockImplementation((config) => {
+          created.push(config);
+          return create(config);
+        });
+      });
+      afterEach(() => jest.restoreAllMocks());
+
+      beforeEach(() => {
+        renderWithProviders(
+          <SlidePanel variant="sheet" onDismiss={jest.fn()} accessibilityLabel="Booking result">
+            <Text>Panel content</Text>
+          </SlidePanel>
+        );
+      });
+
+      it("is the sheet's while the body is at its top", () => {
+        scrollBodyTo(0);
+        expect(claims()).toEqual([true, true]);
+      });
+
+      it("is the list's once the body has scrolled, in both phases", () => {
+        scrollBodyTo(1);
+        expect(claims()).toEqual([false, false]);
+      });
     });
 
     // The gate reads the scroll position, so the body has to report it.

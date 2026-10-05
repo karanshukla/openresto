@@ -47,3 +47,17 @@ export const SHEET_CLAIM_DISTANCE = 8;
 export function shouldClaimSheetDrag(dy: number, dx: number, bodyAtTop: boolean): boolean {
   return bodyAtTop && dy > SHEET_CLAIM_DISTANCE && Math.abs(dy) > Math.abs(dx);
 }
+
+/** A tap on the handle wobbles a few pixels; past this it is a drag. */
+export const HANDLE_CLAIM_DISTANCE = 4;
+
+/**
+ * Whether the sheet's handle owns a drag. Nothing under the handle scrolls, so unlike
+ * `shouldClaimSheetDrag` it needs no scroll position: any mostly-downward drag is the sheet.
+ *
+ * @see [panelMotion.test.ts](../tests/utils/panelMotion.test.ts) — pins that it takes a drag
+ * whatever the body's scroll, and leaves upward and sideways ones alone.
+ */
+export function shouldClaimHandleDrag(dy: number, dx: number): boolean {
+  return dy > HANDLE_CLAIM_DISTANCE && Math.abs(dy) > Math.abs(dx);
+}
