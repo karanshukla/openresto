@@ -83,9 +83,14 @@ export function NativeSheet({
       accessibilityLabel={accessibilityLabel}
     >
       {/* The sheet's own scroller, not a plain view: sized to its content the sheet stops
-          growing at the cap, and past it the body has to scroll inside rather than be clipped. */}
+          growing at the cap, and past it the body has to scroll inside rather than be clipped.
+          No bounce: at the top a downward drag belongs to the sheet, and iOS would also start
+          rubber-banding the list, which gorhom then snaps back every frame, so the booking
+          jitters under the finger dragging the sheet. Android already gets overScrollMode
+          "never" from gorhom; `bounces` is iOS-only. */}
       <BottomSheetScrollView
         testID={testID}
+        bounces={false}
         contentContainerStyle={{ paddingBottom: insets.bottom }}
       >
         {children}

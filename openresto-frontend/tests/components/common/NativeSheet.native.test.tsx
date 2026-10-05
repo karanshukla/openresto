@@ -65,6 +65,16 @@ describe("NativeSheet", () => {
     expect(sheetProps().enablePanDownToClose).toBe(true);
   });
 
+  /**
+   * At the top of the body a downward drag is the sheet's. A bouncing list would rubber-band
+   * under the same finger, and the sheet would snap it back every frame.
+   */
+  it("keeps the body from bouncing while the sheet is dragged", () => {
+    renderSheet();
+
+    expect(screen.getByTestId("sheet-body").props.bounces).toBe(false);
+  });
+
   it("reports a dismissal upward exactly once", () => {
     const onDismiss = renderSheet();
 
