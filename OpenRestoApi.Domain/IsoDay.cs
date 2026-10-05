@@ -1,4 +1,4 @@
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// ISO 8601 day numbers (1=Monday … 7=Sunday), the format every day-list column in the

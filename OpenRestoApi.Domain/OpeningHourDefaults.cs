@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// The service window a restaurant falls back to when it has no usable hours of its own.

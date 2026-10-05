@@ -1,8 +1,8 @@
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// Centralized bounds for the optional contact fields that exist at two levels — per-restaurant
-/// (<see cref="Domain.Restaurant"/>) and global (<see cref="Domain.BrandSettings"/>) — so the
+/// (<see cref="Restaurant"/>) and global (<see cref="BrandSettings"/>) — so the
 /// entity annotations, service guards, and frontend inputs all agree on a single source of truth.
 /// </summary>
 public static class ContactLimits

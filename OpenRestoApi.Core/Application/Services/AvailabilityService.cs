@@ -30,7 +30,7 @@ public sealed class AvailabilityService(
         DateTime localDate = bookingDate.Date;
         int isoDay = IsoDay.Of(localDate);
 
-        if (WalkInHelper.IsWalkInOnlyOn(restaurant, isoDay) || !ServiceWindowHelper.IsOpenOn(restaurant, isoDay))
+        if (WalkInPolicy.IsWalkInOnlyOn(restaurant, isoDay) || !ServiceWindowHelper.IsOpenOn(restaurant, isoDay))
         {
             return NoSlots(restaurantId, bookingDate);
         }
@@ -135,6 +135,9 @@ public sealed class AvailabilityService(
             .Where(g => !g.HasWalkInOnlyMember() && restaurant.CanSeat(g.CombinedSeats, seats))
             .ToList();
 
+    /// <summary>
+    /// 
+    /// </summary>
     /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_RefusesALargePartyAGapThatOnlyFitsTheSmallerTurnTime</seealso>
     private bool IsTableFree(int tableId, UnitReservations reservations, DateTime slotUtc, int durationMinutes)
         => !reservations.IsTableReserved(tableId, slotUtc, slotUtc.AddMinutes(durationMinutes))

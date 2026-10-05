@@ -1,8 +1,4 @@
-using OpenRestoApi.Core.Application.DTOs;
-using OpenRestoApi.Core.Application.Services;
-using OpenRestoApi.Core.Domain;
-
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// Resolves when a sitting actually finishes. <see cref="Booking.EndTime"/> is nullable and rows
@@ -31,7 +27,7 @@ public static class BookingDuration
     /// <seealso>BookingDurationTests.For_KeepsTheSmallerRule_OneSeatBelowTheBoundary</seealso>
     /// <seealso>BookingDurationTests.For_UsesTheDefault_BelowTheLowestRule</seealso>
     public static int For(Restaurant restaurant, int seats)
-        => TurnTimesHelper.Parse(restaurant.TurnTimesJson)
+        => TurnTimes.Parse(restaurant.TurnTimesJson)
             .LastOrDefault(rule => rule.MinSeats <= seats)?.Minutes
             ?? restaurant.DefaultBookingDurationMinutes;
 

@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// The one definition of a native app version string: strict <c>major.minor.patch</c>, no

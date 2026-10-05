@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
-using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 
@@ -389,9 +388,9 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
             // and the day is within 1 of the requested date.
             string? actualDate = b.GetProperty("date").GetString();
             Assert.NotNull(actualDate);
-            
+
             // Check year-month as a baseline
-            string yearMonth = date.Substring(0, 7); 
+            string yearMonth = date.Substring(0, 7);
             Assert.Contains(yearMonth, actualDate);
         }
     }
@@ -509,9 +508,12 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         (int r, int s, int t) = GetSeededIds();
         HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/admin/bookings", new
         {
-            restaurantId = r, sectionId = s, tableId = t,
+            restaurantId = r,
+            sectionId = s,
+            tableId = t,
             date = DateTime.UtcNow.AddDays(310).ToString("yyyy-MM-ddT12:00:00"),
-            customerEmail = "emailtest@test.com", seats = 2
+            customerEmail = "emailtest@test.com",
+            seats = 2
         });
         Assert.Equal(HttpStatusCode.Created, createResp.StatusCode);
         int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
@@ -531,9 +533,12 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
         (int r, int s, int t) = GetSeededIds();
         HttpResponseMessage createResp = await client.PostAsJsonAsync("/api/admin/bookings", new
         {
-            restaurantId = r, sectionId = s, tableId = t,
+            restaurantId = r,
+            sectionId = s,
+            tableId = t,
             date = DateTime.UtcNow.AddDays(311).ToString("yyyy-MM-ddT12:00:00"),
-            customerEmail = "htmltest@test.com", seats = 2
+            customerEmail = "htmltest@test.com",
+            seats = 2
         });
         Assert.Equal(HttpStatusCode.Created, createResp.StatusCode);
         int id = (await createResp.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();

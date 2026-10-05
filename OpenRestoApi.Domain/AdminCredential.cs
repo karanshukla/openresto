@@ -17,8 +17,8 @@ public class AdminCredential
     /// <summary>Optional human name shown in the UI; falls back to <see cref="Email"/>.</summary>
     public string? DisplayName { get; set; }
 
-    /// <summary>One of <see cref="Core.Application.Utilities.UserRoles.Assignable"/>.</summary>
-    public string Role { get; set; } = Core.Application.Utilities.UserRoles.Owner;
+    /// <summary>One of <see cref="UserRoles.Assignable"/>.</summary>
+    public string Role { get; set; } = UserRoles.Owner;
 
     /// <summary>
     /// Deactivated users keep their row (so any future audit trail keeps resolving) but

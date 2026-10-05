@@ -1,4 +1,5 @@
 using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Utilities;
 

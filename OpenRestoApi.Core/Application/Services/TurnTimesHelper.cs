@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Utilities;
@@ -8,41 +6,16 @@ using OpenRestoApi.Core.Domain;
 namespace OpenRestoApi.Core.Application.Services;
 
 /// <summary>
-/// Reads and writes <see cref="Restaurant.TurnTimesJson"/>. Resolving a party's sitting length
-/// is <see cref="BookingDuration.For"/>; this class only owns the stored shape.
+/// The API side of <see cref="TurnTimes"/>: turn times as the DTOs clients send and receive, and
+/// the validation an update has to pass before it is stored.
 /// </summary>
 public static class TurnTimesHelper
 {
-    private sealed class Rule
-    {
-        [JsonPropertyName("minSeats")]
-        public int MinSeats { get; set; }
-
-        [JsonPropertyName("minutes")]
-        public int Minutes { get; set; }
-    }
-
     /// <summary>The stored rules ordered by party size, or empty when there are none or the JSON is unreadable.</summary>
     public static List<TurnTimeDto> Parse(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return [];
-        }
-
-        try
-        {
-            return (JsonSerializer.Deserialize<List<Rule>>(json) ?? [])
-                .Where(r => r != null)
-                .Select(r => new TurnTimeDto { MinSeats = r.MinSeats, Minutes = r.Minutes })
-                .OrderBy(r => r.MinSeats)
-                .ToList();
-        }
-        catch (JsonException)
-        {
-            return [];
-        }
-    }
+        => TurnTimes.Parse(json)
+            .Select(r => new TurnTimeDto { MinSeats = r.MinSeats, Minutes = r.Minutes })
+            .ToList();
 
     /// <summary>
     /// Validates and stores the rules. An empty list clears them, so every party gets
@@ -92,8 +65,6 @@ public static class TurnTimesHelper
             }
         }
 
-        restaurant.TurnTimesJson = JsonSerializer.Serialize(rules
-            .OrderBy(r => r.MinSeats)
-            .Select(r => new Rule { MinSeats = r.MinSeats, Minutes = r.Minutes }));
+        restaurant.TurnTimesJson = TurnTimes.Serialize(rules.Select(r => new TurnTime(r.MinSeats, r.Minutes)));
     }
 }

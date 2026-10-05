@@ -1,10 +1,10 @@
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// The single place admin role values are defined. Adding a role (e.g. <c>Host</c>) means
 /// adding one constant here plus one entry in <see cref="Assignable"/> — never a literal
 /// sprinkled across controllers or services. Gating is done through the named policies in
-/// <see cref="AuthPolicies"/>, so a new role does not require touching any <c>[Authorize]</c>
+/// <c>AuthPolicies</c>, so a new role does not require touching any <c>[Authorize]</c>
 /// attribute.
 /// </summary>
 public static class UserRoles

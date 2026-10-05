@@ -1,4 +1,3 @@
-using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Tests.Services;

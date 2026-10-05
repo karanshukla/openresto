@@ -1,7 +1,4 @@
-using OpenRestoApi.Core.Application.Utilities;
-using OpenRestoApi.Core.Domain;
-
-namespace OpenRestoApi.Core.Application.Services;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// The service a location runs on a given ISO day, and whether an instant falls inside one.
@@ -96,14 +93,14 @@ public static class ServiceWindowHelper
 
     private static (TimeSpan Open, TimeSpan Close) TimesOn(Restaurant restaurant, int isoDay)
     {
-        (string openTime, string closeTime) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
+        (string openTime, string closeTime) = OpeningHours.GetHoursForDay(restaurant, isoDay);
 
-        if (!OpeningHoursHelper.TryParseTime(openTime, out int openHour, out int openMin))
+        if (!OpeningHours.TryParseTime(openTime, out int openHour, out int openMin))
         {
             (openHour, openMin) = OpeningHourDefaults.OpenAt;
         }
 
-        if (!OpeningHoursHelper.TryParseTime(closeTime, out int closeHour, out int closeMin))
+        if (!OpeningHours.TryParseTime(closeTime, out int closeHour, out int closeMin))
         {
             (closeHour, closeMin) = OpeningHourDefaults.CloseAt;
         }

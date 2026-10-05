@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Auditing;
 
 namespace OpenRestoApi.Tests.Infrastructure;
