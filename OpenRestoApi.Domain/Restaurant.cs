@@ -1,5 +1,3 @@
-using OpenRestoApi.Core.Application.Services;
-using OpenRestoApi.Core.Application.Utilities;
 
 namespace OpenRestoApi.Core.Domain;
 
@@ -165,7 +163,7 @@ public class Restaurant
         => IsPaused() && bookingUtc < BookingsPausedUntil!.Value;
 
     public bool IsWalkInOnlyAt(DateTime utc)
-        => WalkInHelper.IsWalkInOnlyAt(this, utc);
+        => WalkInPolicy.IsWalkInOnlyAt(this, utc);
 
     /// <summary>
     /// True when a service the restaurant runs covers the given UTC instant, resolved through

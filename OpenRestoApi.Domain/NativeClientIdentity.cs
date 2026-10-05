@@ -1,4 +1,4 @@
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// Reads the <c>X-OpenResto-Client: &lt;platform&gt;/&lt;version&gt;</c> header the native guest

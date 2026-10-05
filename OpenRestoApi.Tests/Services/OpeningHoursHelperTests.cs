@@ -21,7 +21,7 @@ public class OpeningHoursHelperTests
     {
         Restaurant r = MakeRestaurant();
 
-        (string open, string close) = OpeningHoursHelper.GetHoursForDay(r, 3);
+        (string open, string close) = OpeningHours.GetHoursForDay(r, 3);
 
         Assert.Equal("09:00", open);
         Assert.Equal("22:00", close);
@@ -32,7 +32,7 @@ public class OpeningHoursHelperTests
     {
         Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30"}}""");
 
-        (string open, string close) = OpeningHoursHelper.GetHoursForDay(r, 6);
+        (string open, string close) = OpeningHours.GetHoursForDay(r, 6);
 
         Assert.Equal("11:00", open);
         Assert.Equal("23:30", close);
@@ -43,7 +43,7 @@ public class OpeningHoursHelperTests
     {
         Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30"}}""");
 
-        (string open, string close) = OpeningHoursHelper.GetHoursForDay(r, 2);
+        (string open, string close) = OpeningHours.GetHoursForDay(r, 2);
 
         Assert.Equal("09:00", open);
         Assert.Equal("22:00", close);
@@ -54,7 +54,7 @@ public class OpeningHoursHelperTests
     {
         Restaurant r = MakeRestaurant("not json at all");
 
-        (string open, string close) = OpeningHoursHelper.GetHoursForDay(r, 1);
+        (string open, string close) = OpeningHours.GetHoursForDay(r, 1);
 
         Assert.Equal("09:00", open);
         Assert.Equal("22:00", close);
@@ -65,7 +65,7 @@ public class OpeningHoursHelperTests
     {
         Restaurant r = MakeRestaurant("""{"1":{"open":"25:99","close":"aa:bb"}}""");
 
-        (string open, string close) = OpeningHoursHelper.GetHoursForDay(r, 1);
+        (string open, string close) = OpeningHours.GetHoursForDay(r, 1);
 
         Assert.Equal("09:00", open);
         Assert.Equal("22:00", close);
@@ -74,7 +74,7 @@ public class OpeningHoursHelperTests
     [Fact]
     public void Parse_IgnoresOutOfRangeDayKeys()
     {
-        var parsed = OpeningHoursHelper.Parse("""{"0":{"open":"01:00","close":"02:00"},"8":{"open":"01:00","close":"02:00"},"5":{"open":"10:00","close":"20:00"}}""");
+        var parsed = OpeningHours.Parse("""{"0":{"open":"01:00","close":"02:00"},"8":{"open":"01:00","close":"02:00"},"5":{"open":"10:00","close":"20:00"}}""");
 
         Assert.NotNull(parsed);
         Assert.Single(parsed);
@@ -84,16 +84,16 @@ public class OpeningHoursHelperTests
     [Fact]
     public void Parse_ReturnsNull_ForEmptyOrWhitespace()
     {
-        Assert.Null(OpeningHoursHelper.Parse(null));
-        Assert.Null(OpeningHoursHelper.Parse(""));
-        Assert.Null(OpeningHoursHelper.Parse("   "));
-        Assert.Null(OpeningHoursHelper.Parse("{}"));
+        Assert.Null(OpeningHours.Parse(null));
+        Assert.Null(OpeningHours.Parse(""));
+        Assert.Null(OpeningHours.Parse("   "));
+        Assert.Null(OpeningHours.Parse("{}"));
     }
 
     [Fact]
     public void Parse_ReturnsNull_WhenJsonDeserializesToNull()
     {
-        Assert.Null(OpeningHoursHelper.Parse("null"));
+        Assert.Null(OpeningHours.Parse("null"));
     }
 
     [Fact]
@@ -141,10 +141,10 @@ public class OpeningHoursHelperTests
         OpeningHoursHelper.ApplyOpenHours(r, hours);
 
         Assert.NotNull(r.OpenHoursJson);
-        (string satOpen, string satClose) = OpeningHoursHelper.GetHoursForDay(r, 6);
+        (string satOpen, string satClose) = OpeningHours.GetHoursForDay(r, 6);
         Assert.Equal("11:00", satOpen);
         Assert.Equal("23:00", satClose);
-        (string monOpen, _) = OpeningHoursHelper.GetHoursForDay(r, 1);
+        (string monOpen, _) = OpeningHours.GetHoursForDay(r, 1);
         Assert.Equal("10:00", monOpen);
     }
 
@@ -159,7 +159,7 @@ public class OpeningHoursHelperTests
 
         OpeningHoursHelper.ApplyOpenHours(r, hours);
 
-        (string open, string close) = OpeningHoursHelper.GetHoursForDay(r, 1);
+        (string open, string close) = OpeningHours.GetHoursForDay(r, 1);
         Assert.Equal("09:05", open);
         Assert.Equal("22:00", close);
     }
@@ -175,12 +175,12 @@ public class OpeningHoursHelperTests
 
         OpeningHoursHelper.ApplyOpenHours(r, hours);
 
-        (string tueOpen, string tueClose) = OpeningHoursHelper.GetHoursForDay(r, 2);
+        (string tueOpen, string tueClose) = OpeningHours.GetHoursForDay(r, 2);
         Assert.Equal("08:00", tueOpen);
         Assert.Equal("14:00", tueClose);
-        (string satOpen, _) = OpeningHoursHelper.GetHoursForDay(r, 6);
+        (string satOpen, _) = OpeningHours.GetHoursForDay(r, 6);
         Assert.Equal("11:00", satOpen);
-        (string monOpen, _) = OpeningHoursHelper.GetHoursForDay(r, 1);
+        (string monOpen, _) = OpeningHours.GetHoursForDay(r, 1);
         Assert.Equal("09:00", monOpen);
     }
 
@@ -245,7 +245,7 @@ public class OpeningHoursHelperTests
     [InlineData("12", false, 0, 0)]
     public void TryParseTime_ValidatesRange(string input, bool expected, int h, int m)
     {
-        bool ok = OpeningHoursHelper.TryParseTime(input, out int hour, out int minute);
+        bool ok = OpeningHours.TryParseTime(input, out int hour, out int minute);
 
         Assert.Equal(expected, ok);
         if (expected)

@@ -3,7 +3,7 @@ namespace OpenRestoApi.Core.Domain;
 /// <summary>
 /// A long-lived credential for the headless CLI (issue #319), scoped to a subset of what its
 /// owning <see cref="AdminCredential"/> can do. The raw key is never stored — see
-/// <see cref="Core.Application.Utilities.ApiKeyCrypto"/> for the hash it is verified against.
+/// <c>ApiKeyCrypto</c> for the hash it is verified against.
 /// </summary>
 public class AdminApiKey
 {
@@ -34,7 +34,7 @@ public class AdminApiKey
     public string Prefix { get; set; } = null!;
 
     /// <summary>JSON array of <c>{resource, access}</c> pairs — see
-    /// <see cref="Core.Application.Utilities.ApiKeyScopes"/> for the allow-list they are drawn from.</summary>
+    /// <c>ApiKeyScopes</c> for the allow-list they are drawn from.</summary>
     public string ScopesJson { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

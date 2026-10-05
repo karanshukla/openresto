@@ -30,13 +30,13 @@ public class WalkInTests
     [InlineData("  ")]
     public void ParseWalkInDays_ReturnsEmpty_ForNullOrBlank(string? input)
     {
-        Assert.Empty(WalkInHelper.ParseWalkInDays(input));
+        Assert.Empty(WalkInPolicy.ParseWalkInDays(input));
     }
 
     [Fact]
     public void ParseWalkInDays_ParsesValidDays_AndIgnoresJunk()
     {
-        HashSet<int> days = WalkInHelper.ParseWalkInDays(" 6 ,7,0,8,abc,6");
+        HashSet<int> days = WalkInPolicy.ParseWalkInDays(" 6 ,7,0,8,abc,6");
         Assert.True(days.SetEquals([6, 7]));
     }
 
@@ -66,14 +66,14 @@ public class WalkInTests
     public void IsWalkInOnlyAt_ReturnsTrue_WhenLocationIsWalkInOnly()
     {
         var r = new Restaurant { Name = "T", WalkInOnly = true };
-        Assert.True(WalkInHelper.IsWalkInOnlyAt(r, DateTime.UtcNow));
+        Assert.True(WalkInPolicy.IsWalkInOnlyAt(r, DateTime.UtcNow));
     }
 
     [Fact]
     public void IsWalkInOnlyAt_ReturnsFalse_WhenNoWalkInDays()
     {
         var r = new Restaurant { Name = "T" };
-        Assert.False(WalkInHelper.IsWalkInOnlyAt(r, DateTime.UtcNow));
+        Assert.False(WalkInPolicy.IsWalkInOnlyAt(r, DateTime.UtcNow));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class WalkInTests
         var r = new Restaurant { Name = "T", Timezone = "America/Los_Angeles", WalkInDays = "6" };
         var sundayUtc = new DateTime(2026, 10, 11, 2, 0, 0, DateTimeKind.Utc);
 
-        Assert.True(WalkInHelper.IsWalkInOnlyAt(r, sundayUtc));
+        Assert.True(WalkInPolicy.IsWalkInOnlyAt(r, sundayUtc));
     }
 
     [Fact]
@@ -92,15 +92,15 @@ public class WalkInTests
         var r = new Restaurant { Name = "T", Timezone = "Not/AZone", WalkInDays = "7" };
         var sundayUtc = new DateTime(2026, 10, 11, 12, 0, 0, DateTimeKind.Utc);
 
-        Assert.True(WalkInHelper.IsWalkInOnlyAt(r, sundayUtc));
+        Assert.True(WalkInPolicy.IsWalkInOnlyAt(r, sundayUtc));
     }
 
     [Fact]
     public void IsWalkInOnlyOn_MatchesDay()
     {
         var r = new Restaurant { Name = "T", WalkInDays = "6,7" };
-        Assert.True(WalkInHelper.IsWalkInOnlyOn(r, 6));
-        Assert.False(WalkInHelper.IsWalkInOnlyOn(r, 3));
+        Assert.True(WalkInPolicy.IsWalkInOnlyOn(r, 6));
+        Assert.False(WalkInPolicy.IsWalkInOnlyOn(r, 3));
     }
 
     // ── RestaurantManagementService ───────────────────────────────────────────

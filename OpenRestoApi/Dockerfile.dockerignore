@@ -1,8 +1,9 @@
-# The build context is the repo root, because the API spans three project folders.
+# The build context is the repo root, because the API spans four project folders.
 # Send only those.
 *
 !OpenRestoApi/
 !OpenRestoApi.Core/
+!OpenRestoApi.Domain/
 !OpenRestoApi.Infrastructure/
 **/bin
 **/obj

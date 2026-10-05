@@ -3,7 +3,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OpenRestoApi.Core.Application.Services;
-using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Tests.Services;
 

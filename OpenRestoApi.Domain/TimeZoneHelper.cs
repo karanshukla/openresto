@@ -1,4 +1,4 @@
-namespace OpenRestoApi.Core.Application.Utilities;
+namespace OpenRestoApi.Core.Domain;
 
 /// <summary>
 /// Centralises restaurant-timezone conversions. All <see cref="DateTime"/> values are stored

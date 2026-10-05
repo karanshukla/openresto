@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Interfaces;
-using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.NativeClients;
 
 namespace OpenRestoApi.Tests.Infrastructure;

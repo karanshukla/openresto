@@ -1,4 +1,3 @@
-using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.Utilities;
@@ -95,9 +94,9 @@ public static class EmailPreviewSample
 
     private static int StartMinutesOfDay(Restaurant restaurant, int isoDay)
     {
-        (string open, string close) = OpeningHoursHelper.GetHoursForDay(restaurant, isoDay);
-        if (!OpeningHoursHelper.TryParseTime(open, out int openHour, out int openMinute)
-            || !OpeningHoursHelper.TryParseTime(close, out int closeHour, out int closeMinute))
+        (string open, string close) = OpeningHours.GetHoursForDay(restaurant, isoDay);
+        if (!OpeningHours.TryParseTime(open, out int openHour, out int openMinute)
+            || !OpeningHours.TryParseTime(close, out int closeHour, out int closeMinute))
         {
             return PreferredHour * 60;
         }

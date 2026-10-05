@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Routing;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Auth;
 
 namespace OpenRestoApi.Tests.Infrastructure;

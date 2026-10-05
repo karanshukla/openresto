@@ -7,6 +7,7 @@ WORKDIR /src
 # Copy the project files and restore dependencies
 COPY ["OpenRestoApi/OpenRestoApi.csproj", "OpenRestoApi/"]
 COPY ["OpenRestoApi.Core/OpenRestoApi.Core.csproj", "OpenRestoApi.Core/"]
+COPY ["OpenRestoApi.Domain/OpenRestoApi.Domain.csproj", "OpenRestoApi.Domain/"]
 COPY ["OpenRestoApi.Infrastructure/OpenRestoApi.Infrastructure.csproj", "OpenRestoApi.Infrastructure/"]
 RUN dotnet restore "OpenRestoApi/OpenRestoApi.csproj"
 

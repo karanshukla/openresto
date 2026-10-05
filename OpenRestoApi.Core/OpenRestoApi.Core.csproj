@@ -19,4 +19,8 @@
     <PackageReference Include="WebPush" Version="1.0.13" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\OpenRestoApi.Domain\OpenRestoApi.Domain.csproj" />
+  </ItemGroup>
+
 </Project>

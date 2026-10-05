@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using OpenRestoApi.Core.Application.Utilities;
+using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Core.Application.DTOs;
 
