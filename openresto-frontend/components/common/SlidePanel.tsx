@@ -1,11 +1,23 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, View } from "react-native";
+import {
+  Animated,
+  Modal,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+  type GestureResponderEvent,
+  type PanResponderCallbacks,
+  type PanResponderGestureState,
+} from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { haptics } from "@/utils/haptics";
 import { useTranslation } from "react-i18next";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { animateNode, EASE_ENTER, prefersReducedMotion } from "@/utils/webAnimation";
 import {
+  shouldClaimHandleDrag,
   shouldClaimSheetDrag,
   shouldDismissSheet,
   SHEET_EXIT_DISTANCE,
@@ -74,39 +86,56 @@ export default function SlidePanel({
    * the card is the part under the thumb.
    */
   const bodyAtTop = useRef(true);
-  const panResponder = useMemo(
+  const followDrag = useMemo<PanResponderCallbacks>(
+    () => ({
+      onPanResponderMove: (_e, g) => {
+        if (g.dy > 0) dragY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_e, g) => {
+        if (shouldDismissSheet(g.dy, g.vy)) {
+          haptics.press();
+          Animated.timing(dragY, {
+            toValue: SHEET_EXIT_DISTANCE,
+            duration: prefersReducedMotion() ? 0 : 180,
+            useNativeDriver: nativeDriver,
+          }).start(({ finished }) => finished && onDismissRef.current());
+        } else {
+          Animated.spring(dragY, {
+            toValue: 0,
+            bounciness: 0,
+            useNativeDriver: nativeDriver,
+          }).start();
+        }
+      },
+    }),
+    [dragY, nativeDriver]
+  );
+  /**
+   * The body answers a drag only where its scroller has nothing left to give: at the top of the
+   * content, dragging down. Both phases ask the same question, because the browser scrolls the
+   * body natively without ever taking the responder, so an ungated bubble phase would take a
+   * mid-list "scroll back up" too and move the sheet and the list under the same finger.
+   *
+   * @see [SlidePanel.test.tsx](../../tests/components/common/SlidePanel.test.tsx) — pins that
+   * the body leaves a downward drag alone once scrolled and takes it at the top.
+   */
+  const bodyResponder = useMemo(() => {
+    const claim = (_e: GestureResponderEvent, g: PanResponderGestureState) =>
+      shouldClaimSheetDrag(g.dy, g.dx, bodyAtTop.current);
+    return PanResponder.create({
+      onMoveShouldSetPanResponderCapture: claim,
+      onMoveShouldSetPanResponder: claim,
+      ...followDrag,
+    });
+  }, [followDrag]);
+  // The handle has no scroller under it, so it takes any downward drag wherever the body is.
+  const grabberResponder = useMemo(
     () =>
       PanResponder.create({
-        /**
-         * Claimed ahead of the body's own scroller, but only where the scroller has nothing
-         * left to give: at the top of the content, dragging down. Anywhere else this stays out
-         * of the way and the list scrolls, which is why the gate is the scroll position and not
-         * the gesture alone.
-         */
-        onMoveShouldSetPanResponderCapture: (_e, g) =>
-          shouldClaimSheetDrag(g.dy, g.dx, bodyAtTop.current),
-        onMoveShouldSetPanResponder: (_e, g) => g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
-        onPanResponderMove: (_e, g) => {
-          if (g.dy > 0) dragY.setValue(g.dy);
-        },
-        onPanResponderRelease: (_e, g) => {
-          if (shouldDismissSheet(g.dy, g.vy)) {
-            haptics.press();
-            Animated.timing(dragY, {
-              toValue: SHEET_EXIT_DISTANCE,
-              duration: prefersReducedMotion() ? 0 : 180,
-              useNativeDriver: nativeDriver,
-            }).start(({ finished }) => finished && onDismissRef.current());
-          } else {
-            Animated.spring(dragY, {
-              toValue: 0,
-              bounciness: 0,
-              useNativeDriver: nativeDriver,
-            }).start();
-          }
-        },
+        onMoveShouldSetPanResponder: (_e, g) => shouldClaimHandleDrag(g.dy, g.dx),
+        ...followDrag,
       }),
-    [dragY, nativeDriver]
+    [followDrag]
   );
 
   useEffect(() => () => dragY.stopAnimation(), [dragY]);
@@ -170,7 +199,7 @@ export default function SlidePanel({
               onPress={dismissWithHaptic}
             />
             <Animated.View
-              {...panResponder.panHandlers}
+              {...bodyResponder.panHandlers}
               testID={testID}
               role="dialog"
               aria-modal
@@ -183,7 +212,7 @@ export default function SlidePanel({
               ]}
             >
               <View
-                {...panResponder.panHandlers}
+                {...grabberResponder.panHandlers}
                 testID={`${testID}-grabber`}
                 aria-hidden
                 accessibilityElementsHidden

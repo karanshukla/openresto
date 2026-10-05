@@ -2,6 +2,11 @@ import { Platform, StyleSheet } from "react-native";
 import { theme } from "@/theme/theme";
 
 const ownsTheGesture = Platform.OS === "web" ? ({ touchAction: "none" } as object) : null;
+/**
+ * At the top of the body a downward drag belongs to the sheet, so the browser's own rubber band
+ * on the scroller would move the content under the same finger that is moving the sheet.
+ */
+const noOverscroll = Platform.OS === "web" ? ({ overscrollBehavior: "none" } as object) : null;
 
 export const styles = StyleSheet.create({
   // The side panel fills whatever column the caller gives it. It used to carry its own
@@ -40,7 +45,7 @@ export const styles = StyleSheet.create({
     ...ownsTheGesture,
   },
   grabber: { width: 40, height: 4, borderRadius: 2 },
-  sheetScroll: { flexShrink: 1 },
+  sheetScroll: { flexShrink: 1, ...noOverscroll },
   sheetBody: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xl,
