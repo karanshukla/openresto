@@ -31,6 +31,6 @@
     "prettier": "^3.5.1"
   },
   "overrides": {
-    "shell-quote": ">=1.10.0"
+    "shell-quote": ">=1.12.0"
   }
 }
