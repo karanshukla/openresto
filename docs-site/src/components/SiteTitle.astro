@@ -1,0 +1,36 @@
+---
+import logo from "../assets/logo.svg";
+const { siteTitleHref } = Astro.locals.starlightRoute;
+---
+
+<a href={siteTitleHref} class="site-title">
+  <img src={logo.src} width="30" height="30" alt="" />
+  <span class="name" translate="no">OpenResto</span>
+  <span class="tag">Docs</span>
+</a>
+
+<style>
+  .site-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .name {
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    color: var(--sl-color-white);
+  }
+  .tag {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--sl-color-gray-3);
+  }
+  img {
+    flex: none;
+    border-radius: 8px;
+  }
+</style>

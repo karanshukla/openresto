@@ -11,6 +11,22 @@ npm run build    # static output in dist/
 Pages are Markdown in `src/content/docs/`. The API reference under `/api/reference/` is
 generated at build time from `../openresto-cli/openapi/v1.json`.
 
+## Look and feel
+
+The theme matches the landing page at [get.openres.to](https://get.openres.to): warm ink and
+paper greys, one terracotta accent (`#C2562B`), Inter, and the utensils brand mark.
+
+- `src/styles/theme.css` maps that palette onto Starlight's `--sl-color-*` tokens, for dark
+  (Starlight's default, on `:root`) and light (`:root[data-theme="light"]`).
+- `src/components/` overrides three Starlight components: `SiteTitle` (brand mark plus
+  "OpenResto Docs"), `SocialIcons` (adds Home and the Live demo button) and `Footer` (adds the
+  landing page's brand row).
+- Code blocks use one dark theme in both modes, configured under `expressiveCode` in
+  `astro.config.mjs`, so commands look like the landing page's terminal.
+- Inter is self-hosted through `@fontsource-variable/inter`, so no page loads Google Fonts.
+
+If the landing page's colours change, change the tokens at the top of `theme.css` to match.
+
 ## Deploying (Cloudflare Workers static assets)
 
 `wrangler.jsonc` serves `dist/` as a static-assets Worker and attaches `docs.openres.to` as its

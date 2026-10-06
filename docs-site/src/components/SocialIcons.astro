@@ -1,0 +1,39 @@
+---
+import Default from "@astrojs/starlight/components/SocialIcons.astro";
+---
+
+<a class="nav-link" href="https://get.openres.to">Home</a>
+<Default />
+<a class="demo" href="https://openres.to" target="_blank" rel="noopener">
+  Live demo<span class="sr-only"> (opens in a new tab)</span>
+</a>
+
+<style>
+  .nav-link {
+    color: var(--sl-color-gray-2);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .nav-link:hover {
+    color: var(--sl-color-white);
+  }
+  .demo {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 14px;
+    border-radius: 10px;
+    background: var(--or-accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .demo:hover {
+    background: var(--or-accent-600);
+    color: #fff;
+  }
+</style>

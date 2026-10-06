@@ -1,5 +1,6 @@
 ---
 title: Calling the API with an API key
+description: Create an API key, send it with requests, and pick the smallest set of permissions.
 ---
 
 This page shows you how to call the OpenResto admin API directly over HTTP, using an API key.
@@ -135,12 +136,11 @@ a password. Those need a browser session. There is no `email:write` for the same
 that could rewrite the SMTP host, username and password could be used to intercept mail, and it
 would be sitting in a CI secret.
 
-The three excluded `users` actions follow the same logic. A key that could create a login, or
-take over an existing one, wouldn't be limited by its scopes at all. Its holder could sign in to
-the admin UI as that account and reach every endpoint above, including minting themselves an
-unscoped key. Limiting which role a key may create wouldn't fix this, because that part of the
-admin is open to any admin, not only an Owner, so a Manager login is enough. That is why
-`users:write` covers activation only, which doesn't start a session.
+The three excluded `users` actions follow the same logic. A key that could create an account,
+or reset someone's password, could give its holder a real admin login. From there they could
+sign in to the admin UI and mint themselves a key with every permission, so the key's own
+limits would mean nothing. That is why `users:write` covers activating and deactivating
+accounts only, which can't start anyone's session.
 
 ## What a key cannot do
 

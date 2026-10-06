@@ -1,0 +1,67 @@
+---
+import Default from "@astrojs/starlight/components/Footer.astro";
+import logo from "../assets/logo.svg";
+
+const links = [
+  { label: "openres.to", href: "https://openres.to" },
+  { label: "get.openres.to", href: "https://get.openres.to" },
+  { label: "GitHub", href: "https://github.com/karanshukla/openresto" },
+  { label: "Instagram", href: "https://www.instagram.com/openresto.app/" },
+  { label: "Threads", href: "https://www.threads.com/@openresto.app" },
+];
+---
+
+<Default />
+<div class="brand-row">
+  <span class="brand">
+    <img src={logo.src} width="24" height="24" alt="" />
+    <span class="name">OpenResto</span>
+    <span class="tag">Simple. Secure. Self hosted. MIT licensed.</span>
+  </span>
+  <nav class="links" aria-label="OpenResto elsewhere">
+    {links.map(({ label, href }) => <a {href}>{label}</a>)}
+  </nav>
+</div>
+
+<style>
+  .brand-row {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--sl-color-hairline);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 28px;
+    font-size: 14px;
+  }
+  .brand {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+  }
+  .brand img {
+    border-radius: 6px;
+  }
+  .name {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+    color: var(--sl-color-white);
+  }
+  .tag,
+  .links a {
+    color: var(--sl-color-gray-3);
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+  }
+  .links a {
+    text-decoration: none;
+  }
+  .links a:hover {
+    color: var(--sl-color-white);
+  }
+</style>

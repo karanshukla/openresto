@@ -1,5 +1,8 @@
 ---
 title: Feature reference
+description: How each booking feature behaves, and the API fields, error codes and settings behind it.
+sidebar:
+  order: 1
 ---
 
 This page explains how OpenResto's booking features work, and the API fields, error codes and
@@ -121,8 +124,8 @@ week are unaffected, and the message the guest sees names the local time the pau
 - Booking a group blocks each of its tables, and booking one of its tables blocks the group.
 - Deleting or resizing a table in a group shrinks the group to fit, or removes it if fewer
   than two tables are left.
-- **Oversize cap.** `MaxTableOversizeSeats` limits how much bigger than the party an
-  auto-assigned table can be.
+- **Oversize cap.** `maxTableOversizeSeats` on the restaurant limits how many spare seats an
+  auto-assigned table can have beyond the party size.
 - Deleting a table or section keeps its bookings and clears their table or section. The delete
   confirmation shows how many upcoming bookings are affected.
 - Seat counts are 1–50.
@@ -134,8 +137,9 @@ week are unaffected, and the message the guest sees names the local time the pau
 - References are generated with a cryptographically secure random number generator. Every
   reference ever issued still works, whatever the location's current format.
 - Guest endpoints that take a reference (lookup, cancel, reminders, waitlist tickets) allow
-  10 requests per minute per IP. If many of your guests share one IP, raise this limit in front
-  of the app.
+  10 requests per minute per IP, so nobody can guess references by trying thousands. The limit
+  is built in. Guests sharing one IP address share it too, so make sure your proxy forwards
+  `X-Forwarded-For` (see [HTTPS](/self-hosting/https/)).
 
 ## Locations: archive and delete
 

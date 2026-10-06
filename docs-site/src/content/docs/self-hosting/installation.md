@@ -21,21 +21,19 @@ VPS is enough.
 
 ## 1. Get the files
 
-Download `docker-compose.yml` from the
-[latest release](https://github.com/karanshukla/openresto/releases/latest) into an empty
-directory on your server, and grab
-[`.env.example`](https://github.com/karanshukla/openresto/blob/main/.env.example) next to it.
+Make an empty directory on your server and download `docker-compose.yml` from the
+[latest release](https://github.com/karanshukla/openresto/releases/latest) into it:
 
 ```bash
 mkdir openresto && cd openresto
-# save docker-compose.yml from the release page here
-curl -fsSLo .env https://raw.githubusercontent.com/karanshukla/openresto/main/.env.example
+curl -fsSLO https://github.com/karanshukla/openresto/releases/latest/download/docker-compose.yml
 ```
 
-## 2. Fill in `.env`
+## 2. Create `.env`
 
-Three values are needed. The API won't start without a valid `JWT_KEY` and `CORS_ORIGINS`, and
-the first start needs an `ADMIN_PASSWORD` to create your account.
+Next to `docker-compose.yml`, create a file called `.env` with these values. The API won't start
+without a valid `JWT_KEY` and `CORS_ORIGINS`, and the first start needs `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` to create your account.
 
 ```dotenv
 # At least 32 characters, unique to this deployment: openssl rand -base64 48
@@ -44,12 +42,20 @@ JWT_KEY=...
 # The public address people will type, with https:// and no trailing slash. No wildcards (*).
 CORS_ORIGINS=https://bookings.example.com
 
-# Seeds the first Owner account. Only read while the database has no accounts.
+# Your first Owner account. Only read while the database has no accounts.
 ADMIN_EMAIL=you@example.com
 ADMIN_PASSWORD=a-long-unique-passphrase
 ```
 
-Everything else is optional. Please keep `.env` private, since it holds your secrets. See [Configuration](/self-hosting/configuration/) for the full list.
+Everything else is optional, and [Configuration](/self-hosting/configuration/) lists it all.
+Keep `.env` private, since it holds your secrets.
+
+:::caution[Don't copy `.env.example` for a Docker install]
+The repository's `.env.example` is written for running the code from a clone, so some of its
+names (`Vapid__PublicKey`, `Wallet__Apple__…`, `EmailSettings__…`) are not the ones the release
+`docker-compose.yml` reads. Use the names on the [Configuration](/self-hosting/configuration/)
+page instead.
+:::
 
 ## 3. Start it
 
@@ -57,9 +63,9 @@ Everything else is optional. Please keep `.env` private, since it holds your sec
 docker compose up -d
 ```
 
-The first start takes a short while. The backend updates its database first, and the reverse
+The first start takes a minute or so. The backend sets up its database first, and the reverse
 proxy (the front door that sends visitors to the right place) waits until the backend and web
-app are ready.
+app report healthy.
 
 ```bash
 docker compose ps          # backend, frontend and reverse-proxy should be running
@@ -79,24 +85,36 @@ If the health check fails, wait a minute and try again, then look at `docker com
 | `frontend`      | `ghcr.io/karanshukla/openresto-frontend`  | The web app, served on an internal port                 |
 | `reverse-proxy` | `ghcr.io/karanshukla/openresto-nginx`     | Public entry point: `/api` to the backend, the rest to the web app, uploaded media served directly |
 
-| Volume       | Mounted at              | Holds                                           |
-| ------------ | ----------------------- | ----------------------------------------------- |
-| `db_data`    | `/data` in the backend  | The SQLite database and Data Protection keys    |
-| `media_data` | `/app/wwwroot/media`    | Uploaded images and menu PDFs                   |
+| Storage        | Mounted at              | Holds                                           |
+| -------------- | ----------------------- | ----------------------------------------------- |
+| `db_data`      | `/data` in the backend  | The SQLite database and the Data Protection keys that encrypt your SMTP password |
+| `media_data`   | `/app/wwwroot/media`    | Uploaded images and menu PDFs                   |
+| `./wallet`     | `/wallet` in the backend, read-only | Optional Wallet pass certificates ([guide](/guides/native-app/#wallet-passes)) |
+| `./well-known` | `/.well-known/` on your site, read-only | Optional app-link files for a native app ([guide](/guides/native-app/#4-make-confirmation-emails-open-the-app)) |
+
+The two `./` folders sit next to `docker-compose.yml`. Docker creates them empty if they are
+missing, and empty is fine.
 
 Only the reverse proxy publishes a port. Change it with `HOST_PORT` in `.env`.
 
-## Pinning a version
+## Which version you are running
 
-`latest` follows the newest release. To stay on one version, set it on every command, or in
-`.env`:
+The `docker-compose.yml` attached to a release is **pinned to that release**: its image tags
+are written out as, say, `2.4.0`. So the version you run is the version of the file you
+downloaded, and it stays that way until you download a newer one. `docker compose pull` alone
+won't move you to a newer release. See [Upgrading](/self-hosting/upgrading/).
 
-```bash
-OPENRESTO_VERSION=2.3.1 docker compose up -d
+If you would rather follow the newest release automatically, use
+[`docker-compose.release.yml`](https://github.com/karanshukla/openresto/blob/main/docker-compose.release.yml)
+from the repository instead, saved as `docker-compose.yml` so every command on these pages
+works unchanged. It is the same file before pinning, so it runs `latest` unless you set
+`OPENRESTO_VERSION` in `.env`:
+
+```dotenv
+OPENRESTO_VERSION=2.4.0
 ```
 
-Image tags are published as `X.Y.Z`, `X.Y` and `latest`. See [Upgrading](/self-hosting/upgrading/)
-before you move between versions.
+Images are tagged `X.Y.Z`, `X.Y` and `latest`, with no `v` in front.
 
 ## Next steps
 

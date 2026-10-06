@@ -1,5 +1,8 @@
 ---
 title: Publishing the guest app
+description: Every step and command to build, sign and publish your own branded iOS and Android guest app.
+sidebar:
+  order: 3
 ---
 
 Your guests can browse locations, book a table and find their booking in a native iOS and
@@ -74,9 +77,10 @@ talks to one server. If you move servers, build the app again.
 - A brand icon chosen under **Admin → Settings → Brand**. The generator downloads both app
   icons from your instance. Without one, the build uses OpenResto's bundled artwork. You can
   also pass your own PNGs (see step 1).
-- Node 24 and a clone of this repository at the **same release as your server**. The app
-  version is read from `openresto-frontend/package.json`, so a v1.9.0 checkout produces a
-  1.9.0 app.
+- Node 24 and a clone of this repository at the **same release as your server**
+  (`git clone --branch v2.4.0 https://github.com/karanshukla/openresto`, with your version).
+  The app version is read from `openresto-frontend/package.json`, so a v2.4.0 checkout
+  produces a 2.4.0 app.
 - An [Expo account](https://expo.dev) for EAS Build. Cloud builds work from any machine;
   `eas build --local` works on Linux for Android and on a Mac for iOS.
 - **Android:** a Google Play Console account. **iOS:** an Apple Developer Program membership.
@@ -151,8 +155,9 @@ Brand**, in the Contact & Website card. The guest footer and the app's About scr
 
 ## 4. Make confirmation emails open the app
 
-Booking confirmation emails link to `https://bookings.example.com/lookup?ref=…&email=…`. For
-that link to open the app instead of the browser, your server needs to show each platform that
+Booking confirmation emails link to
+`https://bookings.example.com/booking-confirmation/<reference>?email=…`. For that link to open
+the app instead of the browser, your server needs to show each platform that
 you own both the app and the domain. You do this with two files served from `/.well-known/` on
 your domain, each carrying identifiers that are yours.
 
@@ -236,7 +241,7 @@ take extra time, so it helps to plan for it.
 A guest who opens a confirmed booking in the app sees **Remind me**. Pressing it asks the phone
 for notification permission and registers that device against that one booking; the server
 then pushes a reminder when each lead window opens, by default 24 hours and 2 hours before the
-sitting (`GuestPush__ReminderLeadHours`, comma-separated hours). Pressing it again opts the
+sitting (`GUEST_PUSH_REMINDER_LEAD_HOURS` in `.env`, comma-separated hours). Pressing it again opts the
 device out. The reminder is written in the language the app was in when the guest opted in.
 
 Nothing about the phone reaches your server except the Expo push token, and that token lives
@@ -245,11 +250,11 @@ cancelled, it goes with the booking when an admin purges it, and it is never sho
 admin. Delivery goes through [Expo's push service](https://docs.expo.dev/push-notifications/overview/),
 which holds the APNs and FCM credentials your EAS project set up during the first build, so
 there is no Apple or Google push certificate to put on the server. If you enabled "enhanced
-push security" on the EAS project, set `GuestPush__ExpoAccessToken` to the token it issued;
+push security" on the EAS project, set `EXPO_ACCESS_TOKEN` in `.env` to the token it issued;
 otherwise leave it empty.
 
-The same toggle appears on the website when the server has `Vapid__*` keys (the ones admin
-notifications use), delivered as a browser push through the service worker. A build running
+The same toggle appears on the website when the server has
+[VAPID keys](/self-hosting/push-notifications/) (the ones admin notifications use), delivered as a browser push through the service worker. A build running
 in Expo Go or on a simulator has no push token to offer and hides the toggle.
 
 The app also warns a guest one minute before a table hold lapses, so backgrounding it to check
@@ -279,15 +284,19 @@ Apple needs a Pass Type ID under your developer account and its certificate:
 1. In the Apple Developer portal, register a Pass Type ID (e.g. `pass.com.example.bistro`) and
    create a certificate for it. Export it from Keychain Access as a `.p12` with a password.
 2. Download Apple's WWDR intermediate certificate (G4 or later, `.cer`).
-3. Put both files under `./wallet` and set:
+3. Put both files in the `wallet` folder next to `docker-compose.yml`, add these to `.env`,
+   and run `docker compose up -d`:
 
-   ```bash
-   Wallet__Apple__PassTypeIdentifier=pass.com.example.bistro
-   Wallet__Apple__TeamIdentifier=ABCDE12345
-   Wallet__Apple__CertificatePath=/wallet/pass.p12
-   Wallet__Apple__CertificatePassword=…
-   Wallet__Apple__WwdrCertificatePath=/wallet/wwdr.cer
+   ```dotenv
+   APPLE_PASS_TYPE_ID=pass.com.example.bistro
+   APPLE_TEAM_ID=ABCDE12345
+   APPLE_PASS_CERTIFICATE_PATH=/wallet/pass.p12
+   APPLE_PASS_CERTIFICATE_PASSWORD=…
+   APPLE_WWDR_CERTIFICATE_PATH=/wallet/wwdr.cer
    ```
+
+   The paths start with `/wallet` because that is where the folder appears inside the
+   container.
 
 ### Google
 
@@ -302,11 +311,12 @@ take the steps in order:
 3. Back in the Google Pay & Wallet Console, go to **Users → Invite a user**, paste the service
    account's email address, and set the access level to **Developer**. Without this step, your
    issuer does not recognise the key and every save link is rejected.
-4. Put the key under `./wallet` and set:
+4. Put the key in the `wallet` folder next to `docker-compose.yml`, add these to `.env`,
+   and run `docker compose up -d`:
 
-   ```bash
-   Wallet__Google__IssuerId=3388000000012345678
-   Wallet__Google__ServiceAccountKeyPath=/wallet/google-wallet.json
+   ```dotenv
+   GOOGLE_WALLET_ISSUER_ID=3388000000012345678
+   GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_PATH=/wallet/google-wallet.json
    ```
 
 You do not need to create a pass class. The save link carries the class inline in its signed
@@ -321,8 +331,9 @@ Google Pay, so it needs no merchant account, payment credentials or bank details
 
 ### Trying it from a clone, without committing anything
 
-Running from source there is no `.env` to put `Wallet__*` into. Create
-`OpenRestoApi/appsettings.Local.json` — the backend loads it if present, and `.gitignore` keeps
+Running from source, the settings use their configuration names (`Wallet__Google__IssuerId`
+rather than `GOOGLE_WALLET_ISSUER_ID`). The simplest place for them is
+`OpenRestoApi/appsettings.Local.json`. The backend loads it if present, and `.gitignore` keeps
 it out of every commit:
 
 ```json
@@ -387,18 +398,22 @@ page, and older builds will ask their users to update.
 
 ## Rate limits
 
-Every guest request is rate limited per client IP. Phones on one carrier share a small pool of
-addresses, so a full dining room of guests on the same network can look like one very busy
-client. If the app shows `429` errors on busy nights, that is the likely cause. Raise the
-public limit in your backend configuration.
+Every guest request is rate limited per client IP address: 120 a minute for browsing and
+booking, 10 a minute for looking up a booking. Phones on one carrier share a small pool of
+addresses, so a full dining room on the same network can look like one very busy client. If the
+app shows "too many requests" errors on busy nights, that is the likely cause. These limits are
+built in and can't be changed from `.env`. First check that your proxy forwards
+`X-Forwarded-For` (see [HTTPS](/self-hosting/https/)), and if guests still hit the limit,
+[open an issue](https://github.com/karanshukla/openresto/issues).
 
 ## Reference
 
 ### Environment variables
 
-All optional. The release `docker-compose.yml` maps each one from a plainer name in `.env`.
+All optional. Put the `.env` name in your `.env`; the release `docker-compose.yml` passes it to
+the backend under the configuration name, which is what you use when running from a clone.
 
-| Variable                                | `.env` name                              | Purpose                                                   |
+| Configuration name                      | `.env` name                              | Purpose                                                   |
 | --------------------------------------- | ---------------------------------------- | --------------------------------------------------------- |
 | `GuestPush__ReminderLeadHours`          | `GUEST_PUSH_REMINDER_LEAD_HOURS`         | Reminder leads in hours, comma-separated (default `24,2`) |
 | `GuestPush__ExpoAccessToken`            | `EXPO_ACCESS_TOKEN`                      | Only if the EAS project uses enhanced push security       |
