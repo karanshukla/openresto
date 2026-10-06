@@ -2,7 +2,7 @@
 title: Native app overview
 description: What you need, in what order, to publish your own branded guest app.
 sidebar:
-  order: 1
+  order: 2
 ---
 
 OpenResto ships a native guest app (iOS and Android) that you build and publish under your own
@@ -17,7 +17,7 @@ Wallet passes or emails that open the app.
 | Need | Notes |
 | ---- | ----- |
 | A running, public HTTPS OpenResto | The app is built against your server address, see [Which URL goes where](/self-hosting/domains-and-urls/). |
-| A clone of this repository at your server's release | The app and server must match, so check out the same tag. |
+| A clone of this repository at your server's release | The app and server should match, so check out the same tag (for example `v2.4.0`). |
 | Node.js and an [Expo](https://expo.dev) account | For EAS (Expo's build service) builds. |
 | A Google Play developer account | For Android. |
 | An Apple Developer Program membership | For iOS only. |

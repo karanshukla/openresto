@@ -1,0 +1,170 @@
+/* The get.openres.to palette (openresto-landing/site.css) mapped onto Starlight's tokens:
+   warm ink and paper greys, one terracotta accent, Inter. */
+
+:root {
+  --or-accent: #c2562b;
+  --or-accent-600: #a94822;
+  --or-accent-700: #8f3d1e;
+  --or-warm: #e8b04b;
+  --or-ink: #16130f;
+  --or-paper: #f6f2ec;
+  --or-radius: 14px;
+
+  --sl-font: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Dark is Starlight's default theme, so these sit on :root. */
+:root {
+  --sl-color-white: #fbf8f3;
+  --sl-color-gray-1: #f6f2ec;
+  --sl-color-gray-2: #d6cfc4;
+  --sl-color-gray-3: #a59c8f;
+  --sl-color-gray-4: #6f675c;
+  --sl-color-gray-5: #3a342c;
+  --sl-color-gray-6: #211d17;
+  --sl-color-black: #16130f;
+
+  --sl-color-accent-low: #3b2116;
+  --sl-color-accent: #d46a3f;
+  --sl-color-accent-high: #e48b66;
+
+  --sl-color-bg-nav: var(--sl-color-black);
+  --sl-color-bg-sidebar: var(--sl-color-black);
+  --sl-color-hairline: color-mix(in srgb, var(--sl-color-gray-1) 12%, transparent);
+  --sl-color-hairline-light: color-mix(in srgb, var(--sl-color-gray-1) 16%, transparent);
+  --sl-color-backdrop-overlay: rgba(22, 19, 15, 0.7);
+}
+
+:root[data-theme="light"] {
+  --sl-color-white: #1b1815;
+  --sl-color-gray-1: #2a251f;
+  --sl-color-gray-2: #3f3931;
+  --sl-color-gray-3: #635a4f;
+  --sl-color-gray-4: #8f8678;
+  --sl-color-gray-5: #d6cfc4;
+  --sl-color-gray-6: #f4f1ec;
+  --sl-color-gray-7: #f8f6f2;
+  --sl-color-black: #fcfbf9;
+
+  --sl-color-accent-low: #f6ddd0;
+  --sl-color-accent: #c2562b;
+  --sl-color-accent-high: #8f3d1e;
+
+  --sl-color-bg-nav: var(--sl-color-black);
+  --sl-color-bg-sidebar: var(--sl-color-black);
+  --sl-color-hairline: color-mix(in srgb, #1b1815 12%, transparent);
+  --sl-color-hairline-light: color-mix(in srgb, #1b1815 10%, transparent);
+  --sl-color-backdrop-overlay: rgba(22, 19, 15, 0.4);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--or-accent) 30%, transparent);
+}
+
+:focus-visible {
+  outline-color: var(--or-accent);
+}
+
+/* Headings: the landing page's tight, heavy display type. */
+.sl-markdown-content :is(h1, h2, h3, h4),
+h1#_top {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.sl-markdown-content :is(h3, h4) {
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+.sl-markdown-content a {
+  text-underline-offset: 3px;
+}
+
+/* Buttons: filled terracotta with white text, like the landing page's primary CTA. */
+.sl-link-button {
+  border-radius: 10px;
+  font-weight: 600;
+}
+.sl-link-button.primary,
+.sl-link-button.primary:hover {
+  background: var(--or-accent);
+  border-color: var(--or-accent);
+  color: #fff;
+}
+.sl-link-button.primary:hover {
+  background: var(--or-accent-600);
+  border-color: var(--or-accent-600);
+}
+.sl-link-button.secondary {
+  border-color: var(--sl-color-hairline-light);
+}
+
+/* Splash page hero. */
+.hero {
+  padding-block: 3rem 2rem;
+}
+.hero h1 {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+.hero .tagline {
+  color: var(--sl-color-gray-2);
+  max-width: 60ch;
+}
+
+/* Cards: the landing page's warm surface tiles. */
+.card,
+.sl-link-card {
+  border-radius: var(--or-radius);
+  border-color: var(--sl-color-hairline-light);
+  background: var(--sl-color-gray-6);
+}
+.sl-link-card:hover {
+  border-color: var(--or-accent);
+}
+.sl-link-card .icon {
+  color: var(--or-accent);
+}
+
+/* Tables: a little more air, and no hard grid. */
+.sl-markdown-content table {
+  font-size: var(--sl-text-sm);
+}
+.sl-markdown-content :is(th, td) {
+  border-color: var(--sl-color-hairline-light);
+}
+
+/* Sidebar: the current page reads as an accent pill. */
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover {
+  background: color-mix(in srgb, var(--or-accent) 14%, transparent);
+  color: var(--sl-color-accent-high);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Header icons: muted like the landing page's nav links. */
+.social-icons a[rel="me"] {
+  color: var(--sl-color-gray-3);
+}
+.social-icons a[rel="me"]:hover {
+  color: var(--sl-color-white);
+}
+
+/* In dark mode the ink code block needs an edge against the ink page. */
+:root:not([data-theme="light"]) .expressive-code .frame {
+  box-shadow: 0 0 0 1px var(--sl-color-hairline-light);
+}
+
+/* Numbered steps: terracotta markers, like the landing page's icon tiles. */
+.sl-steps > li::before {
+  background: color-mix(in srgb, var(--or-accent) 14%, transparent);
+  color: var(--sl-color-accent-high);
+  font-weight: 700;
+}

@@ -12,14 +12,21 @@ if you're locked out.
 
 The first time OpenResto starts with no accounts, it creates an **Owner** from `ADMIN_EMAIL`
 and `ADMIN_PASSWORD`. After that, these two settings are ignored, so changing `ADMIN_PASSWORD`
-in `.env` won't change your password. Change it from the admin, or use the recovery script below.
+in `.env` won't change your password. Change it from **Settings → Account**, or use the
+recovery script below.
 
 Please choose a long, unique password, since anyone who can reach `/admin` can try to sign in.
 
 ## More people
 
-Owners can add other accounts from the admin. Accounts have a role, **Owner** or **Manager**,
-and can be deactivated without being deleted.
+Owners can add other accounts under **Settings → Users**. Each account has a role:
+
+- **Owner**: everything, including managing users, API keys and the activity log, and deleting
+  locations.
+- **Manager**: everything else, such as bookings, locations, tables and brand settings.
+
+Accounts can be deactivated without being deleted. There is always at least one active Owner,
+and you can't deactivate yourself or change your own role.
 
 ## API keys
 
@@ -31,27 +38,34 @@ tied to the person who made it and only has the permissions you give it. See
 ## Locked out
 
 `scripts/reset-admin.sh` from the repository resets one account's login and makes it an
-active Owner again. Your bookings, locations and media are left alone. Run it on
-the server that hosts the containers. It needs `python3` and Docker on the host.
+active Owner again. Your bookings, locations and media are left alone. Run it on the server
+that hosts the containers. It needs `python3` and Docker on the host.
+
+The script looks for `.env` in the folder **above** its own, so download it into a `scripts`
+folder inside your install directory:
 
 ```bash
-# download it once
-curl -fsSLO https://raw.githubusercontent.com/karanshukla/openresto/main/scripts/reset-admin.sh
-chmod +x reset-admin.sh
+cd openresto                      # the folder with docker-compose.yml and .env
+mkdir -p scripts
+curl -fsSLo scripts/reset-admin.sh https://raw.githubusercontent.com/karanshukla/openresto/main/scripts/reset-admin.sh
+chmod +x scripts/reset-admin.sh
 ```
 
-The script reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from a `.env` one directory above it, and
-defaults to `docker-compose.vps.yml`. For a release install, point it at your compose file:
+Put the email and new password you want in `.env` as `ADMIN_EMAIL` and `ADMIN_PASSWORD`, then
+run it, pointing it at your compose file:
 
 ```bash
-# put the new values in .env, then:
-./reset-admin.sh --compose-file docker-compose.yml
+./scripts/reset-admin.sh --compose-file docker-compose.yml
 ```
 
-If you leave out `--password`, the script makes a random password and shows it once, so note it
-down. You can pass `--password` on the command line, but other users on the server could see it,
-so `.env` or the generated password is safer.
+What it does:
 
-It resets the account whose email matches `--email`, or the lowest-numbered account if none
-matches, and clears its security question and any pending reset token. Other accounts are not
-changed.
+- It resets the account whose email matches, or the lowest-numbered account (the first one
+  created) if none matches, and sets that account's email to the one you gave.
+- It clears that account's security question and any pending reset token. Other accounts are
+  not changed.
+- If `.env` has no `ADMIN_PASSWORD`, it makes up a random password and prints it once, so
+  note it down.
+
+You can also pass `--email` and `--password` on the command line, but other users on the server
+can see command-line arguments, so `.env` or the generated password is safer.

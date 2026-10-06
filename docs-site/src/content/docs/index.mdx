@@ -3,26 +3,53 @@ title: OpenResto documentation
 description: Run your own restaurant booking system, and build on top of it.
 template: splash
 hero:
-  tagline: A self-hosted restaurant booking system. Run it on your own server, then connect it to other tools or ship your own app.
+  tagline: OpenResto is a self-hosted booking system for independent restaurants. These docs cover running it on your own server, connecting it to other tools, and shipping your own guest app.
   actions:
     - text: Install with Docker
       link: /self-hosting/installation/
       icon: right-arrow
-    - text: API reference
-      link: /api/reference/
+    - text: Try the live demo
+      link: https://openres.to
+      icon: external
       variant: minimal
 ---
 
-import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+import { CardGrid, LinkCard, Steps } from "@astrojs/starlight/components";
+
+## New here? Start with these
+
+<Steps>
+
+1. **[Install it](/self-hosting/installation/).** One `docker-compose.yml`, a four-line `.env`
+   and `docker compose up -d`. A small VPS, a NAS or a Raspberry Pi is enough.
+
+2. **[Add HTTPS](/self-hosting/https/).** Put your own domain in front so guests and staff
+   connect securely.
+
+3. **[Connect email](/self-hosting/email/).** Optional, but guests get a confirmation with a
+   link back to their booking.
+
+4. **[Schedule backups](/self-hosting/backup-restore/).** Everything lives in two Docker
+   volumes, and one command saves both.
+
+</Steps>
+
+## Running it
 
 <CardGrid>
-  <LinkCard title="Install" href="/self-hosting/installation/" description="Docker Compose and pre-built images. No other services needed." />
   <LinkCard title="Configuration" href="/self-hosting/configuration/" description="Every setting you can change, grouped by what it does." />
   <LinkCard title="Which URL goes where" href="/self-hosting/domains-and-urls/" description="Which address to use for CORS_ORIGINS, WEBSITE_URL and the native app." />
-  <LinkCard title="Push notifications" href="/self-hosting/push-notifications/" description="Turn on browser notifications and sort out common snags." />
-  <LinkCard title="Native app overview" href="/guides/native-app-overview/" description="The steps to publish your own branded guest app." />
-  <LinkCard title="HTTPS and reverse proxies" href="/self-hosting/https/" description="Add HTTPS, with your own proxy or the bundled nginx." />
-  <LinkCard title="Backup and restore" href="/self-hosting/backup-restore/" description="What to save, and how to get it back." />
-  <LinkCard title="Feature reference" href="/guides/features/" description="How each booking feature behaves and the fields behind it." />
-  <LinkCard title="Calling the API" href="/api/authentication/" description="API keys, scopes and curl examples." />
+  <LinkCard title="Push notifications" href="/self-hosting/push-notifications/" description="Turn on browser notifications for new bookings and guest reminders." />
+  <LinkCard title="Admin accounts" href="/self-hosting/admin-accounts/" description="Add staff, choose roles, and get back in if you are locked out." />
+  <LinkCard title="Upgrading" href="/self-hosting/upgrading/" description="Move to a new release, and roll back if you need to." />
+  <LinkCard title="Troubleshooting" href="/self-hosting/troubleshooting/" description="Where to look first when something doesn't work." />
+</CardGrid>
+
+## Using and extending it
+
+<CardGrid>
+  <LinkCard title="Feature reference" href="/guides/features/" description="How opening hours, walk-ins, pacing, statuses and the rest behave." />
+  <LinkCard title="Your own guest app" href="/guides/native-app-overview/" description="Publish a branded iOS and Android app for your restaurant." />
+  <LinkCard title="Calling the API" href="/api/authentication/" description="API keys, permissions and curl examples." />
+  <LinkCard title="API reference" href="/api/reference/" description="Every endpoint, generated from the running API." />
 </CardGrid>

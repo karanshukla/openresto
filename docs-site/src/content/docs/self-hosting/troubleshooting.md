@@ -33,7 +33,8 @@ Look at the first error in `docker compose logs backend`.
 - If the page loads but sign-in fails, check `CORS_ORIGINS` matches the address in your
   browser's address bar exactly: same scheme, host and port.
 - Behind a proxy, check it forwards `X-Forwarded-Proto`, see [HTTPS](/self-hosting/https/).
-- Sign-in attempts are rate limited per IP address per minute, so after several failed tries you may need to wait a minute.
+- Sign-in is limited to 10 attempts a minute per IP address, so after several failed tries,
+  wait a minute before the next one.
 
 ## 502 from the reverse proxy
 
@@ -43,8 +44,9 @@ backend logs.
 
 ## Uploads fail
 
-Hero images can be up to 5 MB and menu PDFs up to 10 MB. The bundled proxy allows 12 MB
-uploads. If you use your own proxy, please allow at least that.
+The size limits are 5 MB for the hero image, 2 MB for a location photo and 10 MB for a menu
+PDF. The bundled proxy allows 12 MB requests. If you put your own proxy in front, allow at
+least 12 MB there too (`client_max_body_size 12M;` in nginx).
 
 ## No emails
 
@@ -55,6 +57,13 @@ not in `.env`.
 
 Push needs HTTPS and all three VAPID values. The settings card's message tells you which is missing, see [Push notifications](/self-hosting/push-notifications/#what-the-toggle-is-telling-you).
 
+## Guests see "Too many requests"
+
+Guest pages allow 120 requests a minute per IP address, and booking lookups 10. Guests behind
+one shared address (hotel Wi-Fi, a mobile carrier) count as one visitor. Check that your proxy
+forwards `X-Forwarded-For`, otherwise **every** guest looks like your proxy's address. The
+limits themselves are fixed, see [Configuration](/self-hosting/configuration/#fixed-limits).
+
 ## Emails or passes link to localhost
 
 The server is using its development address. Set `CORS_ORIGINS` to your public address, see [Which URL goes where](/self-hosting/domains-and-urls/).
@@ -62,5 +71,5 @@ The server is using its development address. Set `CORS_ORIGINS` to your public a
 ## Still stuck
 
 Search the [issues](https://github.com/karanshukla/openresto/issues). If you can't find your
-problem, please open one with your version (`docker compose images`), what you expected, and the relevant log lines.
-Please remove secrets from anything you paste.
+problem, open one with your version (`docker compose images`), what you expected, and the
+relevant log lines. Remove secrets from anything you paste.

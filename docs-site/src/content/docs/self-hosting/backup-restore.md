@@ -1,161 +1,137 @@
 ---
 title: Backup and restore
+description: What to save, how to save it, and how to get it back.
 sidebar:
   order: 9
 ---
 
-This page shows what to back up and how to restore it. Everything OpenResto saves lives in Docker volumes (storage areas managed by Docker), so there's no separate database or storage service to back up.
+This page shows what to back up and how to restore it. Everything OpenResto saves lives in two
+Docker volumes, so there is no separate database server or storage service to worry about.
 
 ## What to back up
 
-| Location | Contains | Priority |
-|---|---|---|
-| `/data/openresto.db` (volume `db_data`) | All bookings, restaurants, tables, sections, admin credentials, brand settings, push subscriptions | **Critical** |
-| `/app/wwwroot/media` (volume `media_data`) | Uploaded images | Medium |
-| `/data/dp-keys` (inside `db_data`) | ASP.NET Data Protection keys (encrypt the recent-bookings cookie) | Low. Losing these clears the "my recent bookings" lookup, but no booking data is lost |
+| What | Where | Why it matters |
+| ---- | ----- | -------------- |
+| The database, `openresto.db` | `/data` in the backend (volume `db_data`) | **Everything**: bookings, locations, tables, accounts, brand and email settings. |
+| Data Protection keys | `/data/dp-keys`, in the same volume | Encrypt the saved SMTP password and the guest "recent bookings" cookie. Lose them and you re-enter the SMTP password; no bookings are lost. |
+| Uploaded media | `/app/wwwroot/media` (volume `media_data`) | Hero image, location photos and menu PDFs. |
+| `.env` and `docker-compose.yml` | Next to each other on the host | Your secrets and settings, including the VAPID keys browsers subscribed with. |
+| `./wallet`, `./well-known` | Next to `docker-compose.yml` | Only if you set up Wallet passes or a native app. |
 
-## Before you back up
+The commands below are run from the directory that holds `docker-compose.yml`. They reach the
+volumes through the backend container (`--volumes-from`), so they work whatever Docker named
+the volumes. Docker prefixes them with the project name, so `db_data` is really something like
+`openresto_db_data`, which `docker volume ls` shows.
 
-First, flush pending writes (the SQLite WAL) so the backup is complete:
+## Back up
 
-```bash
-docker compose exec backend sqlite3 /data/openresto.db "PRAGMA wal_checkpoint(TRUNCATE);"
-```
-
-This also happens automatically when you stop the backend with `docker compose stop`, so stopping before you copy works too.
-
-## Backing up named volumes (default install)
-
-The release `docker-compose.yml` uses named volumes (`db_data`, `media_data`). Back them up with a temporary Alpine container that reads the volume and saves a `.tar.gz` file:
+Stopping the backend for a few seconds gives you a clean copy, since SQLite finishes writing
+everything when it shuts down. Guests see the site as unavailable for that moment.
 
 ```bash
-# Backup the database volume
-docker run --rm \
-  -v db_data:/data:ro \
-  -v "$(pwd)/backups":/backups \
-  alpine tar czf /backups/openresto-db-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
-
-# Backup the media volume
-docker run --rm \
-  -v media_data:/media:ro \
-  -v "$(pwd)/backups":/backups \
-  alpine tar czf /backups/openresto-media-$(date +%Y%m%d-%H%M%S).tar.gz -C /media .
-```
-
-> If you changed the project name, use your real volume names instead of `db_data` / `media_data` (check with `docker volume ls`). The default names are `<project-directory-name>_db_data`.
-
-## Backing up bind mounts (VPS/custom install)
-
-If you mounted `./data:/data` directly (as in the `docker-compose.vps.yml`), copy the directory:
-
-```bash
-cp -r ./data ./backups/openresto-data-$(date +%Y%m%d-%H%M%S)
-```
-
-## Restore
-
-```bash
-# 1. Stop the backend so nothing is written during the restore
+mkdir -p backups
 docker compose stop backend
 
-# 2. Restore the database volume (replace TIMESTAMP with your backup's timestamp)
-docker run --rm \
-  -v db_data:/data \
-  -v "$(pwd)/backups":/backups \
-  alpine sh -c "rm -rf /data/* && tar xzf /backups/openresto-db-TIMESTAMP.tar.gz -C /data"
+docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
+  -v "$PWD/backups":/backups alpine \
+  tar czf "/backups/openresto-$(date +%Y%m%d-%H%M%S).tar.gz" -C / data app/wwwroot/media
 
-# 3. Restore the media volume (if needed)
-docker run --rm \
-  -v media_data:/media \
-  -v "$(pwd)/backups":/backups \
-  alpine sh -c "rm -rf /media/* && tar xzf /backups/openresto-media-TIMESTAMP.tar.gz -C /media"
-
-# 4. Start everything back up
 docker compose start backend
 ```
 
-:::caution
-The restore replaces what is currently in the volumes. If you are unsure, take a fresh backup first.
-:::
+That one archive holds the database, the keys and the media. Copy `.env` and `backups/` somewhere
+off the server too: a backup on the same disk doesn't help if the disk dies.
 
-## Automated daily backups
+### Without stopping anything
 
-Example cron job with 7-day retention:
-
-```bash
-# /etc/cron.d/openresto-backup
-0 3 * * * root /opt/openresto/backup.sh >> /var/log/openresto-backup.log 2>&1
-```
+To back up while OpenResto keeps running, let SQLite take a snapshot of itself, then copy the
+snapshot out:
 
 ```bash
-#!/bin/sh
-# /opt/openresto/backup.sh
-set -e
+docker compose exec backend sqlite3 /data/openresto.db ".backup /data/openresto-snapshot.db"
 
-COMPOSE_DIR=/opt/openresto
-BACKUP_DIR=/opt/openresto/backups
-DATE=$(date +%Y%m%d-%H%M%S)
-
-mkdir -p "$BACKUP_DIR"
-
-# Checkpoint WAL for a consistent copy
-docker compose -f "$COMPOSE_DIR/docker-compose.yml" \
-  exec -T backend sqlite3 /data/openresto.db "PRAGMA wal_checkpoint(TRUNCATE);" || true
-
-# Backup database
-docker run --rm \
-  -v db_data:/data:ro \
-  -v "$BACKUP_DIR":/backups \
-  alpine tar czf "/backups/db-$DATE.tar.gz" -C /data .
-
-# Remove backups older than 7 days
-find "$BACKUP_DIR" -name "db-*.tar.gz" -mtime +7 -delete
-
-echo "$DATE backup complete: $BACKUP_DIR/db-$DATE.tar.gz"
+docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
+  -v "$PWD/backups":/backups alpine \
+  mv /data/openresto-snapshot.db "/backups/openresto-$(date +%Y%m%d-%H%M%S).db"
 ```
 
-## Point-in-time online backup
+This covers the database only. Back up media with the archive above when it changes.
 
-To back up while OpenResto keeps running, use SQLite's online backup:
+## Restore
+
+The restore replaces what is in the volumes now. If you are unsure, take a fresh backup first.
 
 ```bash
-docker compose exec backend sqlite3 /data/openresto.db \
-  ".backup /data/openresto-snapshot.db"
+docker compose stop backend
+
+# Swap TIMESTAMP for the backup you want.
+docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
+  -v "$PWD/backups":/backups alpine \
+  sh -c 'rm -rf /data/* /app/wwwroot/media/* && tar xzf /backups/openresto-TIMESTAMP.tar.gz -C /'
+
+docker compose start backend
 ```
 
-This creates `/data/openresto-snapshot.db` inside the `db_data` volume. Copy it out with:
+To restore a `.db` snapshot instead, stop the backend, copy it over `/data/openresto.db` the
+same way (and delete any `openresto.db-wal` and `openresto.db-shm` beside it), then start it.
 
-```bash
-docker run --rm \
-  -v db_data:/data:ro \
-  -v "$(pwd)/backups":/backups \
-  alpine cp /data/openresto-snapshot.db /backups/openresto-snapshot-$(date +%Y%m%d-%H%M%S).db
-```
-
-## Upgrading between versions
-
-The database updates itself when OpenResto starts, and your data is kept. Still, please back up first. See also [Upgrading](/self-hosting/upgrading/).
-
-```bash
-# 1. Back up first (see above)
-# 2. Pull the new images
-OPENRESTO_VERSION=v1.x.x docker compose -f docker-compose.yml pull
-# 3. Restart (the database updates itself before the health check passes)
-OPENRESTO_VERSION=v1.x.x docker compose -f docker-compose.yml up -d
-```
-
-The backend logs will show lines like:
-```
-Applying migration '20260604104824_NullableBookingTableSection'...
-```
-
-If the update fails, the backend stops and you see an error page instead of a broken app. Restore from your backup and report the issue.
-
-## Checking database integrity
-
-Run this after a restore or before an upgrade:
+Afterwards, check the database is sound:
 
 ```bash
 docker compose exec backend sqlite3 /data/openresto.db "PRAGMA integrity_check;"
-# You should see: ok
+# ok
 ```
+
+## Automatic daily backups
+
+This script backs up the database every night without stopping anything and keeps a week of
+copies. Save it as `/opt/openresto/backup.sh`, change `COMPOSE_DIR` to your install directory,
+and make it executable with `chmod +x`.
+
+```bash
+#!/bin/sh
+set -e
+
+COMPOSE_DIR=/opt/openresto
+BACKUP_DIR="$COMPOSE_DIR/backups"
+DATE=$(date +%Y%m%d-%H%M%S)
+
+cd "$COMPOSE_DIR"
+mkdir -p "$BACKUP_DIR"
+
+docker compose exec -T backend sqlite3 /data/openresto.db ".backup /data/openresto-snapshot.db"
+docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
+  -v "$BACKUP_DIR":/backups alpine \
+  mv /data/openresto-snapshot.db "/backups/openresto-$DATE.db"
+
+# Keep seven days.
+find "$BACKUP_DIR" -name "openresto-*.db" -mtime +7 -delete
+
+echo "$DATE backup complete: $BACKUP_DIR/openresto-$DATE.db"
+```
+
+Then schedule it for 3 a.m. with a file at `/etc/cron.d/openresto-backup`:
+
+```txt
+0 3 * * * root /opt/openresto/backup.sh >> /var/log/openresto-backup.log 2>&1
+```
+
+## The VPS compose file
+
+`docker-compose.vps.yml` keeps the database in a `./data` folder on the host rather than a
+volume. Every command above still works, because `--volumes-from` follows bind mounts too. You
+can also just copy the folder while the backend is stopped:
+
+```bash
+docker compose -f docker-compose.vps.yml stop backend
+cp -r ./data "./backups/openresto-data-$(date +%Y%m%d-%H%M%S)"
+docker compose -f docker-compose.vps.yml start backend
+```
+
+Add `-f docker-compose.vps.yml` to every `docker compose` command on this page when you use it.
+
+## Before an upgrade
+
+Take a backup first, every time. The database updates itself when a new version starts, and an
+older version may not understand the updated database. The full steps are in
+[Upgrading](/self-hosting/upgrading/).
