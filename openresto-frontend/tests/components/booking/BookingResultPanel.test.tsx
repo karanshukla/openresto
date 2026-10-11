@@ -18,7 +18,7 @@ const mockBooking = {
   bookingRef: "REF123",
   customerEmail: "test@test.com",
   restaurantId: 1,
-  date: "2026-10-10T12:00:00Z",
+  date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
   seats: 2,
   isCancelled: false,
 } as BookingDto;
