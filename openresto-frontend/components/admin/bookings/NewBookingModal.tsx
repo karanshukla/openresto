@@ -1,12 +1,5 @@
-import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  TouchableWithoutFeedback,
-  View,
-} from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
@@ -20,6 +13,7 @@ import { fetchRestaurants, RestaurantDto, SectionDto } from "@/api/restaurants";
 import { isValidEmail } from "@/utils/validation";
 import { adminCreateBooking } from "@/api/admin";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { styles } from "./NewBookingModal.styles";
 import { Icon } from "@/components/common/Icon";
 
@@ -48,6 +42,8 @@ interface NewBookingModalProps {
 export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModalProps) {
   const { t } = useTranslation();
   const { colors, primaryColor: PRIMARY } = useAppTheme();
+  const dialogRef = useRef<View>(null);
+  useDialogFocus(visible, dialogRef);
   const borderColor = colors.border;
   const mutedColor = colors.muted;
 
@@ -191,153 +187,154 @@ export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModal
   return (
     <>
       <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-        <Pressable
-          style={styles.backdrop}
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel={t("admin.bookings.newBookingModal.closeFormLabel")}
-        >
-          <TouchableWithoutFeedback>
-            <View
-              role="dialog"
-              aria-modal
-              accessibilityViewIsModal
-              accessibilityLabel={t("admin.bookings.newBookingModal.dialogLabel")}
-              style={[styles.sheet, { backgroundColor: colors.card, borderColor }]}
-            >
-              <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                <ThemedText style={styles.title} accessibilityRole="header">
-                  {t("admin.bookings.newBooking")}
-                </ThemedText>
-                <Pressable
-                  onPress={onClose}
-                  style={styles.closeBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("common.actions.close")}
-                  hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
-                >
-                  <Icon name="close" size={22} color={mutedColor} />
-                </Pressable>
-              </View>
+        <View style={styles.backdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel={t("admin.bookings.newBookingModal.closeFormLabel")}
+          />
+          <View
+            ref={dialogRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal
+            accessibilityViewIsModal
+            accessibilityLabel={t("admin.bookings.newBookingModal.dialogLabel")}
+            style={[styles.sheet, { backgroundColor: colors.card, borderColor }]}
+          >
+            <View style={[styles.header, { borderBottomColor: borderColor }]}>
+              <ThemedText style={styles.title} accessibilityRole="header">
+                {t("admin.bookings.newBooking")}
+              </ThemedText>
+              <Pressable
+                onPress={onClose}
+                style={styles.closeBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t("common.actions.close")}
+                hitSlop={{ top: 11, bottom: 11, left: 11, right: 11 }}
+              >
+                <Icon name="close" size={22} color={mutedColor} />
+              </Pressable>
+            </View>
 
-              {loading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator
-                    size="large"
-                    color={PRIMARY}
-                    accessibilityLabel={t("admin.bookings.newBookingModal.loadingForm")}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator
+                  size="large"
+                  color={PRIMARY}
+                  accessibilityLabel={t("admin.bookings.newBookingModal.loadingForm")}
+                />
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.body}
+                contentContainerStyle={styles.bodyContent}
+                keyboardShouldPersistTaps="handled"
+              >
+                {error && (
+                  <View style={styles.errorBanner}>
+                    <ThemedText style={styles.errorText}>{error}</ThemedText>
+                  </View>
+                )}
+
+                <View style={styles.field}>
+                  <ThemedText style={styles.label}>
+                    {t("admin.bookings.form.restaurant")}
+                  </ThemedText>
+                  <Select
+                    selectedValue={restaurantId}
+                    onSelect={handleRestaurantChange}
+                    options={restaurantOptions}
                   />
                 </View>
-              ) : (
-                <ScrollView
-                  style={styles.body}
-                  contentContainerStyle={styles.bodyContent}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {error && (
-                    <View style={styles.errorBanner}>
-                      <ThemedText style={styles.errorText}>{error}</ThemedText>
-                    </View>
-                  )}
 
-                  <View style={styles.field}>
-                    <ThemedText style={styles.label}>
-                      {t("admin.bookings.form.restaurant")}
-                    </ThemedText>
+                <View style={styles.fieldRow}>
+                  <View style={[styles.fieldHalf, styles.field]}>
+                    <ThemedText style={styles.label}>{t("booking.form.sectionLabel")}</ThemedText>
                     <Select
-                      selectedValue={restaurantId}
-                      onSelect={handleRestaurantChange}
-                      options={restaurantOptions}
+                      selectedValue={sectionId}
+                      onSelect={handleSectionChange}
+                      options={sectionOptions}
                     />
                   </View>
-
-                  <View style={styles.fieldRow}>
-                    <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>{t("booking.form.sectionLabel")}</ThemedText>
-                      <Select
-                        selectedValue={sectionId}
-                        onSelect={handleSectionChange}
-                        options={sectionOptions}
-                      />
-                    </View>
-                    <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>{t("booking.form.tableLabel")}</ThemedText>
-                      <Select
-                        selectedValue={tableId}
-                        onSelect={(v) => setTableId(v as number)}
-                        options={tableOptions}
-                      />
-                    </View>
+                  <View style={[styles.fieldHalf, styles.field]}>
+                    <ThemedText style={styles.label}>{t("booking.form.tableLabel")}</ThemedText>
+                    <Select
+                      selectedValue={tableId}
+                      onSelect={(v) => setTableId(v as number)}
+                      options={tableOptions}
+                    />
                   </View>
+                </View>
 
-                  <View style={styles.fieldRow}>
-                    <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>{t("booking.form.dateLabel")}</ThemedText>
-                      <DatePicker selectedDate={date} onSelect={handleDateSelect} allowPast />
-                    </View>
-                    <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>{t("booking.form.timeLabel")}</ThemedText>
-                      <TimePicker
-                        selectedTime={time}
-                        onSelect={setTime}
-                        minTime={getHoursForDate(selectedRestaurant ?? {}, date).open}
-                        maxTime={getHoursForDate(selectedRestaurant ?? {}, date).close}
-                      />
-                    </View>
+                <View style={styles.fieldRow}>
+                  <View style={[styles.fieldHalf, styles.field]}>
+                    <ThemedText style={styles.label}>{t("booking.form.dateLabel")}</ThemedText>
+                    <DatePicker selectedDate={date} onSelect={handleDateSelect} allowPast />
                   </View>
-
-                  <View style={styles.fieldRow}>
-                    <View style={[styles.fieldHalf, styles.field]}>
-                      <ThemedText style={styles.label}>{t("booking.form.guestsLabel")}</ThemedText>
-                      <Select
-                        selectedValue={seats}
-                        onSelect={(v) => setSeats(v as number)}
-                        options={seatOptions}
-                      />
-                    </View>
-                    <View style={styles.fieldHalf}>
-                      <ThemedText style={styles.label}>
-                        {t("admin.bookings.form.guestNameOptional")}
-                      </ThemedText>
-                      <Input
-                        placeholder={t("admin.bookings.form.namePlaceholder")}
-                        value={guestName}
-                        onChangeText={setGuestName}
-                        autoCapitalize="words"
-                      />
-                    </View>
+                  <View style={[styles.fieldHalf, styles.field]}>
+                    <ThemedText style={styles.label}>{t("booking.form.timeLabel")}</ThemedText>
+                    <TimePicker
+                      selectedTime={time}
+                      onSelect={setTime}
+                      minTime={getHoursForDate(selectedRestaurant ?? {}, date).open}
+                      maxTime={getHoursForDate(selectedRestaurant ?? {}, date).close}
+                    />
                   </View>
+                </View>
 
-                  <View style={styles.field}>
+                <View style={styles.fieldRow}>
+                  <View style={[styles.fieldHalf, styles.field]}>
+                    <ThemedText style={styles.label}>{t("booking.form.guestsLabel")}</ThemedText>
+                    <Select
+                      selectedValue={seats}
+                      onSelect={(v) => setSeats(v as number)}
+                      options={seatOptions}
+                    />
+                  </View>
+                  <View style={styles.fieldHalf}>
                     <ThemedText style={styles.label}>
-                      {t("admin.bookings.form.guestEmail")}
+                      {t("admin.bookings.form.guestNameOptional")}
                     </ThemedText>
                     <Input
-                      placeholder={t("admin.bookings.form.emailPlaceholder")}
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
+                      placeholder={t("admin.bookings.form.namePlaceholder")}
+                      value={guestName}
+                      onChangeText={setGuestName}
+                      autoCapitalize="words"
                     />
                   </View>
+                </View>
 
-                  <Button
-                    size="md"
-                    fullWidth
-                    style={styles.submitBtn}
-                    onPress={handleSubmit}
-                    disabled={!isValid || submitting}
-                    loading={submitting}
-                  >
-                    {submitting
-                      ? t("admin.bookings.newBookingModal.creating")
-                      : t("admin.bookings.newBookingModal.submit")}
-                  </Button>
-                </ScrollView>
-              )}
-            </View>
-          </TouchableWithoutFeedback>
-        </Pressable>
+                <View style={styles.field}>
+                  <ThemedText style={styles.label}>
+                    {t("admin.bookings.form.guestEmail")}
+                  </ThemedText>
+                  <Input
+                    placeholder={t("admin.bookings.form.emailPlaceholder")}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <Button
+                  size="md"
+                  fullWidth
+                  style={styles.submitBtn}
+                  onPress={handleSubmit}
+                  disabled={!isValid || submitting}
+                  loading={submitting}
+                >
+                  {submitting
+                    ? t("admin.bookings.newBookingModal.creating")
+                    : t("admin.bookings.newBookingModal.submit")}
+                </Button>
+              </ScrollView>
+            )}
+          </View>
+        </View>
       </Modal>
 
       <ConfirmModal
