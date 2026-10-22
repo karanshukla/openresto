@@ -583,7 +583,7 @@ jobs:
 
       - name: Install Playwright Browsers
         working-directory: openresto-frontend
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run Playwright Smoke Tests
         working-directory: openresto-frontend
@@ -670,7 +670,7 @@ jobs:
 
       - name: Install Playwright Browsers
         working-directory: openresto-frontend
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run Playwright Extensive Tests
         working-directory: openresto-frontend

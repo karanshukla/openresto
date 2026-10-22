@@ -3,6 +3,29 @@ import path from "path";
 
 const ADMIN_STATE_FILE = path.join(__dirname, "e2e/.auth/admin.json");
 
+/* Specs that need the admin cookie; everything else runs unauthenticated. */
+const ADMIN_SPECS = [
+  "**/admin-activity.spec.ts",
+  "**/admin-pause.spec.ts",
+  "**/admin-extend.spec.ts",
+  "**/brand-colour.spec.ts",
+  "**/lookup.spec.ts",
+  "**/keyboard-shortcuts.spec.ts",
+  "**/cancel-past-booking.spec.ts",
+  "**/admin-change-email.spec.ts",
+  "**/admin-reorder-sections.spec.ts",
+  "**/auth-security.spec.ts",
+  "**/admin-session.spec.ts",
+  "**/admin-dashboard.spec.ts",
+  "**/admin-highlights-crud.spec.ts",
+  "**/admin-notifications-layout.spec.ts",
+  "**/admin-sections-tables-crud.spec.ts",
+  "**/admin-users.spec.ts",
+  "**/brand-identity.spec.ts",
+  "**/walk-in-days.spec.ts",
+  "**/admin-locale-fr.spec.ts",
+];
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -42,27 +65,7 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: [
-        "**/admin-activity.spec.ts",
-        "**/admin-pause.spec.ts",
-        "**/admin-extend.spec.ts",
-        "**/brand-colour.spec.ts",
-        "**/lookup.spec.ts",
-        "**/keyboard-shortcuts.spec.ts",
-        "**/cancel-past-booking.spec.ts",
-        "**/admin-change-email.spec.ts",
-        "**/admin-reorder-sections.spec.ts",
-        "**/auth-security.spec.ts",
-        "**/admin-session.spec.ts",
-        "**/admin-dashboard.spec.ts",
-        "**/admin-highlights-crud.spec.ts",
-        "**/admin-notifications-layout.spec.ts",
-        "**/admin-sections-tables-crud.spec.ts",
-        "**/admin-users.spec.ts",
-        "**/brand-identity.spec.ts",
-        "**/walk-in-days.spec.ts",
-        "**/admin-locale-fr.spec.ts",
-      ],
+      testIgnore: ADMIN_SPECS,
     },
     // ── Admin tests — pre-loaded auth cookie ────────────────────────────────
     {
@@ -71,27 +74,21 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         storageState: ADMIN_STATE_FILE,
       },
-      testMatch: [
-        "**/admin-activity.spec.ts",
-        "**/admin-pause.spec.ts",
-        "**/admin-extend.spec.ts",
-        "**/brand-colour.spec.ts",
-        "**/lookup.spec.ts",
-        "**/keyboard-shortcuts.spec.ts",
-        "**/cancel-past-booking.spec.ts",
-        "**/admin-change-email.spec.ts",
-        "**/admin-reorder-sections.spec.ts",
-        "**/auth-security.spec.ts",
-        "**/admin-session.spec.ts",
-        "**/admin-dashboard.spec.ts",
-        "**/admin-highlights-crud.spec.ts",
-        "**/admin-notifications-layout.spec.ts",
-        "**/admin-sections-tables-crud.spec.ts",
-        "**/admin-users.spec.ts",
-        "**/brand-identity.spec.ts",
-        "**/walk-in-days.spec.ts",
-        "**/admin-locale-fr.spec.ts",
-      ],
+      testMatch: ADMIN_SPECS,
+    },
+    // ── Safari (WebKit) — same split as above ───────────────────────────────
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+      testIgnore: ADMIN_SPECS,
+    },
+    {
+      name: "webkit-admin",
+      use: {
+        ...devices["Desktop Safari"],
+        storageState: ADMIN_STATE_FILE,
+      },
+      testMatch: ADMIN_SPECS,
     },
   ],
 });

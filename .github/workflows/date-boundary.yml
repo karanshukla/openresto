@@ -60,7 +60,7 @@ jobs:
 
       - name: Install Playwright Browsers
         working-directory: openresto-frontend
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Pin the clock to the last day of this month
         id: pin

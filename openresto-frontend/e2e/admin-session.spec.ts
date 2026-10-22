@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from "./helpers";
-import { ADMIN_STATE_FILE } from "./global-setup";
+import { saveAdminState } from "./global-setup";
 
 /**
  * The admin auth-session lifecycle. Every admin spec implicitly depends on the
@@ -30,7 +30,7 @@ test.describe("Admin session lifecycle", { tag: "@smoke" }, () => {
     await ctx.request.post("/api/admin/auth/login", {
       data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
     });
-    await ctx.storageState({ path: ADMIN_STATE_FILE });
+    await saveAdminState(ctx);
     await ctx.close();
   });
 
