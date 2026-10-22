@@ -1,8 +1,21 @@
-import { chromium } from "@playwright/test";
+import { chromium, type BrowserContext } from "@playwright/test";
+import fs from "fs";
 import path from "path";
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from "./helpers";
 
 export const ADMIN_STATE_FILE = path.join(__dirname, ".auth/admin.json");
+
+/**
+ * Persist the context's admin cookie to ADMIN_STATE_FILE for the admin projects.
+ * Outside Development the cookie is Secure, and the E2E stack is plain http://localhost:
+ * Chromium sends a Secure cookie to localhost anyway, WebKit doesn't, so the flag is cleared.
+ */
+export async function saveAdminState(ctx: BrowserContext) {
+  const state = await ctx.storageState();
+  const cookies = state.cookies.map((c) => ({ ...c, secure: false }));
+  fs.mkdirSync(path.dirname(ADMIN_STATE_FILE), { recursive: true });
+  fs.writeFileSync(ADMIN_STATE_FILE, JSON.stringify({ ...state, cookies }, null, 2));
+}
 
 /**
  * Login once before all tests run and save the auth cookie to disk.
@@ -23,6 +36,6 @@ export default async function globalSetup() {
   }
 
   // Persist cookies so every admin test can load this state
-  await ctx.storageState({ path: ADMIN_STATE_FILE });
+  await saveAdminState(ctx);
   await browser.close();
 }
