@@ -1150,4 +1150,100 @@ public class AvailabilityServiceTests
         TimeSpan timeOfDay = TimeSpan.Parse(slotTime, System.Globalization.CultureInfo.InvariantCulture);
         return timeOfDay >= TimeSpan.FromHours(18) ? localDate + timeOfDay : localDate.AddDays(1) + timeOfDay;
     }
+
+
+    // ── Last booking time ─────────────────────────────────────────────────────
+
+    private static AvailabilityService NewAvailabilityService(AppDbContext db)
+        => new(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+
+    [Fact]
+    public async Task GetAvailabilityAsync_OffersSlotsUpToClose_WhenNoLastBookingTimeIsSet()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_OffersSlotsUpToClose_WhenNoLastBookingTimeIsSet));
+        TestSeed.RestaurantWithHours(db, open: "11:00", close: "13:00");
+
+        AvailabilityResponseDto result = await NewAvailabilityService(db)
+            .GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal(["11:00", "11:30", "12:00", "12:30"], result.Slots.Select(s => s.Time));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_OffersTheSlotAtTheLastBookingTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_OffersTheSlotAtTheLastBookingTime));
+        TestSeed.RestaurantWithHours(db, open: "11:00", close: "13:00");
+        db.Restaurants.First().LastBookingTime = "12:00";
+        db.SaveChanges();
+
+        AvailabilityResponseDto result = await NewAvailabilityService(db)
+            .GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal("12:00", result.Slots.Last().Time);
+        Assert.True(result.Slots.Last().IsAvailable);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_OffersNoSlotAfterTheLastBookingTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_OffersNoSlotAfterTheLastBookingTime));
+        TestSeed.RestaurantWithHours(db, open: "11:00", close: "13:00");
+        db.Restaurants.First().LastBookingTime = "12:00";
+        db.SaveChanges();
+
+        AvailabilityResponseDto result = await NewAvailabilityService(db)
+            .GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        // Left out, not marked unavailable: the service is open then, so a closed slot would read
+        // as "fully booked".
+        Assert.Equal(["11:00", "11:30", "12:00"], result.Slots.Select(s => s.Time));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_OffersAnOffGridLastBookingTime_ThroughTheSlotBeforeIt()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_OffersAnOffGridLastBookingTime_ThroughTheSlotBeforeIt));
+        TestSeed.RestaurantWithHours(db, open: "11:00", close: "13:00");
+        db.Restaurants.First().LastBookingTime = "12:15";
+        db.SaveChanges();
+
+        AvailabilityResponseDto result = await NewAvailabilityService(db)
+            .GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal("12:00", result.Slots.Last().Time);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_UsesTheDaysOwnLastBooking_OverTheRestaurantWideOne()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesTheDaysOwnLastBooking_OverTheRestaurantWideOne));
+        TestSeed.RestaurantWithHours(db, open: "11:00", close: "13:00");
+        Restaurant r = db.Restaurants.First();
+        r.LastBookingTime = "11:00";
+        r.OpenHoursJson = """{"6":{"open":"11:00","close":"13:00","lastBooking":"12:30"}}""";
+        db.SaveChanges();
+
+        // 2026-10-10 is a Saturday (ISO day 6), 2026-10-09 the Friday before it.
+        AvailabilityService svc = NewAvailabilityService(db);
+        AvailabilityResponseDto saturday = await svc.GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+        AvailabilityResponseDto friday = await svc.GetAvailabilityAsync(1, new DateTime(2026, 10, 9, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal("12:30", saturday.Slots.Last().Time);
+        Assert.Equal(["11:00"], friday.Slots.Select(s => s.Time));
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_RunsAnOvernightServiceUpToItsAfterMidnightLastBooking()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_RunsAnOvernightServiceUpToItsAfterMidnightLastBooking));
+        TestSeed.RestaurantWithHours(db, open: "22:00", close: "02:00");
+        db.Restaurants.First().LastBookingTime = "00:30";
+        db.SaveChanges();
+
+        AvailabilityResponseDto result = await NewAvailabilityService(db)
+            .GetAvailabilityAsync(1, new DateTime(2026, 10, 10, 0, 0, 0, DateTimeKind.Utc), 2);
+
+        Assert.Equal(["22:00", "22:30", "23:00", "23:30", "00:00", "00:30"], result.Slots.Select(s => s.Time));
+    }
 }

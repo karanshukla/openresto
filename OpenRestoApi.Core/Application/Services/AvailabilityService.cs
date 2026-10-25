@@ -36,13 +36,14 @@ public sealed class AvailabilityService(
         }
 
         (DateTime localStart, DateTime localEnd) = ServiceWindowHelper.LocalWindowFor(restaurant, localDate, isoDay);
+        DateTime lastStart = LastBookableStart(restaurant, localDate, isoDay, localEnd);
         var reservations = new UnitReservations(restaurant, activeBookings);
         List<Table> eligibleTables = EligibleTables(restaurant, seats);
         List<TableGroup> eligibleGroups = EligibleGroups(restaurant, seats);
         int durationMinutes = BookingDuration.For(restaurant, seats);
 
         var slots = new List<TimeSlotDto>();
-        for (DateTime current = localStart; current < localEnd; current = current.AddMinutes(SlotInterval(restaurant)))
+        for (DateTime current = localStart; current < localEnd && current <= lastStart; current = current.AddMinutes(SlotInterval(restaurant)))
         {
             DateTime slotUtc = TimeZoneInfo.ConvertTimeToUtc(current, tz);
 
@@ -96,6 +97,17 @@ public sealed class AvailabilityService(
         AvailableTableIds = new List<int>(),
         Category = GetCategory(local)
     };
+
+    /// <summary>
+    /// The latest local start the grid may offer: the day's last booking time when it has one,
+    /// otherwise anything before close. Slots past it are left out rather than marked closed,
+    /// since the service is still open then and "unavailable" would read as "fully booked".
+    /// </summary>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_OffersTheSlotAtTheLastBookingTime</seealso>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_OffersNoSlotAfterTheLastBookingTime</seealso>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_OffersSlotsUpToClose_WhenNoLastBookingTimeIsSet</seealso>
+    private static DateTime LastBookableStart(Restaurant restaurant, DateTime localDate, int isoDay, DateTime localEnd)
+        => ServiceWindowHelper.LastBookingCutoffFor(restaurant, localDate, isoDay) ?? localEnd;
 
     private static string FormatSlotTime(DateTime local)
         => local.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);

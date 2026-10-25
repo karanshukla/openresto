@@ -446,4 +446,43 @@ public class HoldPolicyServiceTests
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("closed", result.FailureMessage);
     }
+
+
+    // ── Last booking time ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsEligible_AtTheLastBookingTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsEligible_AtTheLastBookingTime));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "T", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC", LastBookingTime = "20:15"
+        });
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        DateTime atCutoff = DateTime.UtcNow.Date.AddDays(1).AddHours(20).AddMinutes(15);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, atCutoff, seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsRejected_AfterTheLastBookingTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsRejected_AfterTheLastBookingTime));
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "T", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC", LastBookingTime = "20:15"
+        });
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        DateTime afterCutoff = DateTime.UtcNow.Date.AddDays(1).AddHours(20).AddMinutes(30);
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, afterCutoff, seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
+        Assert.Equal(ErrorCodes.RestaurantPastLastBooking, result.Code);
+        Assert.Equal("The last booking for that day is at 20:15. Please choose an earlier time.", result.FailureMessage);
+    }
 }

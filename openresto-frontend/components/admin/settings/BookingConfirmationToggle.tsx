@@ -10,6 +10,14 @@ export interface BookingConfirmationToggleProps {
   confirmDisabled: boolean;
   /** Fired with the next value when the user toggles (parent owns the state + save-msg side-effect). */
   onToggle: (next: boolean) => void;
+  /**
+   * Which automatic email the card switches. The guest confirmation is the default; the
+   * restaurant alert reuses the same card with its own copy, since the two are one control
+   * at two destinations rather than two controls.
+   */
+  kind?: "guestConfirmation" | "restaurantAlert";
+  /** Rendered above the card; omitted when a sibling card already carries the section label. */
+  showSectionLabel?: boolean;
   borderColor: string;
   mutedColor: string;
   primaryColor: string;
@@ -18,15 +26,35 @@ export interface BookingConfirmationToggleProps {
   accentSoft: string;
 }
 
+const COPY = {
+  guestConfirmation: {
+    toggleLabel: "admin.settings.bookingConfirmation.toggleLabel",
+    title: "admin.settings.bookingConfirmation.title",
+    subtitle: "admin.settings.bookingConfirmation.subtitle",
+    icon: "mail-outline",
+  },
+  restaurantAlert: {
+    toggleLabel: "admin.settings.restaurantAlerts.toggleLabel",
+    title: "admin.settings.restaurantAlerts.title",
+    subtitle: "admin.settings.restaurantAlerts.subtitle",
+    icon: "storefront-outline",
+  },
+} as const;
+
 /**
- * The "Booking confirmation" toggle card in the EmailSettingsCard right column — icon + title +
- * description + the on/off switch, plus a "Configure and test SMTP above to enable" hint when the
- * toggle is disabled. Presentational: receives the current value + a single onToggle callback.
+ * An automatic-email toggle card in the EmailSettingsCard — icon + title + description + the
+ * on/off switch, plus a "Configure and test SMTP above to enable" hint when the toggle is
+ * disabled. Presentational: receives the current value + a single onToggle callback.
+ *
+ * @see [BookingConfirmationToggle.test.tsx](../../../tests/components/admin/settings/BookingConfirmationToggle.test.tsx)
+ * — pins that the restaurant-alert kind carries its own copy and the same disabled guard.
  */
 export function BookingConfirmationToggle({
   sendConfirmations,
   confirmDisabled,
   onToggle,
+  kind = "guestConfirmation",
+  showSectionLabel = true,
   borderColor,
   mutedColor,
   primaryColor,
@@ -35,11 +63,14 @@ export function BookingConfirmationToggle({
   accentSoft,
 }: BookingConfirmationToggleProps) {
   const { t } = useTranslation();
+  const copy = COPY[kind];
   return (
     <View style={styles.wrapper}>
-      <SubLabel mutedColor={mutedColor}>
-        {t("admin.settings.bookingConfirmation.sectionLabel")}
-      </SubLabel>
+      {showSectionLabel && (
+        <SubLabel mutedColor={mutedColor}>
+          {t("admin.settings.bookingConfirmation.sectionLabel")}
+        </SubLabel>
+      )}
       <View
         style={[
           styles.card,
@@ -54,22 +85,20 @@ export function BookingConfirmationToggle({
           }}
           role="switch"
           aria-checked={sendConfirmations}
-          accessibilityLabel={t("admin.settings.bookingConfirmation.toggleLabel")}
+          accessibilityLabel={t(copy.toggleLabel)}
           accessibilityState={{ checked: sendConfirmations, disabled: confirmDisabled }}
           style={styles.row}
         >
           <View style={[styles.iconWrap, { backgroundColor: cardBg, borderColor }]}>
-            <Icon name="mail-outline" size="sm" color={mutedColor} />
+            <Icon name={copy.icon} size="sm" color={mutedColor} />
           </View>
           <View style={styles.copy}>
             <View style={styles.titleRow}>
-              <ThemedText style={styles.title}>
-                {t("admin.settings.bookingConfirmation.title")}
-              </ThemedText>
+              <ThemedText style={styles.title}>{t(copy.title)}</ThemedText>
               <View style={[styles.badge, { backgroundColor: accentSoft }]} />
             </View>
             <ThemedText style={[styles.subtitle, { color: mutedColor }]}>
-              {t("admin.settings.bookingConfirmation.subtitle")}
+              {t(copy.subtitle)}
             </ThemedText>
           </View>
           <ToggleSwitch

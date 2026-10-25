@@ -15,8 +15,9 @@ export type EmailTestState = "idle" | "testing" | "ok" | "fail";
  * form before testing, so the panel is always reporting on what is in the fields, not on whatever
  * was last persisted.
  *
- * One payload, one save — `sendBookingConfirmations` travels with the SMTP credentials because the
- * API stores them as a single record, so the toggle stays in the card that owns that save.
+ * One payload, one save — `sendBookingConfirmations` and `sendRestaurantBookingAlerts` travel
+ * with the SMTP credentials because the API stores them as a single record, so both toggles stay
+ * in the card that owns that save.
  */
 export function useEmailSettings() {
   const [host, setHost] = useState("");
@@ -32,6 +33,7 @@ export function useEmailSettings() {
   const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [isConfigured, setIsConfigured] = useState(false);
   const [sendConfirmations, setSendConfirmations] = useState(false);
+  const [sendRestaurantAlerts, setSendRestaurantAlerts] = useState(false);
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null);
   const [failures, setFailures] = useState<EmailFailureDto[]>([]);
 
@@ -46,6 +48,7 @@ export function useEmailSettings() {
       setFromEmail(s.fromEmail ?? "");
       setIsConfigured(s.isConfigured);
       setSendConfirmations(s.sendBookingConfirmations ?? false);
+      setSendRestaurantAlerts(s.sendRestaurantBookingAlerts ?? false);
       if (s.isConfigured) setTestState("ok");
       const matched = EMAIL_PROVIDERS.find((p) => p.host && p.host === s.host);
       if (matched) setActiveProviderId(matched.id);
@@ -69,6 +72,7 @@ export function useEmailSettings() {
     fromName: fromName || undefined,
     fromEmail: fromEmail || undefined,
     sendBookingConfirmations: sendConfirmations,
+    sendRestaurantBookingAlerts: sendRestaurantAlerts,
   });
 
   const handleSave = async () => {
@@ -94,15 +98,23 @@ export function useEmailSettings() {
     setTestMsg(result.message);
   };
 
-  const toggleConfirmations = (next: boolean) => {
-    setSendConfirmations(next);
-    // The hint shares the slot the save outcome uses, so toggling back off has to clear it:
-    // otherwise "Save to apply" sits there after the change it referred to has been undone.
+  // The hint shares the slot the save outcome uses, so toggling back off has to clear it:
+  // otherwise "Save to apply" sits there after the change it referred to has been undone.
+  const noteSaveToApply = (next: boolean) =>
     setSaveMsg(
       next
         ? { text: "Emails will be sent using your SMTP account. Save to apply.", ok: false }
         : null
     );
+
+  const toggleConfirmations = (next: boolean) => {
+    setSendConfirmations(next);
+    noteSaveToApply(next);
+  };
+
+  const toggleRestaurantAlerts = (next: boolean) => {
+    setSendRestaurantAlerts(next);
+    noteSaveToApply(next);
   };
 
   return {
@@ -126,12 +138,14 @@ export function useEmailSettings() {
     saveMsg,
     isConfigured,
     sendConfirmations,
+    sendRestaurantAlerts,
     activeProviderId,
     failures,
     selectProvider,
     handleSave,
     handleTest,
     toggleConfirmations,
+    toggleRestaurantAlerts,
     /** Confirmations can only be enabled once the connection has actually been proven. */
     confirmDisabled: !isConfigured && testState !== "ok",
   };

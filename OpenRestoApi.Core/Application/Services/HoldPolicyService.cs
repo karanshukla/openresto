@@ -103,6 +103,13 @@ public sealed class HoldPolicyService(
             return HoldPolicyResult.Rejected("The restaurant is closed at the requested time.", ErrorCodes.RestaurantClosedAtTime);
         }
 
+        // 7. Last booking time — open, but the book for that service has closed.
+        if (!restaurant.IsAcceptingBookingsAt(bookingDate))
+        {
+            LastBookingHelper.Rejection cutoff = LastBookingHelper.RejectionFor(restaurant, bookingDate);
+            return HoldPolicyResult.Rejected(cutoff.Message, cutoff.Code, cutoff.Args);
+        }
+
         return HoldPolicyResult.Eligible(restaurant, bookingDate);
     }
 }

@@ -20,13 +20,19 @@ import {
   updateRestaurant,
   uploadMenuFile,
 } from "@/api/restaurants";
-import { getHoursForDay, hasCustomHours, parseOpenDays } from "@/utils/openingHours";
+import {
+  getHoursForDay,
+  getLastBookingForDay,
+  hasCustomHours,
+  isWithinServiceWindow,
+  parseOpenDays,
+} from "@/utils/openingHours";
 import { isValidEmail, isValidUrl, WEB_SCHEMES } from "@/utils/validation";
 import { parseWalkInDays } from "@/utils/walkIn";
 import { hasDuplicateTurnTimes } from "@/utils/turnTimes";
 import { theme } from "@/theme/theme";
 import { isOvernight } from "./sectionHelpers";
-import { OpeningHoursSection } from "./OpeningHoursSection";
+import { OpeningHoursSection, type DayHoursState } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
 import { LocationTagsSection } from "./LocationTagsSection";
 import { TurnTimesField } from "./TurnTimesField";
@@ -159,29 +165,37 @@ function formatDurationLabel(minutes: number): string {
   return `${hours}h ${remainder}m`;
 }
 
-type WeekHours = Record<number, { open: string; close: string }>;
+type WeekHours = Record<number, DayHoursState>;
 
 function initialWeekHours(restaurant: RestaurantDto): WeekHours {
   const week: WeekHours = {};
   for (let day = 1; day <= 7; day++) {
-    week[day] = getHoursForDay(restaurant, day);
+    week[day] = {
+      ...getHoursForDay(restaurant, day),
+      lastBooking: getLastBookingForDay(restaurant, day),
+    };
   }
   return week;
+}
+
+/**
+ * One day of the `openHours` payload. `lastBooking` is only sent when set: the server reads a
+ * missing one as "up to close", which is also what null means, so the two never disagree.
+ */
+function dayEntry(day: number, hours: DayHoursState): DayHoursDto {
+  return hours.lastBooking
+    ? { day, open: hours.open, close: hours.close, lastBooking: hours.lastBooking }
+    : { day, open: hours.open, close: hours.close };
 }
 
 function buildOpenHoursPayload(
   customHours: boolean,
   weekHours: WeekHours,
-  openTime: string,
-  closeTime: string
+  uniform: DayHoursState
 ): DayHoursDto[] {
   const payload: DayHoursDto[] = [];
   for (let day = 1; day <= 7; day++) {
-    payload.push(
-      customHours
-        ? { day, open: weekHours[day].open, close: weekHours[day].close }
-        : { day, open: openTime, close: closeTime }
-    );
+    payload.push(dayEntry(day, customHours ? weekHours[day] : uniform));
   }
   return payload;
 }
@@ -252,6 +266,9 @@ export function RestaurantInfoForm({
   const [emailAddress, setEmailAddress] = useState(restaurant.emailAddress ?? "");
   const [openTime, setOpenTime] = useState(restaurant.openTime ?? "09:00");
   const [closeTime, setCloseTime] = useState(restaurant.closeTime ?? "22:00");
+  const [lastBookingTime, setLastBookingTime] = useState<string | null>(() =>
+    getLastBookingForDay(restaurant, 1)
+  );
   const [customHours, setCustomHours] = useState(() => hasCustomHours(restaurant));
   const [weekHours, setWeekHours] = useState<WeekHours>(() => initialWeekHours(restaurant));
   const [openDays, setOpenDays] = useState<number[]>(parseOpenDays(restaurant.openDays));
@@ -307,7 +324,7 @@ export function RestaurantInfoForm({
     );
   };
 
-  const setDayHours = (day: number, patch: Partial<{ open: string; close: string }>) => {
+  const setDayHours = (day: number, patch: Partial<DayHoursState>) => {
     setWeekHours((prev) => ({ ...prev, [day]: { ...prev[day], ...patch } }));
   };
 
@@ -322,12 +339,19 @@ export function RestaurantInfoForm({
     });
   };
 
-  const openHoursPayload = buildOpenHoursPayload(customHours, weekHours, openTime, closeTime);
+  const openHoursPayload = buildOpenHoursPayload(customHours, weekHours, {
+    open: openTime,
+    close: closeTime,
+    lastBooking: lastBookingTime,
+  });
   const initialOpenHours = buildOpenHoursPayload(
     hasCustomHours(restaurant),
     initialWeekHours(restaurant),
-    restaurant.openTime ?? "09:00",
-    restaurant.closeTime ?? "22:00"
+    {
+      open: restaurant.openTime ?? "09:00",
+      close: restaurant.closeTime ?? "22:00",
+      lastBooking: getLastBookingForDay(restaurant, 1),
+    }
   );
   const menuUrlIsServedFile = isServedMenuFile(restaurant.menuUrl);
 
@@ -426,6 +450,19 @@ export function RestaurantInfoForm({
   };
 
   /**
+   * A last booking time has to sit inside its day's window, which it stops doing when the hours
+   * are narrowed around it. The picker only offers times inside the window, so this is what
+   * catches a cutoff the hours have since moved past.
+   */
+  const lastBookingWithinHours = customHours
+    ? openDays.every(
+        (d) =>
+          !weekHours[d].lastBooking ||
+          isWithinServiceWindow(weekHours[d].open, weekHours[d].close, weekHours[d].lastBooking)
+      )
+    : !lastBookingTime || isWithinServiceWindow(openTime, closeTime, lastBookingTime);
+
+  /**
    * Why the save is paused, or null when it can go. These mirror the backend's own validators
    * (UrlValidator, ContactFields): with no Save button to disable there is nothing to grey out,
    * so the reason is stated in the footer instead of the write being silently withheld.
@@ -448,6 +485,9 @@ export function RestaurantInfoForm({
     }
     if (hasDuplicateTurnTimes(turnTimes)) {
       return t("admin.settings.restaurantInfo.blockedDuplicateTurnTimes");
+    }
+    if (!lastBookingWithinHours) {
+      return t("admin.settings.restaurantInfo.blockedLastBookingOutsideHours");
     }
     if (
       maxCoversPerSlot !== null &&
@@ -475,6 +515,7 @@ export function RestaurantInfoForm({
         openTime: result.openTime,
         closeTime: result.closeTime,
         openHours: result.openHours,
+        lastBookingTime: result.lastBookingTime,
         openDays: result.openDays,
         walkInOnly: result.walkInOnly,
         walkInDays: result.walkInDays,
@@ -512,16 +553,19 @@ export function RestaurantInfoForm({
       setTags(previous.tags ? previous.tags.split(",") : []);
       const restored: WeekHours = {};
       for (const entry of previous.openHours) {
-        restored[entry.day] = { open: entry.open, close: entry.close };
+        restored[entry.day] = {
+          open: entry.open,
+          close: entry.close,
+          lastBooking: entry.lastBooking ?? null,
+        };
       }
       setWeekHours(restored);
-      const uniform = previous.openHours.every(
-        (h) => h.open === previous.openHours[0].open && h.close === previous.openHours[0].close
-      );
+      const uniform = !hasCustomHours({ openHours: previous.openHours });
       setCustomHours(!uniform);
       if (uniform && previous.openHours[0]) {
         setOpenTime(previous.openHours[0].open);
         setCloseTime(previous.openHours[0].close);
+        setLastBookingTime(previous.openHours[0].lastBooking ?? null);
       }
     },
   });
@@ -871,12 +915,14 @@ export function RestaurantInfoForm({
         customHours={customHours}
         openTime={openTime}
         closeTime={closeTime}
+        lastBookingTime={lastBookingTime}
         weekHours={weekHours}
         openDays={openDays}
         anyOvernight={anyOvernight}
         onSetCustomHours={setCustomHours}
         onSetOpenTime={setOpenTime}
         onSetCloseTime={setCloseTime}
+        onSetLastBookingTime={setLastBookingTime}
         onSetDayHours={setDayHours}
         onCopyHoursToAllDays={copyHoursToAllDays}
         onToggleDay={toggleDay}

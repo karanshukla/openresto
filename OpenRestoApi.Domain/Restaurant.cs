@@ -23,6 +23,14 @@ public class Restaurant
     public string? OpenHoursJson { get; set; }
 
     /// <summary>
+    /// Optional HH:mm after which no new online booking may start, for days whose
+    /// <see cref="OpenHoursJson"/> entry carries no <c>lastBooking</c> of its own. Null means
+    /// bookings run up to closing time. Guests still see the real closing time; only the slots
+    /// offered and accepted stop here. Resolve with <c>OpeningHours.GetLastBookingForDay</c>.
+    /// </summary>
+    public string? LastBookingTime { get; set; }
+
+    /// <summary>
     /// IANA timezone identifier (e.g. "Europe/London", "America/New_York").
     /// All booking times are interpreted in this timezone.
     /// </summary>
@@ -174,4 +182,12 @@ public class Restaurant
     /// <seealso>RestaurantTests.IsOpenAt_True_ForOvernightWindow_AfterMidnightClose</seealso>
     /// <seealso>RestaurantTests.IsOpenAt_False_ForOvernightWindow_OutsideBothSegments</seealso>
     public bool IsOpenAt(DateTime utc) => ServiceWindowHelper.IsServingAt(this, utc);
+
+    /// <summary>
+    /// Open at <paramref name="utc"/> and not yet past that service's last booking time. The
+    /// gate every online path uses (availability, holds, booking create); staff-recorded
+    /// bookings and the waitlist ask <see cref="IsOpenAt"/> instead, since the kitchen is open
+    /// past the cutoff even though the book is closed.
+    /// </summary>
+    public bool IsAcceptingBookingsAt(DateTime utc) => ServiceWindowHelper.IsAcceptingBookingsAt(this, utc);
 }

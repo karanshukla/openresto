@@ -1,3 +1,4 @@
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Domain;
 
@@ -290,5 +291,112 @@ public class EmailTemplateServiceTests
         string html = _svc.BuildConfirmationEmail(MakeBooking(), restaurant, brand, DefaultWebsiteUrl);
 
         Assert.Contains("Open Resto", html);
+    }
+
+
+    // ── Restaurant booking alerts (#504) ──────────────────────────────────────
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_ListsTheBookingAndLinksToItInTheAdmin()
+    {
+        Booking booking = MakeBooking(customerName: "Alice", sectionName: "Terrace", tableName: "T4", specialRequests: "Window seat");
+
+        string html = _svc.BuildRestaurantAlertEmail(booking, MakeRestaurant(), _defaultBrand, DefaultWebsiteUrl, RestaurantAlertKind.Created);
+
+        Assert.Contains("New booking", html);
+        Assert.Contains("Alice", html);
+        Assert.Contains("guest@example.com", html);
+        Assert.Contains("2 guests", html);
+        Assert.Contains("Saturday, 1 August 2026", html);
+        Assert.Contains("7:00 PM", html);
+        Assert.Contains("Terrace", html);
+        Assert.Contains("T4", html);
+        Assert.Contains("Window seat", html);
+        Assert.Contains("REF-XYZ", html);
+        Assert.Contains("https://openres.to/admin/bookings?query=REF-XYZ", html);
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_SaysCancelled_ForACancellation()
+    {
+        string html = _svc.BuildRestaurantAlertEmail(MakeBooking(), MakeRestaurant(), _defaultBrand, DefaultWebsiteUrl, RestaurantAlertKind.Cancelled);
+
+        Assert.Contains("Booking cancelled", html);
+        Assert.DoesNotContain("New booking", html);
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_RendersTheTimeInTheRestaurantsTimezone()
+    {
+        Restaurant restaurant = MakeRestaurant();
+        restaurant.Timezone = "America/New_York";
+
+        string html = _svc.BuildRestaurantAlertEmail(MakeBooking(), restaurant, _defaultBrand, DefaultWebsiteUrl, RestaurantAlertKind.Created);
+
+        // 19:00 UTC on 1 August is 15:00 in New York.
+        Assert.Contains("3:00 PM", html);
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_HtmlEncodesTheGuest_AndHidesEmptyRows()
+    {
+        Booking booking = MakeBooking(customerName: "<b>Bob</b>", customerEmail: "", tableId: null);
+
+        string html = _svc.BuildRestaurantAlertEmail(booking, MakeRestaurant(), _defaultBrand, DefaultWebsiteUrl, RestaurantAlertKind.Created);
+
+        Assert.Contains("&lt;b&gt;Bob&lt;/b&gt;", html);
+        Assert.DoesNotContain("<b>Bob</b>", html);
+        Assert.DoesNotContain(">Section<", html);
+        Assert.DoesNotContain(">Table<", html);
+        Assert.DoesNotContain("Special requests", html);
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_UsesTheBrandIconHeader_WhenAFaviconIsSet()
+    {
+        var brand = new BrandSettings { AppName = "Open Resto", PrimaryColor = "#0a7ea4", FaviconIcon = "utensils" };
+
+        string html = _svc.BuildRestaurantAlertEmail(MakeBooking(), MakeRestaurant(), brand, DefaultWebsiteUrl, RestaurantAlertKind.Created);
+
+        Assert.Contains("/api/brand/pwa-icon.svg", html);
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_NamesAGroupBooking_ByItsMembers()
+    {
+        Booking booking = MakeBooking(tableId: null);
+        booking.TableGroup = new TableGroup
+        {
+            Name = null,
+            Members = [new TableGroupMembership { Table = new Table { Name = "A1", Seats = 2 } }, new TableGroupMembership { Table = new Table { Name = "A2", Seats = 2 } }],
+        };
+
+        string html = _svc.BuildRestaurantAlertEmail(booking, MakeRestaurant(), _defaultBrand, DefaultWebsiteUrl, RestaurantAlertKind.Created);
+
+        Assert.Contains("A1", html);
+        Assert.Contains("A2", html);
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_ShowsOnlyTheStart_WhenNoEndTimeIsStored()
+    {
+        Booking booking = MakeBooking();
+        booking.EndTime = null;
+
+        string html = _svc.BuildRestaurantAlertEmail(booking, MakeRestaurant(), _defaultBrand, DefaultWebsiteUrl, RestaurantAlertKind.Created);
+
+        Assert.Contains(">7:00 PM<", html);
+        Assert.DoesNotContain("9:00 PM", html);
+    }
+
+    [Theory]
+    [InlineData(RestaurantAlertKind.Created, "New booking \u2013 Testaurant: 1 guest at 7:00 PM")]
+    [InlineData(RestaurantAlertKind.Cancelled, "Booking cancelled \u2013 Testaurant: 1 guest at 7:00 PM")]
+    public void BuildRestaurantAlertSubject_NamesTheEventPartyAndTime(RestaurantAlertKind kind, string expected)
+    {
+        Booking booking = MakeBooking();
+        booking.Seats = 1;
+
+        Assert.Equal(expected, _svc.BuildRestaurantAlertSubject(booking, MakeRestaurant(), kind));
     }
 }

@@ -19,7 +19,8 @@ public sealed class BookingNotificationService(
     IBookingRepository bookingRepository,
     IOptions<VapidSettings> vapidOptions,
     IWebPushClient webPushClient,
-    ILogger<BookingNotificationService> logger) : IBookingNotificationService
+    ILogger<BookingNotificationService> logger,
+    IRestaurantBookingAlertService? restaurantAlerts = null) : IBookingNotificationService
 {
     private readonly IAdminNotificationRepository _notificationRepository = notificationRepository;
     private readonly IAdminPushSubscriptionRepository _pushSubscriptionRepository = pushSubscriptionRepository;
@@ -28,6 +29,7 @@ public sealed class BookingNotificationService(
     private readonly VapidSettings _vapid = vapidOptions.Value;
     private readonly IWebPushClient _webPushClient = webPushClient;
     private readonly ILogger<BookingNotificationService> _log = logger;
+    private readonly IRestaurantBookingAlertService? _restaurantAlerts = restaurantAlerts;
 
     // Fraction of tables booked on a day that triggers the RestaurantNearlyFull notification
     private const double _capacityThreshold = 0.8;
@@ -72,6 +74,8 @@ public sealed class BookingNotificationService(
                 BookingRef: booking.BookingRef,
                 RestaurantId: booking.RestaurantId
             ));
+
+        await AlertRestaurantAsync(booking, alerts => alerts.SendBookingCreatedAsync(booking));
     }
 
     public async Task NotifyBookingCancelledAsync(Booking booking, string restaurantName)
@@ -107,6 +111,8 @@ public sealed class BookingNotificationService(
                 BookingRef: booking.BookingRef,
                 RestaurantId: booking.RestaurantId
             ));
+
+        await AlertRestaurantAsync(booking, alerts => alerts.SendBookingCancelledAsync(booking));
     }
 
     public async Task CheckAndNotifyCapacityAsync(int restaurantId, string restaurantName, DateTime bookingDate)
@@ -172,6 +178,31 @@ public sealed class BookingNotificationService(
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// The email to the location rides after the push rather than beside it, and a failure in
+    /// it is its own: the push has already been recorded by the time it runs, and nothing it
+    /// throws reaches the worker.
+    /// </summary>
+    /// <seealso>BookingNotificationServiceTests.NotifyBookingCreatedAsync_EmailsTheRestaurant</seealso>
+    /// <seealso>BookingNotificationServiceTests.NotifyBookingCancelledAsync_EmailsTheRestaurant</seealso>
+    /// <seealso>BookingNotificationServiceTests.NotifyBookingCreatedAsync_KeepsThePush_WhenTheRestaurantEmailThrows</seealso>
+    private async Task AlertRestaurantAsync(Booking booking, Func<IRestaurantBookingAlertService, Task> send)
+    {
+        if (_restaurantAlerts is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await send(_restaurantAlerts);
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "[Alert] Restaurant booking email failed for ref {Ref}", booking.BookingRef);
+        }
+    }
 
     private async Task SendPushAsync(int restaurantId, int notificationId, PushPayload payload)
     {

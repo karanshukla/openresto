@@ -93,11 +93,12 @@ BRAND = {
 # rather than hand-numbered. `group.tables` refers to member tables by name.
 #
 # Between them these seven locations cover: per-day opening hours (including a
-# past-midnight wrap), both booking-reference formats, all three contact
-# fallback states, every slot interval (15/30/60), walk-in-only both globally
-# and per-day, a live booking pause, an archived location, the table-oversize
-# cap, turn times by party size, a walk-in-only table, a cover cap, and
-# combinable table groups both named and unnamed.
+# past-midnight wrap), a last booking time both restaurant-wide and per day,
+# both booking-reference formats, all three contact fallback states, every slot
+# interval (15/30/60), walk-in-only both globally and per-day, a live booking
+# pause, an archived location, the table-oversize cap, turn times by party
+# size, a walk-in-only table, a cover cap, and combinable table groups both
+# named and unnamed.
 
 LOCATIONS = [
     {
@@ -109,6 +110,10 @@ LOCATIONS = [
         "open_days": "1,2,3,4,5,6",
         "open_time": "09:00",
         "close_time": "23:45",
+        # LastBookingTime: the bar stays open to 23:45 but the kitchen takes its
+        # last table at 22:00, so the guest hours still read 09:00–23:45 while
+        # availability and the booking form stop at 22:00.
+        "last_booking": "22:00",
         "duration": 90,
         # Turn times by party size (TurnTimesJson): a two-top turns in an hour, a
         # party of five or more holds its table for two.
@@ -153,10 +158,14 @@ LOCATIONS = [
         "open_days": "3,4,5,6",
         "open_time": "11:00",
         "close_time": "22:00",
+        # A third element is that day's last booking time (OpenHoursJson
+        # "lastBooking"): the Friday/Saturday bar runs to 01:30 but the last
+        # table is seated at 00:30, the after-midnight case the resolver has to
+        # credit to the day the service opened.
         "open_hours": {
             3: ("16:00", "22:00"),  # Wednesday opens late
-            5: ("11:00", "01:30"),  # Friday runs past midnight
-            6: ("11:00", "01:30"),  # Saturday too
+            5: ("11:00", "01:30", "00:30"),  # Friday runs past midnight
+            6: ("11:00", "01:30", "00:30"),  # Saturday too
         },
         "duration": 60,
         "slot_interval": 30,
@@ -443,7 +452,7 @@ def build_dataset(now_utc):
         open_hours_json = None
         if spec.get("open_hours"):
             open_hours_json = json.dumps(
-                {str(day): {"open": o, "close": c} for day, (o, c) in sorted(spec["open_hours"].items())},
+                {str(day): day_hours_entry(hours) for day, hours in sorted(spec["open_hours"].items())},
                 separators=(",", ":"),
             )
 
@@ -467,6 +476,7 @@ def build_dataset(now_utc):
                     "TurnTimesJson": turn_times_json,
                     "BookingSlotIntervalMinutes": spec["slot_interval"],
                     "OpenHoursJson": open_hours_json,
+                    "LastBookingTime": spec.get("last_booking"),
                     "WalkInOnly": bool(spec.get("walk_in_only")),
                     "WalkInDays": spec.get("walk_in_days"),
                     "Description": spec.get("description"),
@@ -775,8 +785,25 @@ def parse_hhmm(text):
 def hours_for_day(spec, iso_day):
     override = (spec.get("open_hours") or {}).get(iso_day)
     if override:
-        return override
+        return override[0], override[1]
     return spec["open_time"], spec["close_time"]
+
+
+def day_hours_entry(hours):
+    """The OpenHoursJson entry for one day: (open, close) or (open, close, last_booking)."""
+    entry = {"open": hours[0], "close": hours[1]}
+    if len(hours) > 2 and hours[2]:
+        entry["lastBooking"] = hours[2]
+    return entry
+
+
+def last_booking_for_day(spec, iso_day):
+    """The day's last booking time the way OpeningHours.GetLastBookingForDay resolves it:
+    the day's own override when it carries one, else the restaurant-wide value, else None."""
+    override = (spec.get("open_hours") or {}).get(iso_day)
+    if override and len(override) > 2 and override[2]:
+        return override[2]
+    return spec.get("last_booking")
 
 
 def duration_for(spec, seats):
@@ -793,8 +820,10 @@ def day_slot_grid(spec, iso_day):
     """Local minutes-from-midnight for every bookable start on this ISO day.
 
     Mirrors AvailabilityService: a close time at or before the open time rolls
-    into the next day (23:00→01:30 wraps; 00:00→00:00 is a full 24 hours), and
-    a start is only offered if the whole booking fits before close.
+    into the next day (23:00→01:30 wraps; 00:00→00:00 is a full 24 hours), a
+    start is only offered if the whole booking fits before close, and nothing
+    starts after the day's last booking time (an after-midnight one belongs to
+    the day the service opened, so it rolls forward the same way).
     """
     open_txt, close_txt = hours_for_day(spec, iso_day)
     start = parse_hhmm(open_txt)
@@ -802,8 +831,16 @@ def day_slot_grid(spec, iso_day):
     if end <= start:
         end += 24 * 60
 
+    last_start = end - longest_duration(spec)
+    last_booking = last_booking_for_day(spec, iso_day)
+    if last_booking:
+        cutoff = parse_hhmm(last_booking)
+        if cutoff < start:
+            cutoff += 24 * 60
+        last_start = min(last_start, cutoff)
+
     step = spec["slot_interval"]
-    return list(range(start, end - longest_duration(spec) + 1, step))
+    return list(range(start, last_start + 1, step))
 
 
 class UnitLedger:

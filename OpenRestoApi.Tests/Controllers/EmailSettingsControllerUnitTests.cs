@@ -79,4 +79,38 @@ public class EmailSettingsControllerUnitTests
         var resp = Assert.IsType<EmailSettingsResponse>(okResult.Value);
         Assert.False(resp.SendBookingConfirmations);
     }
+
+
+    [Fact]
+    public async Task Get_ReturnsSendRestaurantBookingAlerts_WhenSettingsExist()
+    {
+        _mockService.Setup(s => s.GetAsync()).ReturnsAsync(new EmailSettings
+        {
+            Host = "smtp.test.com",
+            Port = 587,
+            Username = "user@test.com",
+            EncryptedPassword = "enc",
+            SendRestaurantBookingAlerts = true,
+        });
+
+        var result = await _controller.Get();
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var resp = Assert.IsType<EmailSettingsResponse>(okResult.Value);
+        Assert.True(resp.SendRestaurantBookingAlerts);
+    }
+
+    [Fact]
+    public async Task Save_PassesSendRestaurantBookingAlerts_ToTheService()
+    {
+        _mockService.Setup(s => s.SaveAsync(
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string?>(),
+                It.IsAny<bool>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<bool>(), true))
+            .Returns(Task.CompletedTask)
+            .Verifiable();
+
+        var result = await _controller.Save(new EmailSettingsRequest { Host = "smtp.test.com", Username = "u", SendRestaurantBookingAlerts = true });
+
+        Assert.IsType<OkObjectResult>(result);
+        _mockService.Verify();
+    }
 }

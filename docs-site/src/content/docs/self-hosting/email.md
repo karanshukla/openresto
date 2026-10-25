@@ -13,13 +13,14 @@ bookings still work and guests just don't get a confirmation email.
 
 SMTP is set in the admin, not in `.env`. Go to **Settings → Email** and fill in:
 
-| Field                  | Notes |
-| ---------------------- | ----- |
-| Host and port          | From your provider, e.g. `smtp.example.com` and `587`. |
-| Username and password  | The password is stored encrypted in the database and not shown again. |
-| Use SSL                | See below. |
-| From name and address  | What guests see. Many providers need this to be an address you have verified. |
-| Send booking confirmation emails | Off by default. Turn it on once the test passes. |
+| Field                               | Notes                                                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Host and port                       | From your provider, e.g. `smtp.example.com` and `587`.                                                                   |
+| Username and password               | The password is stored encrypted in the database and not shown again.                                                    |
+| Use SSL                             | See below.                                                                                                               |
+| From name and address               | What guests see. Many providers need this to be an address you have verified.                                            |
+| Send booking confirmation emails    | Off by default. Turn it on once the test passes.                                                                         |
+| Email the restaurant about bookings | Off by default. Sends each location an email when a booking is made or cancelled, alongside the admin push notification. |
 
 Press **Send a test email** before you rely on it. It saves the settings and tries to connect,
 so a wrong host or password shows up straight away. The same page shows a preview of the
@@ -34,6 +35,10 @@ confirmation guests receive, and a list of recent send failures.
 ## What gets sent
 
 - Booking confirmations and cancellations to the guest, when confirmations are enabled.
+- New-booking and cancellation alerts to the restaurant, when restaurant alerts are enabled.
+  They go to the location's contact email, or the brand's contact email when the location has
+  none (both under **Settings → Brand** and the location's own Contact card); a location with
+  neither gets no email. Each alert links to the booking in the admin.
 - "Table ready" notices for the walk-in waitlist.
 
 Emails link back to your site using your public address: the **Website URL** in the brand

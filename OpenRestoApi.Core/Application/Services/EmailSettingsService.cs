@@ -36,7 +36,8 @@ public class EmailSettingsService(
     public virtual async Task SaveAsync(
         string host, int port, string username, string? password,
         bool enableSsl, string? fromName, string? fromEmail,
-        bool sendBookingConfirmations = false)
+        bool sendBookingConfirmations = false,
+        bool sendRestaurantBookingAlerts = false)
     {
         EmailSettings? settings = await _settingsRepository.GetAsync();
         bool isNew = false;
@@ -55,6 +56,7 @@ public class EmailSettingsService(
         _audit.RecordChange("fromName", settings.FromName, fromName);
         _audit.RecordChange("fromEmail", settings.FromEmail, fromEmail);
         _audit.RecordChange("sendBookingConfirmations", settings.SendBookingConfirmations, sendBookingConfirmations);
+        _audit.RecordChange("sendRestaurantBookingAlerts", settings.SendRestaurantBookingAlerts, sendRestaurantBookingAlerts);
 
         settings.Host = host;
         settings.Port = port;
@@ -63,6 +65,7 @@ public class EmailSettingsService(
         settings.FromName = fromName;
         settings.FromEmail = fromEmail;
         settings.SendBookingConfirmations = sendBookingConfirmations;
+        settings.SendRestaurantBookingAlerts = sendRestaurantBookingAlerts;
 
         if (!string.IsNullOrEmpty(password) && password != "••••••••")
         {

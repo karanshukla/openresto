@@ -85,6 +85,7 @@ public static class ErrorCodes
     public const string RestaurantNameRequired = "restaurant.name_required";
     public const string RestaurantArchiveBeforeDelete = "restaurant.archive_before_delete";
     public const string RestaurantClosedAtTime = "restaurant.closed_at_time";
+    public const string RestaurantPastLastBooking = "restaurant.past_last_booking";
     public const string RestaurantDurationInvalid = "restaurant.duration_invalid";
     public const string RestaurantSlotIntervalInvalid = "restaurant.slot_interval_invalid";
     public const string RestaurantOversizeCapInvalid = "restaurant.oversize_cap_invalid";
@@ -95,6 +96,7 @@ public static class ErrorCodes
     public const string RestaurantOpenHoursDayInvalid = "restaurant.open_hours_day_invalid";
     public const string RestaurantOpenHoursDuplicateDay = "restaurant.open_hours_duplicate_day";
     public const string RestaurantOpenHoursTimeInvalid = "restaurant.open_hours_time_invalid";
+    public const string RestaurantLastBookingOutsideHours = "restaurant.last_booking_outside_hours";
     public const string RestaurantSectionIdsMismatch = "restaurant.section_ids_mismatch";
     public const string RestaurantTurnTimeDuplicateSeats = "restaurant.turn_time_duplicate_seats";
     public const string RestaurantTurnTimeMinutesInvalid = "restaurant.turn_time_minutes_invalid";

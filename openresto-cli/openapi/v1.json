@@ -4502,6 +4502,13 @@
           },
           "close": {
             "type": "string"
+          },
+          "lastBooking": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Latest start (HH:mm) for a new online booking that day, inside the day\u0027s own window.\nNull means bookings run up to string DayHoursDto.Close; guests still see the real closing time."
           }
         }
       },
@@ -4545,6 +4552,10 @@
           },
           "sendBookingConfirmations": {
             "type": "boolean"
+          },
+          "sendRestaurantBookingAlerts": {
+            "type": "boolean",
+            "description": "Email each location\u0027s contact address when a booking is created or cancelled."
           }
         }
       },
@@ -4867,6 +4878,13 @@
               "$ref": "#/components/schemas/DayHoursDto"
             },
             "description": "Resolved hours for every day of the week (always 7 entries)."
+          },
+          "lastBookingTime": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Restaurant-wide latest start (HH:mm) for a new online booking, or null when bookings run\nup to closing time. Each entry of List\u0026lt;DayHoursDto\u0026gt; RestaurantDto.OpenHours carries the resolved per-day value."
           },
           "openDays": {
             "type": "string"
@@ -5263,6 +5281,13 @@
               "$ref": "#/components/schemas/DayHoursDto"
             },
             "description": "Per-day opening hours (ISO day 1=Monday \u2026 7=Sunday). When provided, takes\nprecedence over OpenTime/CloseTime; identical hours for all 7 days collapse\nback into the uniform OpenTime/CloseTime pair."
+          },
+          "lastBookingTime": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Latest start (HH:mm) for a new online booking on days whose List\u0026lt;DayHoursDto\u0026gt;? UpdateRestaurantRequest.OpenHours entry\nsets no \u0060lastBooking\u0060 of its own. Empty string clears it (bookings run up to close);\nnull leaves it untouched. Must fall inside the uniform OpenTime/CloseTime window."
           },
           "timezone": {
             "type": [

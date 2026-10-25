@@ -1,5 +1,5 @@
 import { getNowInTimezone } from "@/utils/date";
-import { getHoursForDate, HoursSource } from "@/utils/openingHours";
+import { getHoursForDate, getLastBookingForDate, HoursSource } from "@/utils/openingHours";
 
 /* istanbul ignore next */
 function addDays(dateStr: string, n: number): string {
@@ -8,15 +8,30 @@ function addDays(dateStr: string, n: number): string {
 }
 
 /**
+ * The latest useful start on `dateStr`, in minutes from midnight: the day's last booking time
+ * when it has one, otherwise the margin the form has always used (21:45 for a 22:00 close).
+ *
+ * @see [bookingSuggestions.test.ts](../../tests/components/booking/bookingSuggestions.test.ts)
+ * — pins that a last booking time replaces the before-close margin.
+ */
+export function latestStartMinutes(restaurant: HoursSource, dateStr: string): number {
+  const lastBooking = getLastBookingForDate(restaurant, dateStr);
+  if (lastBooking) {
+    const [h, m] = lastBooking.split(":").map(Number);
+    return h * 60 + m;
+  }
+  const { close } = getHoursForDate(restaurant, dateStr);
+  const [closeH] = close.split(":").map(Number);
+  return (closeH - 1) * 60 + 45;
+}
+
+/**
  * The date the booking form opens on: today while there is still time to start a sitting
- * (the last useful start is 1h15m before close), tomorrow once that has passed.
+ * (see {@link latestStartMinutes}), tomorrow once that has passed.
  */
 export function suggestDate(restaurant: HoursSource, timezone: string): string {
   const { dateStr, hours, minutes } = getNowInTimezone(timezone);
-  const { close } = getHoursForDate(restaurant, dateStr);
-  const [closeH] = close.split(":").map(Number);
-  const latestStartMinutes = (closeH - 1) * 60 + 45;
-  if (hours * 60 + minutes < latestStartMinutes) {
+  if (hours * 60 + minutes < latestStartMinutes(restaurant, dateStr)) {
     return dateStr;
   }
   /* istanbul ignore next */

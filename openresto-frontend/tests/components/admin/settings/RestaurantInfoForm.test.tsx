@@ -33,6 +33,29 @@ jest.mock("@/hooks/use-persisted-state", () => ({
   },
 }));
 
+jest.mock("@/components/admin/settings/LastBookingPicker", () => {
+  const { View, Text, Pressable } = require("react-native");
+  return {
+    LastBookingPicker: ({
+      value,
+      onChange,
+    }: {
+      value: string | null;
+      onChange: (t: string | null) => void;
+    }) => (
+      <View>
+        <Text testID="last-booking-picker">{value ?? "until-close"}</Text>
+        <Pressable onPress={() => onChange("20:00")}>
+          <Text>Pick Last</Text>
+        </Pressable>
+        <Pressable onPress={() => onChange(null)}>
+          <Text>Clear Last</Text>
+        </Pressable>
+      </View>
+    ),
+  };
+});
+
 jest.mock("@/components/common/TimePicker", () => {
   const { View, Text, Pressable } = require("react-native");
   return {
@@ -578,6 +601,116 @@ describe("RestaurantInfoForm", () => {
         (h: { open: string; close: string }) => h.open === "11:00" && h.close === "23:00"
       )
     ).toBe(true);
+  });
+
+  // ── Last booking time (#505) ─────────────────────────────────────────────
+
+  it("sends a uniform last booking time on every day and leaves it out when unset", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      lastBookingTime: "20:00",
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    expect(screen.getByTestId("last-booking-picker").props.children).toBe("until-close");
+    fireEvent.press(screen.getByText("Pick Last"));
+    await flushAutosave();
+    const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
+    expect(payload.openHours).toHaveLength(7);
+    expect(payload.openHours[0]).toEqual({
+      day: 1,
+      open: "09:00",
+      close: "22:00",
+      lastBooking: "20:00",
+    });
+    expect(
+      payload.openHours.every((h: { lastBooking?: string }) => h.lastBooking === "20:00")
+    ).toBe(true);
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ lastBookingTime: "20:00" }));
+  });
+
+  it("starts in custom mode when only a day's last booking time differs", () => {
+    const cutoffWeek = uniformWeek.map((h) => (h.day === 5 ? { ...h, lastBooking: "20:15" } : h));
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, openHours: cutoffWeek }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByTestId("day-toggle-1")).toBeTruthy();
+    // Friday's picker holds its cutoff; the other open days have none.
+    expect(screen.getAllByTestId("last-booking-picker").map((n) => n.props.children)).toEqual([
+      "until-close",
+      "until-close",
+      "until-close",
+      "until-close",
+      "20:15",
+    ]);
+  });
+
+  it("saves a per-day last booking time, and clearing it drops the field", async () => {
+    const cutoffWeek = uniformWeek.map((h) => (h.day === 5 ? { ...h, lastBooking: "20:15" } : h));
+    const withCutoff = { ...mockRestaurant, openHours: cutoffWeek };
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(withCutoff);
+    render(<RestaurantInfoForm restaurant={withCutoff} onSaved={onSaved} />);
+    // Monday gains a cutoff, Friday loses its own.
+    fireEvent.press(screen.getAllByText("Pick Last")[0]);
+    fireEvent.press(screen.getAllByText("Clear Last")[4]);
+    await flushAutosave();
+    const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
+    expect(payload.openHours[0]).toEqual({
+      day: 1,
+      open: "09:00",
+      close: "22:00",
+      lastBooking: "20:00",
+    });
+    expect(payload.openHours[4]).toEqual({ day: 5, open: "09:00", close: "22:00" });
+  });
+
+  it("copies a day's last booking time along with its hours", async () => {
+    const cutoffWeek = customWeek.map((h) => (h.day === 6 ? { ...h, lastBooking: "21:00" } : h));
+    const withSaturday = { ...mockRestaurant, openHours: cutoffWeek, openDays: "1,2,3,4,5,6" };
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(withSaturday);
+    render(<RestaurantInfoForm restaurant={withSaturday} onSaved={onSaved} />);
+    fireEvent.press(screen.getByTestId("copy-hours-6"));
+    await flushAutosave();
+    const payload = (restaurantsApi.updateRestaurant as jest.Mock).mock.calls[0][1];
+    expect(
+      payload.openHours.every((h: { lastBooking?: string }) => h.lastBooking === "21:00")
+    ).toBe(true);
+  });
+
+  it("withholds the save and says why when the hours move past the last booking time", async () => {
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, lastBookingTime: "21:00" }}
+        onSaved={onSaved}
+      />
+    );
+    // The mocked picker sets 10:00; the second one in uniform mode is "Closes", which puts
+    // the 21:00 cutoff outside the 09:00–10:00 window.
+    fireEvent.press(screen.getAllByText("Pick Time")[1]);
+    await flushAutosave();
+    expect(
+      screen.getByText("A last booking time must fall within that day's opening hours.")
+    ).toBeTruthy();
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+  });
+
+  it("withholds the save for a per-day last booking time outside its day's hours", async () => {
+    const cutoffWeek = customWeek.map((h) => (h.day === 1 ? { ...h, lastBooking: "21:00" } : h));
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, openHours: cutoffWeek }}
+        onSaved={onSaved}
+      />
+    );
+    // Monday's second picker is its closing time; 10:00 strands the 21:00 cutoff.
+    fireEvent.press(screen.getAllByText("Pick Time")[1]);
+    await flushAutosave();
+    expect(
+      screen.getByText("A last booking time must fall within that day's opening hours.")
+    ).toBeTruthy();
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
   });
 
   it("shows the after-midnight hint when closing time is before opening", () => {

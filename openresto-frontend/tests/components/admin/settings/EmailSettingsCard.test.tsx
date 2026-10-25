@@ -378,14 +378,61 @@ describe("EmailSettingsCard", () => {
   it("shows Booking confirmations section when expanded", async () => {
     render(<EmailSettings {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    expect(screen.getByText("Booking confirmations")).toBeTruthy();
+    expect(screen.getByText("Automatic emails")).toBeTruthy();
     expect(screen.getByText("Booking confirmation")).toBeTruthy();
+    expect(screen.getByText("Booking alerts to the restaurant")).toBeTruthy();
+  });
+
+  it("saves the restaurant alert toggle with the SMTP settings", async () => {
+    (adminApi.getEmailSettings as jest.Mock).mockResolvedValue({
+      ...defaultSettings,
+      host: "smtp.example.com",
+      username: "admin@example.com",
+      isConfigured: true,
+      sendRestaurantBookingAlerts: false,
+    });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    render(<EmailSettings {...baseProps} />);
+    await waitFor(() => expect(screen.getByDisplayValue("smtp.example.com")).toBeTruthy());
+
+    act(() => {
+      fireEvent.press(screen.getByLabelText("Email the restaurant about bookings"));
+    });
+    await waitFor(() => expect(screen.getByText(/Emails will be sent/)).toBeTruthy());
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save SMTP settings"));
+    });
+
+    expect(adminApi.saveEmailSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sendRestaurantBookingAlerts: true,
+        sendBookingConfirmations: false,
+      })
+    );
+  });
+
+  it("clears the save hint when the restaurant alert toggle is switched back off", async () => {
+    (adminApi.getEmailSettings as jest.Mock).mockResolvedValue({
+      ...defaultSettings,
+      host: "smtp.example.com",
+      username: "admin@example.com",
+      isConfigured: true,
+      sendRestaurantBookingAlerts: true,
+    });
+    render(<EmailSettings {...baseProps} />);
+    await waitFor(() => expect(screen.getByDisplayValue("smtp.example.com")).toBeTruthy());
+
+    act(() => {
+      fireEvent.press(screen.getByLabelText("Email the restaurant about bookings"));
+    });
+    expect(screen.queryByText(/Emails will be sent/)).toBeNull();
   });
 
   it("shows configure SMTP notice when not yet tested", async () => {
     render(<EmailSettings {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
-    expect(screen.getByText("Configure and test SMTP above to enable.")).toBeTruthy();
+    // One hint per automatic-email toggle, both gated on the same connection.
+    expect(screen.getAllByText("Configure and test SMTP above to enable.")).toHaveLength(2);
   });
 
   it("populates form from loaded settings", async () => {
@@ -544,8 +591,8 @@ describe("EmailSettingsCard", () => {
       fireEvent.press(screen.getByText("Send test"));
     });
     await waitFor(() => expect(screen.getByText("Re-test")).toBeTruthy());
-    // Find ToggleSwitch by role="switch"
-    const toggleSwitch = screen.getByRole("switch");
+    // Find the first ToggleSwitch by role="switch" (the guest confirmation one)
+    const toggleSwitch = screen.getAllByRole("switch")[0];
     act(() => {
       fireEvent.press(toggleSwitch);
     });

@@ -4389,6 +4389,11 @@ export interface components {
             day?: number | string;
             open?: string;
             close?: string;
+            /**
+             * @description Latest start (HH:mm) for a new online booking that day, inside the day's own window.
+             *     Null means bookings run up to string DayHoursDto.Close; guests still see the real closing time.
+             */
+            lastBooking?: null | string;
         };
         EmailSettingsRequest: {
             host?: string;
@@ -4400,6 +4405,8 @@ export interface components {
             fromName?: null | string;
             fromEmail?: null | string;
             sendBookingConfirmations?: boolean;
+            /** @description Email each location's contact address when a booking is created or cancelled. */
+            sendRestaurantBookingAlerts?: boolean;
         };
         ExtendBookingRequest: {
             /**
@@ -4513,6 +4520,11 @@ export interface components {
             closeTime?: string;
             /** @description Resolved hours for every day of the week (always 7 entries). */
             openHours?: components["schemas"]["DayHoursDto"][];
+            /**
+             * @description Restaurant-wide latest start (HH:mm) for a new online booking, or null when bookings run
+             *     up to closing time. Each entry of List&lt;DayHoursDto&gt; RestaurantDto.OpenHours carries the resolved per-day value.
+             */
+            lastBookingTime?: null | string;
             openDays?: string;
             timezone?: string;
             tags?: string[];
@@ -4654,6 +4666,12 @@ export interface components {
              *     back into the uniform OpenTime/CloseTime pair.
              */
             openHours?: null | components["schemas"]["DayHoursDto"][];
+            /**
+             * @description Latest start (HH:mm) for a new online booking on days whose List&lt;DayHoursDto&gt;? UpdateRestaurantRequest.OpenHours entry
+             *     sets no `lastBooking` of its own. Empty string clears it (bookings run up to close);
+             *     null leaves it untouched. Must fall inside the uniform OpenTime/CloseTime window.
+             */
+            lastBookingTime?: null | string;
             timezone?: null | string;
             tags?: null | string;
             /** Format: int32 */

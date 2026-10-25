@@ -52,7 +52,31 @@ describe("BookingConfirmationToggle", () => {
     render(<BookingConfirmationToggle {...baseProps} />);
     expect(screen.getByText("Booking confirmation")).toBeTruthy();
     expect(screen.getByText("Sent the moment a guest books a table.")).toBeTruthy();
-    expect(screen.getByText("Booking confirmations")).toBeTruthy();
+    expect(screen.getByText("Automatic emails")).toBeTruthy();
+  });
+
+  it("renders the restaurant-alert copy for that kind, without a second section label", () => {
+    render(
+      <BookingConfirmationToggle {...baseProps} kind="restaurantAlert" showSectionLabel={false} />
+    );
+    expect(screen.getByText("Booking alerts to the restaurant")).toBeTruthy();
+    expect(screen.getByLabelText("Email the restaurant about bookings")).toBeTruthy();
+    expect(screen.queryByText("Automatic emails")).toBeNull();
+    expect(screen.queryByText("Booking confirmation")).toBeNull();
+  });
+
+  it("keeps the disabled guard for the restaurant-alert kind", () => {
+    const onToggle = jest.fn();
+    render(
+      <BookingConfirmationToggle
+        {...baseProps}
+        kind="restaurantAlert"
+        confirmDisabled
+        onToggle={onToggle}
+      />
+    );
+    fireEvent.press(screen.getByText("Booking alerts to the restaurant"));
+    expect(onToggle).not.toHaveBeenCalled();
   });
 
   it("does not show the SMTP hint when enabled", () => {

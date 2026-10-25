@@ -20,4 +20,16 @@ public interface IEmailTemplateService
     /// admin's preview render the same header, rather than each spelling the wording out.
     /// </summary>
     string BuildConfirmationSubject(Restaurant restaurant);
+
+    /// <summary>
+    /// Subject of the email a location receives when a booking is created or cancelled
+    /// .
+    /// </summary>
+    string BuildRestaurantAlertSubject(Booking booking, Restaurant restaurant, RestaurantAlertKind kind);
+
+    /// <summary>
+    /// Body of that email: who booked, for how many, when in the location's own clock, where
+    /// they sit, the reference, and a link to the booking in the admin.
+    /// </summary>
+    string BuildRestaurantAlertEmail(Booking booking, Restaurant restaurant, BrandSettings brand, string websiteUrl, RestaurantAlertKind kind);
 }

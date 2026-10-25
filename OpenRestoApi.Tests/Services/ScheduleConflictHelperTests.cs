@@ -200,4 +200,16 @@ public class ScheduleConflictHelperTests
 
         Assert.Empty(ScheduleConflictHelper.Conflicting(restaurant, bookings));
     }
+
+
+    [Fact]
+    public void Evaluate_KeepsSittingAfterTheLastBookingTime()
+    {
+        // The last booking time closes the book to new online bookings; the kitchen stays open
+        // until close, so a sitting already taken after it is honoured as it stands.
+        Restaurant restaurant = Restaurant(openTime: "11:00", closeTime: "23:00");
+        restaurant.LastBookingTime = "20:15";
+
+        Assert.Equal(ScheduleConflictReason.None, ScheduleConflictHelper.Evaluate(restaurant, MondayAt(21)));
+    }
 }

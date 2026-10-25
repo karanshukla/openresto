@@ -179,4 +179,105 @@ public class ServiceWindowHelperTests
 
         Assert.Equal(TimeSpan.FromDays(1), end - start);
     }
+
+
+    // ── Last booking time ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void IsAcceptingBookingsAt_AllowsTheLastBookingTimeItself()
+    {
+        Restaurant r = NewRestaurant(openTime: "09:00", closeTime: "22:00");
+        r.LastBookingTime = "20:15";
+
+        Assert.True(ServiceWindowHelper.IsAcceptingBookingsAt(r, SaturdayAt(20, 15)));
+    }
+
+    [Fact]
+    public void IsAcceptingBookingsAt_RefusesOneSlotAfterTheLastBookingTime()
+    {
+        // Still inside the 09:00–22:00 service, so the venue is open; only the book is closed.
+        Restaurant r = NewRestaurant(openTime: "09:00", closeTime: "22:00");
+        r.LastBookingTime = "20:15";
+
+        Assert.False(ServiceWindowHelper.IsAcceptingBookingsAt(r, SaturdayAt(20, 30)));
+        Assert.True(ServiceWindowHelper.IsServingAt(r, SaturdayAt(20, 30)));
+    }
+
+    [Fact]
+    public void IsAcceptingBookingsAt_MatchesIsServingAt_WhenNoLastBookingTimeIsSet()
+    {
+        Restaurant r = NewRestaurant(openTime: "09:00", closeTime: "22:00");
+
+        Assert.True(ServiceWindowHelper.IsAcceptingBookingsAt(r, SaturdayAt(21, 45)));
+        Assert.False(ServiceWindowHelper.IsAcceptingBookingsAt(r, SaturdayAt(22)));
+    }
+
+    [Fact]
+    public void IsAcceptingBookingsAt_MeasuresAnAfterMidnightCutoffFromTheOpeningDay()
+    {
+        // Saturday 18:00–02:00 with the last booking at 00:30: Sunday 00:30 is still Saturday's
+        // service and its own cutoff, Sunday 01:00 is past it.
+        Restaurant r = NewRestaurant(openTime: "18:00", closeTime: "02:00", openDays: Saturday);
+        r.LastBookingTime = "00:30";
+
+        Assert.True(ServiceWindowHelper.IsAcceptingBookingsAt(r, SundayAt(0, 30)));
+        Assert.False(ServiceWindowHelper.IsAcceptingBookingsAt(r, SundayAt(1)));
+        Assert.True(ServiceWindowHelper.IsAcceptingBookingsAt(r, SaturdayAt(23)));
+    }
+
+    [Fact]
+    public void IsAcceptingBookingsAt_JudgesTheTailAgainstTheOpeningDaysCutoff_NotTheLandingDays()
+    {
+        // Saturday runs 18:00–02:00 with no cutoff; Sunday is a lunch service whose book closes
+        // at 13:00. Sunday 01:00 is Saturday's tail, and Saturday's book is still open.
+        Restaurant r = NewRestaurant(
+            openHoursJson: """{"6":{"open":"18:00","close":"02:00"},"7":{"open":"11:00","close":"15:00","lastBooking":"13:00"}}""");
+
+        Assert.True(ServiceWindowHelper.IsAcceptingBookingsAt(r, SundayAt(1)));
+        Assert.True(ServiceWindowHelper.IsAcceptingBookingsAt(r, SundayAt(13)));
+        Assert.False(ServiceWindowHelper.IsAcceptingBookingsAt(r, SundayAt(13, 30)));
+    }
+
+    [Fact]
+    public void LastBookingCutoffFor_RollsACutoffBeforeOpeningIntoTheNextMorning()
+    {
+        Restaurant r = NewRestaurant(openTime: "18:00", closeTime: "02:00");
+        r.LastBookingTime = "00:30";
+        var saturday = new DateTime(2026, 1, 10);
+
+        Assert.Equal(new DateTime(2026, 1, 11, 0, 30, 0), ServiceWindowHelper.LastBookingCutoffFor(r, saturday, 6));
+    }
+
+    [Fact]
+    public void LastBookingCutoffFor_IgnoresACutoffOutsideTheWindow()
+    {
+        // 23:00 is after a 22:00 close: validation never stores it, so a row that carries it is
+        // read as having no cutoff rather than as closing the book at some guessed time.
+        Restaurant r = NewRestaurant(openTime: "09:00", closeTime: "22:00");
+        r.LastBookingTime = "23:00";
+
+        Assert.Null(ServiceWindowHelper.LastBookingCutoffFor(r, new DateTime(2026, 1, 10), 6));
+    }
+
+    [Fact]
+    public void LastBookingCutoffFor_IsNullWithoutALastBookingTime()
+    {
+        Restaurant r = NewRestaurant();
+
+        Assert.Null(ServiceWindowHelper.LastBookingCutoffFor(r, new DateTime(2026, 1, 10), 6));
+    }
+
+    [Theory]
+    [InlineData("18:00", "02:00", "23:00", true)]
+    [InlineData("18:00", "02:00", "01:59", true)]
+    [InlineData("18:00", "02:00", "02:00", false)]
+    [InlineData("18:00", "02:00", "12:00", false)]
+    [InlineData("09:00", "22:00", "09:00", true)]
+    [InlineData("09:00", "22:00", "22:00", false)]
+    [InlineData("00:00", "00:00", "13:00", true)]
+    public void CoversTimeOfDay_WrapsPastMidnight(string open, string close, string time, bool expected)
+    {
+        Assert.Equal(expected, ServiceWindowHelper.CoversTimeOfDay(
+            TimeSpan.Parse(open), TimeSpan.Parse(close), TimeSpan.Parse(time)));
+    }
 }

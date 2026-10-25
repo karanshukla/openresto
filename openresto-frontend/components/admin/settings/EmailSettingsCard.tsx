@@ -71,10 +71,12 @@ export function EmailSettingsCard({
     saveMsg,
     isConfigured,
     sendConfirmations,
+    sendRestaurantAlerts,
     activeProviderId,
     selectProvider,
     handleSave,
     toggleConfirmations,
+    toggleRestaurantAlerts,
     confirmDisabled,
   } = email;
 
@@ -349,6 +351,20 @@ export function EmailSettingsCard({
             sendConfirmations={sendConfirmations}
             confirmDisabled={confirmDisabled}
             onToggle={toggleConfirmations}
+            borderColor={borderColor}
+            mutedColor={mutedColor}
+            primaryColor={primaryColor}
+            cardBg={cardBg}
+            surface2={surface2}
+            accentSoft={accentSoft}
+          />
+
+          <BookingConfirmationToggle
+            kind="restaurantAlert"
+            showSectionLabel={false}
+            sendConfirmations={sendRestaurantAlerts}
+            confirmDisabled={confirmDisabled}
+            onToggle={toggleRestaurantAlerts}
             borderColor={borderColor}
             mutedColor={mutedColor}
             primaryColor={primaryColor}

@@ -50,6 +50,34 @@ describe("OpeningHoursTable", () => {
     expect(closed.length).toBe(2);
   });
 
+  it("shows the last booking time under the hours, and only where a guest could book", () => {
+    renderWithProviders(
+      <OpeningHoursTable
+        restaurant={
+          {
+            ...baseRestaurant,
+            openDays: "1,2,3,4,5,6,7",
+            walkInDays: "7",
+            lastBookingTime: "20:15",
+            openHours: baseRestaurant.openHours.map((h) =>
+              h.day === 5 ? { ...h, lastBooking: "21:00" } : h
+            ),
+          } as any
+        }
+      />
+    );
+    // Friday carries its own cutoff; the other five bookable days inherit 20:15; Sunday is
+    // walk-in only, so it shows none. The hours themselves are unchanged.
+    expect(screen.getByText("Last booking 21:00")).toBeTruthy();
+    expect(screen.getAllByText("Last booking 20:15")).toHaveLength(5);
+    expect(screen.getByText("09:00 – 23:00")).toBeTruthy();
+  });
+
+  it("shows no last booking line when none is set", () => {
+    renderWithProviders(<OpeningHoursTable restaurant={baseRestaurant as any} />);
+    expect(screen.queryByText(/Last booking/)).toBeNull();
+  });
+
   it("annotates walk-in-only days with a Walk-in badge", () => {
     renderWithProviders(
       <OpeningHoursTable

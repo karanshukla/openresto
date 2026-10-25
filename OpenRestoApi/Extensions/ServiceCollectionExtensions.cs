@@ -439,6 +439,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEmailService, OpenRestoApi.Infrastructure.Email.EmailService>();
         services.AddScoped<IEmailTemplateService, OpenRestoApi.Core.Application.Services.EmailTemplateService>();
         services.AddScoped<IBookingConfirmationService, OpenRestoApi.Core.Application.Services.BookingConfirmationService>();
+        services.AddScoped<IRestaurantBookingAlertService, OpenRestoApi.Core.Application.Services.RestaurantBookingAlertService>();
         services.AddScoped<INotificationService, OpenRestoApi.Core.Application.Services.NotificationService>();
         // Endpoints come from browsers and guests, so the connection is only ever opened to a
         // public address — see PublicOnlyConnector.

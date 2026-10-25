@@ -451,7 +451,9 @@
       "turn_time_minutes_invalid": "Die Minuten einer Tischzeit müssen einer dieser Werte sein: {{allowed}}.",
       "turn_time_seats_out_of_range": "Die Gruppengröße einer Tischzeit muss zwischen {{min}} und {{max}} liegen.",
       "walk_in_days_invalid": "WalkInDays muss eine durch Kommas getrennte Liste von ISO-Tagesnummern von 1 (Montag) bis 7 (Sonntag) sein.",
-      "max_covers_invalid": "Die maximale Gästezahl pro Zeitfenster muss mindestens 1 sein oder leer bleiben (kein Limit)."
+      "max_covers_invalid": "Die maximale Gästezahl pro Zeitfenster muss mindestens 1 sein oder leer bleiben (kein Limit).",
+      "past_last_booking": "Die letzte Buchung an diesem Tag ist um {{time}}. Bitte wählen Sie eine frühere Zeit.",
+      "last_booking_outside_hours": "Die letzte Buchungszeit muss innerhalb der Öffnungszeiten des Tages liegen ({{open}}–{{close}})."
     },
     "social_link": {
       "label_required": "Die Bezeichnung des Social-Media-Links darf nicht leer sein.",
@@ -639,7 +641,8 @@
       "thursday": "Donnerstag",
       "tuesday": "Dienstag",
       "walkIn": "Ohne Reservierung",
-      "wednesday": "Mittwoch"
+      "wednesday": "Mittwoch",
+      "lastBooking": "Letzte Buchung {{time}}"
     },
     "seatingMap": {
       "combinableHeading": "Tische, die wir kombinieren können",
@@ -1359,7 +1362,12 @@
         "dayStateOpen": "geöffnet",
         "dayStateClosed": "geschlossen",
         "copyHoursLabel": "Öffnungszeiten von {{day}} auf alle Tage übertragen",
-        "overnightHint": "Eine Schließzeit vor oder zur Öffnungszeit bedeutet, dass das Restaurant nach Mitternacht schließt."
+        "overnightHint": "Eine Schließzeit vor oder zur Öffnungszeit bedeutet, dass das Restaurant nach Mitternacht schließt.",
+        "lastBookingLabel": "Letzte Buchung",
+        "lastBookingShortLabel": "Letzte",
+        "lastBookingUntilClose": "Bis zur Schließung",
+        "lastBookingDayLabel": "Letzte Buchungszeit für {{day}}",
+        "lastBookingHint": "Die letzte Buchung ist die späteste Startzeit, die ein Gast online buchen kann. Gäste sehen weiterhin die vollen Öffnungszeiten; nur die angebotenen Zeitfenster enden früher."
       },
       "walkInPolicy": {
         "title": "Walk-in-Richtlinie",
@@ -1432,7 +1440,7 @@
         "unavailable": "Die Vorschau konnte nicht erstellt werden."
       },
       "bookingConfirmation": {
-        "sectionLabel": "Buchungsbestätigungen",
+        "sectionLabel": "Automatische E-Mails",
         "toggleLabel": "Buchungsbestätigungs-E-Mails senden",
         "title": "Buchungsbestätigung",
         "subtitle": "Wird gesendet, sobald ein Gast einen Tisch bucht.",
@@ -1960,7 +1968,8 @@
         "maxCoversLabel": "Max. Gäste pro Zeitfenster",
         "maxCoversPlaceholder": "Kein Limit",
         "maxCoversHint": "Begrenzt die Gäste, deren Online-Buchung in einem {{minutes}}-Minuten-Fenster beginnt. Buchungen durch das Personal und die Warteliste sind nicht begrenzt.",
-        "blockedInvalidMaxCovers": "Die maximale Gästezahl pro Zeitfenster muss eine ganze Zahl ab 1 sein oder leer bleiben."
+        "blockedInvalidMaxCovers": "Die maximale Gästezahl pro Zeitfenster muss eine ganze Zahl ab 1 sein oder leer bleiben.",
+        "blockedLastBookingOutsideHours": "Die letzte Buchungszeit muss innerhalb der Öffnungszeiten des Tages liegen."
       },
       "accountRoute": {
         "title": "Konto",
@@ -2072,6 +2081,11 @@
       },
       "brandAutosave": {
         "serverUnreachable": "Server konnte nicht erreicht werden."
+      },
+      "restaurantAlerts": {
+        "toggleLabel": "Restaurant per E-Mail über Buchungen informieren",
+        "title": "Buchungshinweise an das Restaurant",
+        "subtitle": "Werden an die Kontaktadresse des Standorts (oder der Marke) gesendet, wenn eine Buchung erstellt oder storniert wird."
       }
     },
     "sidebar": {

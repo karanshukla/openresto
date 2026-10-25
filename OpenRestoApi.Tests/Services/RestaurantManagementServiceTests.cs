@@ -2031,4 +2031,91 @@ public class RestaurantManagementServiceTests
 
         Assert.Equal(1, impact!.Bookings);
     }
+
+
+    // ── Last booking time (#505) ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAsync_StoresTheRestaurantWideLastBookingTime_AndResolvesItPerDay()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_StoresTheRestaurantWideLastBookingTime_AndResolvesItPerDay));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+
+        RestaurantDto? result = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", LastBookingTime = "20:15" });
+
+        Assert.Equal("20:15", result!.LastBookingTime);
+        Assert.All(result.OpenHours, h => Assert.Equal("20:15", h.LastBooking));
+        Assert.Equal("20:15", db.Restaurants.Single(r => r.Id == 1).LastBookingTime);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsTheLastBookingTime_OnAnEmptyString()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ClearsTheLastBookingTime_OnAnEmptyString));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC", LastBookingTime = "20:15" });
+        await db.SaveChangesAsync();
+
+        RestaurantDto? result = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", LastBookingTime = "" });
+
+        Assert.Null(result!.LastBookingTime);
+        Assert.All(result.OpenHours, h => Assert.Null(h.LastBooking));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_LeavesTheLastBookingTimeAlone_WhenTheRequestOmitsIt()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_LeavesTheLastBookingTimeAlone_WhenTheRequestOmitsIt));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC", LastBookingTime = "20:15" });
+        await db.SaveChangesAsync();
+
+        RestaurantDto? result = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "Renamed" });
+
+        Assert.Equal("20:15", result!.LastBookingTime);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Throws_WhenTheLastBookingTimeIsOutsideTheHours()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_Throws_WhenTheLastBookingTimeIsOutsideTheHours));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+
+        var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+            CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", LastBookingTime = "22:30" }));
+        Assert.Equal(ErrorCodes.RestaurantLastBookingOutsideHours, ex.Code);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_StoresPerDayLastBookingTimes_InsideTheOpenHours()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_StoresPerDayLastBookingTimes_InsideTheOpenHours));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", OpenTime = "09:00", CloseTime = "22:00", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+
+        var hours = Enumerable.Range(1, 7)
+            .Select(d => new DayHoursDto { Day = d, Open = "10:00", Close = "22:00", LastBooking = "20:15" })
+            .ToList();
+        hours[5] = new DayHoursDto { Day = 6, Open = "10:00", Close = "22:00", LastBooking = "21:00" };
+
+        RestaurantDto? result = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", OpenHours = hours });
+
+        Assert.Equal("21:00", result!.OpenHours.Single(h => h.Day == 6).LastBooking);
+        Assert.Equal("20:15", result.OpenHours.Single(h => h.Day == 1).LastBooking);
+        Assert.Null(result.LastBookingTime);
+    }
+
+    [Fact]
+    public async Task CreateAsync_AppliesTheLastBookingTime_FromDto()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateAsync_AppliesTheLastBookingTime_FromDto));
+
+        RestaurantDto result = await CreateService(db).CreateAsync(new RestaurantDto
+        {
+            Name = "New", OpenTime = "09:00", CloseTime = "22:00", LastBookingTime = "20:15",
+        });
+
+        Assert.Equal("20:15", result.LastBookingTime);
+        Assert.Equal("20:15", (await db.Restaurants.FindAsync(result.Id))!.LastBookingTime);
+    }
 }

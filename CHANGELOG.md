@@ -10,6 +10,11 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+### Added
+
+- A location can set a last booking time, separate from its closing time, for the whole week or per day. Guests still see the real opening hours, but no slot after it is offered or accepted; a service that runs past midnight carries its cutoff with it. ([#505](https://github.com/karanshukla/openresto/issues/505))
+- The restaurant can be emailed when a booking is made or cancelled, as a second toggle beside the guest confirmation in **Settings → Email**. The alert goes to the location's contact address, falling back to the brand's, and links to the booking in the admin. ([#504](https://github.com/karanshukla/openresto/issues/504))
+
 ## [2.4.1] - 2026-10-14
 
 ### Changed

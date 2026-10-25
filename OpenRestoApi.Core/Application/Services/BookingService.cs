@@ -118,12 +118,15 @@ public class BookingService(
     }
 
     /// <summary>
-    /// The three ways a location refuses an online booking for a given sitting. Admin-recorded
+    /// The four ways a location refuses an online booking for a given sitting. Admin-recorded
     /// bookings go through <c>AdminService.CreateBookingAsync</c> and are deliberately exempt
-    /// from all of them, so staff can still log a walk-in during a pause.
+    /// from all of them, so staff can still log a walk-in during a pause or after the day's
+    /// last booking time.
     /// </summary>
     /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsBooking_InsideThePauseWindow</seealso>
     /// <seealso>BookingServiceTests.CreateBookingAsync_AllowsBooking_AfterThePauseWindow</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_AcceptsABookingAtTheLastBookingTime</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingAfterTheLastBookingTime</seealso>
     private static void RejectIfClosedToOnlineBookings(Restaurant restaurant, DateTime bookingDate)
     {
         if (bookingDate < DateTime.UtcNow.AddMinutes(-Booking.CancellationGraceMinutes))
@@ -143,6 +146,14 @@ public class BookingService(
                 ? "This location accepts walk-ins only and does not take online bookings."
                 : "This location accepts walk-ins only on the selected day. Please choose another day or just come in.")
             { Code = restaurant.WalkInOnly ? ErrorCodes.BookingWalkInOnly : ErrorCodes.BookingWalkInOnlyToday };
+        }
+
+        // Only the cutoff is judged here, for a sitting the hours themselves would accept; a
+        // closed time is still the hold's refusal, not this path's.
+        if (restaurant.IsOpenAt(bookingDate) && !restaurant.IsAcceptingBookingsAt(bookingDate))
+        {
+            LastBookingHelper.Rejection cutoff = LastBookingHelper.RejectionFor(restaurant, bookingDate);
+            throw new ConflictException(cutoff.Message) { Code = cutoff.Code, Args = cutoff.Args };
         }
     }
 
