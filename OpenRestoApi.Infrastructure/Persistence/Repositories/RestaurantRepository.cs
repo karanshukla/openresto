@@ -20,6 +20,7 @@ namespace OpenRestoApi.Infrastructure.Persistence.Repositories;
 [OnlyAccessibleBy("OpenRestoApi.Tests.Controllers.AdminControllerEmailTests")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Controllers.AdminControllerLookupTests")]
 [OnlyAccessibleBy("OpenRestoApi.Tests.Integration.RepositoryTests")]
+[OnlyAccessibleBy("OpenRestoApi.Tests.Services.RestaurantBookingAlertServiceTests")]
 [ExternalAccessAllowed]
 internal class RestaurantRepository(AppDbContext db) : IRestaurantRepository
 {
