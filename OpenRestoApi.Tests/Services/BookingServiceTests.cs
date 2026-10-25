@@ -1494,6 +1494,69 @@ public partial class BookingServiceTests
         Assert.NotEmpty(result.BookingRef!);
     }
 
+    // ── CreateBookingAsync — last booking time ────────────────────────────────
+    //
+    // The cutoff closes the book, not the kitchen: the pair pins that the last booking time is
+    // itself bookable and the next slot is not, while the service is open through both.
+
+    private static void SeedOpenAllDayWithLastBooking(AppDbContext db, string lastBooking)
+    {
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "Late Bar",
+            Timezone = "UTC",
+            OpenTime = "00:00",
+            CloseTime = "00:00",
+            LastBookingTime = lastBooking,
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AcceptsABookingAtTheLastBookingTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AcceptsABookingAtTheLastBookingTime));
+        SeedOpenAllDayWithLastBooking(db, "20:15");
+        BookingService svc = CreateService(db);
+
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.Date.AddDays(3).AddHours(20).AddMinutes(15)
+        });
+
+        Assert.NotEmpty(result.BookingRef!);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_RejectsABookingAfterTheLastBookingTime()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_RejectsABookingAfterTheLastBookingTime));
+        SeedOpenAllDayWithLastBooking(db, "20:15");
+        BookingService svc = CreateService(db);
+
+        var ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 1,
+            TableId = 1,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.Date.AddDays(3).AddHours(20).AddMinutes(30)
+        }));
+
+        Assert.Equal(ErrorCodes.RestaurantPastLastBooking, ex.Code);
+        Assert.Equal("20:15", ex.Args!["time"]);
+        Assert.Empty(db.Bookings);
+    }
+
     // ── CreateBookingAsync — auto-assign ("Any section") ──────────────────────
     //
     // When TableId/SectionId are both null, the service picks the smallest fitting free

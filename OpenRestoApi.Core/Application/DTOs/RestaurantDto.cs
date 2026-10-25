@@ -45,6 +45,13 @@ public class UpdateRestaurantRequest
     /// </summary>
     public List<DayHoursDto>? OpenHours { get; set; }
 
+    /// <summary>
+    /// Latest start (HH:mm) for a new online booking on days whose <see cref="OpenHours"/> entry
+    /// sets no <c>lastBooking</c> of its own. Empty string clears it (bookings run up to close);
+    /// null leaves it untouched. Must fall inside the uniform OpenTime/CloseTime window.
+    /// </summary>
+    public string? LastBookingTime { get; set; }
+
     public string? Timezone { get; set; }
     public string? Tags { get; set; }
     public int? DefaultBookingDurationMinutes { get; set; }
@@ -234,6 +241,12 @@ public class DayHoursDto
     public int Day { get; set; }
     public string Open { get; set; } = OpeningHourDefaults.Open;
     public string Close { get; set; } = OpeningHourDefaults.Close;
+
+    /// <summary>
+    /// Latest start (HH:mm) for a new online booking that day, inside the day's own window.
+    /// Null means bookings run up to <see cref="Close"/>; guests still see the real closing time.
+    /// </summary>
+    public string? LastBooking { get; set; }
 }
 
 /// <summary>A party of <see cref="MinSeats"/> or more holds its table for <see cref="Minutes"/>, up to the next rule.</summary>
@@ -253,6 +266,12 @@ public class RestaurantDto
 
     /// <summary>Resolved hours for every day of the week (always 7 entries).</summary>
     public List<DayHoursDto> OpenHours { get; set; } = new();
+
+    /// <summary>
+    /// Restaurant-wide latest start (HH:mm) for a new online booking, or null when bookings run
+    /// up to closing time. Each entry of <see cref="OpenHours"/> carries the resolved per-day value.
+    /// </summary>
+    public string? LastBookingTime { get; set; }
 
     public string OpenDays { get; set; } = "1,2,3,4,5,6,7";
     public string Timezone { get; set; } = "UTC";

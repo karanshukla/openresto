@@ -41,6 +41,7 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
             FromEmail = settings.FromEmail,
             IsConfigured = true,
             SendBookingConfirmations = settings.SendBookingConfirmations,
+            SendRestaurantBookingAlerts = settings.SendRestaurantBookingAlerts,
         });
     }
 
@@ -49,7 +50,7 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
     {
         await _emailSettings.SaveAsync(
             req.Host, req.Port, req.Username, req.Password,
-            req.EnableSsl, req.FromName, req.FromEmail, req.SendBookingConfirmations);
+            req.EnableSsl, req.FromName, req.FromEmail, req.SendBookingConfirmations, req.SendRestaurantBookingAlerts);
         return Ok(new { message = "Email settings saved." });
     }
 
@@ -85,6 +86,9 @@ public class EmailSettingsRequest
     public string? FromName { get; set; }
     public string? FromEmail { get; set; }
     public bool SendBookingConfirmations { get; set; }
+
+    /// <summary>Email each location's contact address when a booking is created or cancelled.</summary>
+    public bool SendRestaurantBookingAlerts { get; set; }
 }
 
 public class EmailSettingsResponse
@@ -98,4 +102,5 @@ public class EmailSettingsResponse
     public string? FromEmail { get; set; }
     public bool IsConfigured { get; set; }
     public bool SendBookingConfirmations { get; set; }
+    public bool SendRestaurantBookingAlerts { get; set; }
 }

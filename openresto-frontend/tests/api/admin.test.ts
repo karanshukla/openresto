@@ -701,6 +701,7 @@ describe("getEmailSettings", () => {
       enableSsl: true,
       isConfigured: false,
       sendBookingConfirmations: false,
+      sendRestaurantBookingAlerts: false,
     });
   });
 });
@@ -713,6 +714,7 @@ describe("saveEmailSettings", () => {
     password: "pass",
     enableSsl: true,
     sendBookingConfirmations: false,
+    sendRestaurantBookingAlerts: false,
   };
 
   it("patches email settings and returns response", async () => {

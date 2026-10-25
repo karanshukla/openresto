@@ -58,7 +58,8 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
             password = "supersecret",
             enableSsl = true,
             fromName = "Test Sender",
-            fromEmail = "noreply@example.com"
+            fromEmail = "noreply@example.com",
+            sendRestaurantBookingAlerts = true
         });
 
         Assert.Equal(HttpStatusCode.OK, saveResponse.StatusCode);
@@ -75,6 +76,8 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
         Assert.Equal("Test Sender", body.GetProperty("fromName").GetString());
         Assert.Equal("noreply@example.com", body.GetProperty("fromEmail").GetString());
         Assert.True(body.GetProperty("isConfigured").GetBoolean());
+        Assert.False(body.GetProperty("sendBookingConfirmations").GetBoolean());
+        Assert.True(body.GetProperty("sendRestaurantBookingAlerts").GetBoolean());
     }
 
     [Fact]

@@ -38,8 +38,16 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  hoursColumn: {
+    alignItems: "flex-end",
+  },
   hoursText: {
     fontSize: 14,
+    fontVariant: ["tabular-nums"],
+  },
+  lastBookingText: {
+    fontSize: 11.5,
+    marginTop: 1,
     fontVariant: ["tabular-nums"],
   },
   closedText: {

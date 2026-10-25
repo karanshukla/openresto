@@ -9,13 +9,17 @@ import { styles as settingsStyles } from "./settings.styles";
 import { AccordionCardHeader } from "./AccordionCardHeader";
 import { styles } from "./OpeningHoursSection.styles";
 import { Icon } from "@/components/common/Icon";
+import { LastBookingPicker } from "./LastBookingPicker";
 
-type WeekHours = Record<number, { open: string; close: string }>;
+export type DayHoursState = { open: string; close: string; lastBooking: string | null };
+type WeekHours = Record<number, DayHoursState>;
 
 export interface OpeningHoursSectionProps {
   customHours: boolean;
   openTime: string;
   closeTime: string;
+  /** Uniform-mode last booking time; null means bookings run up to close. */
+  lastBookingTime: string | null;
   weekHours: WeekHours;
   openDays: number[];
   /** Shown when any active day's close ≤ open (overnight). */
@@ -24,7 +28,8 @@ export interface OpeningHoursSectionProps {
   onSetCustomHours: (v: boolean) => void;
   onSetOpenTime: (t: string) => void;
   onSetCloseTime: (t: string) => void;
-  onSetDayHours: (day: number, patch: Partial<{ open: string; close: string }>) => void;
+  onSetLastBookingTime: (t: string | null) => void;
+  onSetDayHours: (day: number, patch: Partial<DayHoursState>) => void;
   onCopyHoursToAllDays: (day: number) => void;
   onToggleDay: (day: number) => void;
   // Theme values (presentational).
@@ -45,12 +50,14 @@ export function OpeningHoursSection({
   customHours,
   openTime,
   closeTime,
+  lastBookingTime,
   weekHours,
   openDays,
   anyOvernight,
   onSetCustomHours,
   onSetOpenTime,
   onSetCloseTime,
+  onSetLastBookingTime,
   onSetDayHours,
   onCopyHoursToAllDays,
   onToggleDay,
@@ -134,7 +141,22 @@ export function OpeningHoursSection({
                     maxTime="23:45"
                   />
                 </View>
+                <View style={styles.uniformTimeField}>
+                  <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.openingHours.lastBookingLabel")}
+                  </ThemedText>
+                  <LastBookingPicker
+                    open={openTime}
+                    close={closeTime}
+                    value={lastBookingTime}
+                    onChange={onSetLastBookingTime}
+                    accessibilityLabel={t("admin.settings.openingHours.lastBookingLabel")}
+                  />
+                </View>
               </View>
+              <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
+                {t("admin.settings.openingHours.lastBookingHint")}
+              </ThemedText>
 
               <View style={settingsStyles.policyField}>
                 <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
@@ -231,6 +253,23 @@ export function OpeningHoursSection({
                             maxTime="23:45"
                           />
                         </View>
+                        <ThemedText style={[styles.lastBookingLabel, { color: mutedColor }]}>
+                          {t("admin.settings.openingHours.lastBookingShortLabel")}
+                        </ThemedText>
+                        <View style={styles.timeField}>
+                          <LastBookingPicker
+                            open={hours.open}
+                            close={hours.close}
+                            value={hours.lastBooking}
+                            onChange={(next) => onSetDayHours(day, { lastBooking: next })}
+                            accessibilityLabel={t(
+                              "admin.settings.openingHours.lastBookingDayLabel",
+                              {
+                                day: dayLabels[i],
+                              }
+                            )}
+                          />
+                        </View>
                         <Pressable
                           onPress={() => onCopyHoursToAllDays(day)}
                           testID={`copy-hours-${day}`}
@@ -260,6 +299,9 @@ export function OpeningHoursSection({
               })}
               <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
                 {t("admin.settings.openingHours.copyHint")}
+              </ThemedText>
+              <ThemedText style={[settingsStyles.policyHint, { color: mutedColor }]}>
+                {t("admin.settings.openingHours.lastBookingHint")}
               </ThemedText>
             </View>
           )}

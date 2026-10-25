@@ -1,10 +1,15 @@
 import {
+  bookingTimePickerBounds,
   getHoursForDay,
   getHoursForDate,
   getIsoDayFromDateString,
+  getLastBookingForDate,
+  getLastBookingForDay,
   getNextOpening,
   hasCustomHours,
+  isWithinServiceWindow,
   isoDayShortName,
+  lastBookingOptions,
   parseOpenDays,
   summarizeHours,
 } from "@/utils/openingHours";
@@ -106,6 +111,121 @@ describe("hasCustomHours", () => {
   it("is false when openHours is missing or empty", () => {
     expect(hasCustomHours({})).toBe(false);
     expect(hasCustomHours({ openHours: [] })).toBe(false);
+  });
+
+  it("is true when only a day's last booking time differs", () => {
+    const week = uniformRestaurant.openHours.map((h) =>
+      h.day === 5 ? { ...h, lastBooking: "20:15" } : h
+    );
+    expect(hasCustomHours({ openHours: week })).toBe(true);
+  });
+
+  it("treats a null and a missing last booking as the same", () => {
+    const week = uniformRestaurant.openHours.map((h) =>
+      h.day === 5 ? { ...h, lastBooking: null } : h
+    );
+    expect(hasCustomHours({ openHours: week })).toBe(false);
+  });
+});
+
+describe("getLastBookingForDay", () => {
+  const withCutoffs = {
+    ...uniformRestaurant,
+    lastBookingTime: "20:15",
+    openHours: uniformRestaurant.openHours.map((h) =>
+      h.day === 6 ? { ...h, lastBooking: "21:00" } : h
+    ),
+  };
+
+  it("uses the day's own value over the restaurant-wide one", () => {
+    expect(getLastBookingForDay(withCutoffs, 6)).toBe("21:00");
+  });
+
+  it("falls back to the restaurant-wide value", () => {
+    expect(getLastBookingForDay(withCutoffs, 2)).toBe("20:15");
+  });
+
+  it("is null when neither is set", () => {
+    expect(getLastBookingForDay(uniformRestaurant, 2)).toBeNull();
+    expect(getLastBookingForDay({ lastBookingTime: "" }, 2)).toBeNull();
+  });
+
+  it("resolves through a date", () => {
+    expect(getLastBookingForDate(withCutoffs, "2026-10-10")).toBe("21:00");
+  });
+});
+
+describe("isWithinServiceWindow", () => {
+  it("includes the opening time and excludes the closing time", () => {
+    expect(isWithinServiceWindow("09:00", "22:00", "09:00")).toBe(true);
+    expect(isWithinServiceWindow("09:00", "22:00", "21:45")).toBe(true);
+    expect(isWithinServiceWindow("09:00", "22:00", "22:00")).toBe(false);
+    expect(isWithinServiceWindow("09:00", "22:00", "08:45")).toBe(false);
+  });
+
+  it("wraps past midnight when close is before open", () => {
+    expect(isWithinServiceWindow("18:00", "02:00", "23:30")).toBe(true);
+    expect(isWithinServiceWindow("18:00", "02:00", "01:45")).toBe(true);
+    expect(isWithinServiceWindow("18:00", "02:00", "02:00")).toBe(false);
+    expect(isWithinServiceWindow("18:00", "02:00", "12:00")).toBe(false);
+  });
+
+  it("covers every time when open and close match", () => {
+    expect(isWithinServiceWindow("00:00", "00:00", "13:00")).toBe(true);
+  });
+});
+
+describe("lastBookingOptions", () => {
+  it("runs from opening to a quarter before close", () => {
+    expect(lastBookingOptions("18:00", "19:00")).toEqual(["18:00", "18:15", "18:30", "18:45"]);
+  });
+
+  it("continues into the next morning for an overnight window", () => {
+    const options = lastBookingOptions("23:00", "01:00");
+    expect(options[0]).toBe("23:00");
+    expect(options).toContain("23:45");
+    expect(options).toContain("00:00");
+    expect(options[options.length - 1]).toBe("00:45");
+  });
+
+  it("offers the whole day when open and close match", () => {
+    const options = lastBookingOptions("00:00", "00:00");
+    expect(options).toHaveLength(96);
+    expect(options[95]).toBe("23:45");
+  });
+});
+
+describe("bookingTimePickerBounds", () => {
+  it("runs from open to close with no last booking time", () => {
+    expect(bookingTimePickerBounds({ open: "11:00", close: "22:00", lastBooking: null })).toEqual({
+      min: "11:00",
+      max: "22:00",
+    });
+  });
+
+  it("caps the picker at a last booking time before close", () => {
+    expect(
+      bookingTimePickerBounds({ open: "11:00", close: "22:00", lastBooking: "20:15" })
+    ).toEqual({
+      min: "11:00",
+      max: "20:15",
+    });
+  });
+
+  it("runs to the end of the day for an overnight service", () => {
+    expect(bookingTimePickerBounds({ open: "18:00", close: "02:00", lastBooking: null })).toEqual({
+      min: "18:00",
+      max: "23:45",
+    });
+  });
+
+  it("caps an overnight picker at a last booking before midnight, not one after it", () => {
+    expect(
+      bookingTimePickerBounds({ open: "18:00", close: "02:00", lastBooking: "23:00" }).max
+    ).toBe("23:00");
+    expect(
+      bookingTimePickerBounds({ open: "18:00", close: "02:00", lastBooking: "00:30" }).max
+    ).toBe("23:45");
   });
 });
 

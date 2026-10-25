@@ -15,7 +15,7 @@ namespace OpenRestoApi.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
 
             modelBuilder.Entity("OpenRestoApi.Core.Domain.AdminApiKey", b =>
                 {
@@ -513,6 +513,9 @@ namespace OpenRestoApi.Migrations
                     b.Property<bool>("SendBookingConfirmations")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("SendRestaurantBookingAlerts")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -640,6 +643,9 @@ namespace OpenRestoApi.Migrations
 
                     b.Property<bool>("IsArchived")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastBookingTime")
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("MaxCoversPerSlot")
                         .HasColumnType("INTEGER");

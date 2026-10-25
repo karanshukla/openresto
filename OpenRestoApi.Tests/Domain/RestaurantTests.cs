@@ -277,4 +277,27 @@ public class RestaurantTests
 
         Assert.True(r.CanSeat(unitSeats: 10, partySize: 2));
     }
+
+
+    // ── IsAcceptingBookingsAt ─────────────────────────────────────────────────
+
+    [Fact]
+    public void IsAcceptingBookingsAt_True_AtTheLastBookingTime()
+    {
+        Restaurant r = NewRestaurant(openTime: "09:00", closeTime: "22:00");
+        r.LastBookingTime = "20:15";
+
+        Assert.True(r.IsAcceptingBookingsAt(new DateTime(2026, 1, 5, 20, 15, 0, DateTimeKind.Utc)));
+    }
+
+    [Fact]
+    public void IsAcceptingBookingsAt_False_AfterTheLastBookingTime_WhileStillOpen()
+    {
+        Restaurant r = NewRestaurant(openTime: "09:00", closeTime: "22:00");
+        r.LastBookingTime = "20:15";
+        var afterCutoff = new DateTime(2026, 1, 5, 20, 30, 0, DateTimeKind.Utc);
+
+        Assert.False(r.IsAcceptingBookingsAt(afterCutoff));
+        Assert.True(r.IsOpenAt(afterCutoff));
+    }
 }

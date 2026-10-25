@@ -1,6 +1,7 @@
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 
 namespace OpenRestoApi.Tests.Services;
@@ -253,5 +254,212 @@ public class OpeningHoursHelperTests
             Assert.Equal(h, hour);
             Assert.Equal(m, minute);
         }
+    }
+
+
+    // ── Last booking time ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void GetLastBookingForDay_UsesTheDaysOverride()
+    {
+        Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30","lastBooking":"21:00"}}""");
+        r.LastBookingTime = "20:00";
+
+        Assert.Equal("21:00", OpeningHours.GetLastBookingForDay(r, 6));
+    }
+
+    [Fact]
+    public void GetLastBookingForDay_FallsBackToTheRestaurantWideValue()
+    {
+        Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30"}}""");
+        r.LastBookingTime = "20:00";
+
+        Assert.Equal("20:00", OpeningHours.GetLastBookingForDay(r, 6));
+        Assert.Equal("20:00", OpeningHours.GetLastBookingForDay(r, 2));
+    }
+
+    [Fact]
+    public void GetLastBookingForDay_IsNullWhenNothingIsSet()
+    {
+        Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30"}}""");
+
+        Assert.Null(OpeningHours.GetLastBookingForDay(r, 6));
+        Assert.Null(OpeningHours.GetLastBookingForDay(r, 1));
+    }
+
+    [Fact]
+    public void GetLastBookingForDay_IgnoresAnUnparseableValue()
+    {
+        Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30","lastBooking":"soon"}}""");
+        r.LastBookingTime = "nope";
+
+        Assert.Null(OpeningHours.GetLastBookingForDay(r, 6));
+    }
+
+    [Fact]
+    public void ResolveWeek_CarriesEachDaysLastBooking()
+    {
+        Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30","lastBooking":"21:00"}}""");
+        r.LastBookingTime = "20:00";
+
+        List<DayHoursDto> week = OpeningHoursHelper.ResolveWeek(r);
+
+        Assert.Equal("21:00", week.Single(d => d.Day == 6).LastBooking);
+        Assert.All(week.Where(d => d.Day != 6), d => Assert.Equal("20:00", d.LastBooking));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_CollapsesLastBookingIntoTheRestaurantWideValue_WhenUniform()
+    {
+        Restaurant r = MakeRestaurant("""{"6":{"open":"11:00","close":"23:30","lastBooking":"21:00"}}""");
+        var uniform = Enumerable.Range(1, 7)
+            .Select(d => new DayHoursDto { Day = d, Open = "10:00", Close = "22:00", LastBooking = "20:15" })
+            .ToList();
+
+        OpeningHoursHelper.ApplyOpenHours(r, uniform);
+
+        Assert.Null(r.OpenHoursJson);
+        Assert.Equal("20:15", r.LastBookingTime);
+    }
+
+    [Fact]
+    public void ApplyOpenHours_KeepsTheWeekCustom_WhenOnlyTheLastBookingDiffers()
+    {
+        Restaurant r = MakeRestaurant();
+        r.LastBookingTime = "19:00";
+        var hours = Enumerable.Range(1, 7)
+            .Select(d => new DayHoursDto { Day = d, Open = "10:00", Close = "22:00", LastBooking = "20:15" })
+            .ToList();
+        hours[5] = new DayHoursDto { Day = 6, Open = "10:00", Close = "22:00", LastBooking = "21:00" };
+
+        OpeningHoursHelper.ApplyOpenHours(r, hours);
+
+        Assert.NotNull(r.OpenHoursJson);
+        // The JSON holds the whole week, so the restaurant-wide value is cleared rather than left
+        // as a second, stale answer for days the JSON already covers.
+        Assert.Null(r.LastBookingTime);
+        Assert.Equal("21:00", OpeningHours.GetLastBookingForDay(r, 6));
+        Assert.Equal("20:15", OpeningHours.GetLastBookingForDay(r, 1));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_RoundTripsADayWithNoLastBooking()
+    {
+        Restaurant r = MakeRestaurant();
+        var hours = Enumerable.Range(1, 7)
+            .Select(d => new DayHoursDto { Day = d, Open = "10:00", Close = "22:00", LastBooking = "20:15" })
+            .ToList();
+        hours[6] = new DayHoursDto { Day = 7, Open = "10:00", Close = "22:00", LastBooking = null };
+
+        OpeningHoursHelper.ApplyOpenHours(r, hours);
+
+        Assert.Null(OpeningHours.GetLastBookingForDay(r, 7));
+        Assert.Equal("20:15", OpeningHours.GetLastBookingForDay(r, 1));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_PartialUpdate_KeepsTheLastBookingOfUntouchedDays()
+    {
+        Restaurant r = MakeRestaurant("""{"2":{"open":"08:00","close":"14:00","lastBooking":"12:00"}}""");
+        var hours = new List<DayHoursDto> { new() { Day = 6, Open = "11:00", Close = "23:00", LastBooking = "21:00" } };
+
+        OpeningHoursHelper.ApplyOpenHours(r, hours);
+
+        Assert.Equal("12:00", OpeningHours.GetLastBookingForDay(r, 2));
+        Assert.Equal("21:00", OpeningHours.GetLastBookingForDay(r, 6));
+        Assert.Null(OpeningHours.GetLastBookingForDay(r, 1));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_NormalizesTheLastBookingTime()
+    {
+        Restaurant r = MakeRestaurant();
+        var hours = new List<DayHoursDto> { new() { Day = 1, Open = "9:00", Close = "22:00", LastBooking = "20:5" } };
+
+        OpeningHoursHelper.ApplyOpenHours(r, hours);
+
+        Assert.Equal("20:05", OpeningHours.GetLastBookingForDay(r, 1));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_AcceptsALastBookingAtTheOpeningTime()
+    {
+        Restaurant r = MakeRestaurant();
+        var hours = new List<DayHoursDto> { new() { Day = 1, Open = "09:00", Close = "22:00", LastBooking = "09:00" } };
+
+        OpeningHoursHelper.ApplyOpenHours(r, hours);
+
+        Assert.Equal("09:00", OpeningHours.GetLastBookingForDay(r, 1));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_RejectsALastBookingAtTheClosingTime()
+    {
+        Restaurant r = MakeRestaurant();
+        var hours = new List<DayHoursDto> { new() { Day = 1, Open = "09:00", Close = "22:00", LastBooking = "22:00" } };
+
+        var ex = Assert.Throws<ValidationException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
+        Assert.Equal(ErrorCodes.RestaurantLastBookingOutsideHours, ex.Code);
+    }
+
+    [Fact]
+    public void ApplyOpenHours_AcceptsAnAfterMidnightLastBooking_InsideAnOvernightWindow()
+    {
+        Restaurant r = MakeRestaurant();
+        var hours = new List<DayHoursDto> { new() { Day = 6, Open = "18:00", Close = "02:00", LastBooking = "00:30" } };
+
+        OpeningHoursHelper.ApplyOpenHours(r, hours);
+
+        Assert.Equal("00:30", OpeningHours.GetLastBookingForDay(r, 6));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_RejectsALastBookingInTheGapOfAnOvernightWindow()
+    {
+        Restaurant r = MakeRestaurant();
+        var hours = new List<DayHoursDto> { new() { Day = 6, Open = "18:00", Close = "02:00", LastBooking = "12:00" } };
+
+        Assert.Throws<ValidationException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
+    }
+
+    [Fact]
+    public void ApplyOpenHours_RejectsAnUnparseableLastBooking()
+    {
+        Restaurant r = MakeRestaurant();
+        var hours = new List<DayHoursDto> { new() { Day = 1, Open = "09:00", Close = "22:00", LastBooking = "late" } };
+
+        var ex = Assert.Throws<ValidationException>(() => OpeningHoursHelper.ApplyOpenHours(r, hours));
+        Assert.Equal(ErrorCodes.RestaurantOpenHoursTimeInvalid, ex.Code);
+    }
+
+    [Fact]
+    public void ApplyLastBookingTime_StoresAValueInsideTheUniformWindow()
+    {
+        Restaurant r = MakeRestaurant();
+
+        OpeningHoursHelper.ApplyLastBookingTime(r, "20:15");
+
+        Assert.Equal("20:15", r.LastBookingTime);
+    }
+
+    [Fact]
+    public void ApplyLastBookingTime_ClearsOnBlank()
+    {
+        Restaurant r = MakeRestaurant();
+        r.LastBookingTime = "20:15";
+
+        OpeningHoursHelper.ApplyLastBookingTime(r, "");
+
+        Assert.Null(r.LastBookingTime);
+    }
+
+    [Fact]
+    public void ApplyLastBookingTime_RejectsAValueOutsideTheUniformWindow()
+    {
+        Restaurant r = MakeRestaurant();
+
+        var ex = Assert.Throws<ValidationException>(() => OpeningHoursHelper.ApplyLastBookingTime(r, "23:00"));
+        Assert.Equal(ErrorCodes.RestaurantLastBookingOutsideHours, ex.Code);
+        Assert.Null(r.LastBookingTime);
     }
 }

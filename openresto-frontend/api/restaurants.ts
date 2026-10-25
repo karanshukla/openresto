@@ -71,6 +71,11 @@ export interface DayHoursDto {
   day: number;
   open: string;
   close: string;
+  /**
+   * Latest start ("HH:mm") a guest may book online that day, inside the day's own window.
+   * Absent or null means bookings run up to `close`; the hours shown to guests are unchanged.
+   */
+  lastBooking?: string | null;
 }
 
 /**
@@ -87,6 +92,11 @@ export interface RestaurantDto {
   closeTime: string;
   /** Resolved hours for every day of the week (7 entries) when provided by the API. */
   openHours?: DayHoursDto[];
+  /**
+   * Restaurant-wide latest start a guest may book online, or null when bookings run up to
+   * closing time. Each `openHours` entry carries the resolved per-day value.
+   */
+  lastBookingTime?: string | null;
   openDays: string;
   timezone: string;
   tags?: string[];
@@ -206,6 +216,8 @@ export async function updateRestaurant(
     openTime?: string;
     closeTime?: string;
     openHours?: DayHoursDto[];
+    /** Empty string clears; undefined leaves the stored value alone. */
+    lastBookingTime?: string;
     openDays?: string;
     timezone?: string;
     tags?: string | null;

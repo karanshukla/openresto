@@ -174,4 +174,18 @@ public class EmailStatusControllerTests
         Assert.Contains("Old Town", result.Html, StringComparison.Ordinal);
         Assert.Contains("Old Town", result.Subject, StringComparison.Ordinal);
     }
+
+
+    [Fact]
+    public async Task Status_ReportsWhetherTheRestaurantIsEmailed()
+    {
+        EmailSettings settings = Configured(sendBookingConfirmations: false);
+        settings.SendRestaurantBookingAlerts = true;
+        _service.Setup(s => s.GetAsync()).ReturnsAsync(settings);
+
+        EmailStatusResponse status = StatusOf(await ControllerFor(FakeCurrentUser.Anonymous()).Status());
+
+        Assert.True(status.SendRestaurantBookingAlerts);
+        Assert.False(status.SendBookingConfirmations);
+    }
 }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
+using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Settings;
 using OpenRestoApi.Core.Domain;
@@ -418,5 +419,63 @@ public class BookingNotificationServiceTests : IDisposable
         Assert.Contains(nameof(InvalidEncryptionDetailsException), notification.PushError);
         // A bad key is not a dead endpoint, so the row stays for the browser to refresh.
         Assert.Equal(2, await _db.AdminPushSubscriptions.CountAsync());
+    }
+
+
+    // ── Restaurant email alerts ───────────────────────────────────────────────
+
+    private BookingNotificationService CreateService(IRestaurantBookingAlertService alerts)
+        => new(
+            new AdminNotificationRepository(_db),
+            new AdminPushSubscriptionRepository(_db),
+            new TableRepository(_db),
+            new BookingRepository(_db),
+            Options.Create(new VapidSettings()),
+            _webPushClientMock.Object,
+            NullLogger<BookingNotificationService>.Instance,
+            alerts);
+
+    [Fact]
+    public async Task NotifyBookingCreatedAsync_EmailsTheRestaurant()
+    {
+        await SeedRestaurantAsync();
+        var booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+        var alerts = new Mock<IRestaurantBookingAlertService>();
+
+        await CreateService(alerts.Object).NotifyBookingCreatedAsync(booking, "Resto");
+
+        alerts.Verify(a => a.SendBookingCreatedAsync(booking), Times.Once);
+        alerts.Verify(a => a.SendBookingCancelledAsync(It.IsAny<Booking>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task NotifyBookingCancelledAsync_EmailsTheRestaurant()
+    {
+        await SeedRestaurantAsync();
+        var booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+        var alerts = new Mock<IRestaurantBookingAlertService>();
+
+        await CreateService(alerts.Object).NotifyBookingCancelledAsync(booking, "Resto");
+
+        alerts.Verify(a => a.SendBookingCancelledAsync(booking), Times.Once);
+    }
+
+    [Fact]
+    public async Task NotifyBookingCreatedAsync_KeepsThePush_WhenTheRestaurantEmailThrows()
+    {
+        await SeedRestaurantAsync();
+        var booking = MakeBooking();
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+        var alerts = new Mock<IRestaurantBookingAlertService>();
+        alerts.Setup(a => a.SendBookingCreatedAsync(It.IsAny<Booking>())).ThrowsAsync(new InvalidOperationException("boom"));
+
+        await CreateService(alerts.Object).NotifyBookingCreatedAsync(booking, "Resto");
+
+        Assert.NotNull(await _db.AdminNotifications.FirstOrDefaultAsync(n => n.Type == NotificationType.BookingCreated));
     }
 }

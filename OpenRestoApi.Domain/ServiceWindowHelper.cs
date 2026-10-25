@@ -53,6 +53,79 @@ public static class ServiceWindowHelper
         return (start, end <= start ? end.AddDays(1) : end);
     }
 
+    /// <summary>
+    /// Whether a new online booking may start at <paramref name="utc"/>: the instant has to be
+    /// inside a service, as <see cref="IsServingAt"/> judges it, and at or before that service's
+    /// last booking time when it has one. A service's cutoff belongs to the day the service
+    /// opened, so an after-midnight cutoff is measured against the previous day's service and
+    /// a sitting in the tail is judged against the tail's own cutoff, never the landing day's.
+    /// </summary>
+    /// <seealso>ServiceWindowHelperTests.IsAcceptingBookingsAt_AllowsTheLastBookingTimeItself</seealso>
+    /// <seealso>ServiceWindowHelperTests.IsAcceptingBookingsAt_RefusesOneSlotAfterTheLastBookingTime</seealso>
+    /// <seealso>ServiceWindowHelperTests.IsAcceptingBookingsAt_MeasuresAnAfterMidnightCutoffFromTheOpeningDay</seealso>
+    public static bool IsAcceptingBookingsAt(Restaurant restaurant, DateTime utc)
+    {
+        DateTime local = TimeZoneHelper.ConvertUtcToLocal(utc, restaurant.Timezone);
+        int isoDay = IsoDay.Of(local);
+        DateTime dayBefore = local.Date.AddDays(-1);
+
+        return (OpensOntoTimeOfDay(restaurant, isoDay, local.TimeOfDay)
+                && IsBeforeCutoff(restaurant, local.Date, isoDay, local))
+            || (SpillsPastMidnightOnto(restaurant, DayBefore(isoDay), local.TimeOfDay)
+                && IsBeforeCutoff(restaurant, dayBefore, DayBefore(isoDay), local));
+    }
+
+    /// <summary>
+    /// Local instant after which the service opening on <paramref name="isoDay"/> takes no new
+    /// booking, anchored on <paramref name="localDate"/> the way <see cref="LocalWindowFor"/>
+    /// anchors the window: a cutoff that reads earlier than the opening belongs to the next
+    /// morning. Null when the day has no last booking time, and also when the stored value
+    /// falls outside the window, since validation keeps it inside and a value outside has no
+    /// reading that is not a guess.
+    /// </summary>
+    /// <seealso>ServiceWindowHelperTests.LastBookingCutoffFor_RollsACutoffBeforeOpeningIntoTheNextMorning</seealso>
+    /// <seealso>ServiceWindowHelperTests.LastBookingCutoffFor_IgnoresACutoffOutsideTheWindow</seealso>
+    public static DateTime? LastBookingCutoffFor(Restaurant restaurant, DateTime localDate, int isoDay)
+    {
+        if (!OpeningHours.TryParseTime(OpeningHours.GetLastBookingForDay(restaurant, isoDay), out int hour, out int minute))
+        {
+            return null;
+        }
+
+        (DateTime start, DateTime end) = LocalWindowFor(restaurant, localDate, isoDay);
+        DateTime cutoff = localDate.Date + new TimeSpan(hour, minute, 0);
+        if (cutoff < start)
+        {
+            cutoff = cutoff.AddDays(1);
+        }
+
+        return cutoff < end ? cutoff : null;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="isoDay"/>'s service, opening on <paramref name="serviceDate"/>,
+    /// still takes a booking at <paramref name="local"/>: every service does until it has a
+    /// last booking time, and the cutoff itself is the last start allowed.
+    /// </summary>
+    private static bool IsBeforeCutoff(Restaurant restaurant, DateTime serviceDate, int isoDay, DateTime local)
+        => LastBookingCutoffFor(restaurant, serviceDate, isoDay) is not DateTime cutoff || local <= cutoff;
+
+    /// <summary>
+    /// Whether <paramref name="time"/> is a moment a service running <paramref name="open"/> to
+    /// <paramref name="close"/> is serving: opening inclusive, closing exclusive, the two equal
+    /// meaning all day, and a close before the open wrapping past midnight.
+    /// </summary>
+    /// <seealso>ServiceWindowHelperTests.CoversTimeOfDay_WrapsPastMidnight</seealso>
+    public static bool CoversTimeOfDay(TimeSpan open, TimeSpan close, TimeSpan time)
+    {
+        if (open == close)
+        {
+            return true;
+        }
+
+        return close < open ? time >= open || time < close : time >= open && time < close;
+    }
+
     private static int DayBefore(int isoDay) => isoDay == IsoDay.Monday ? IsoDay.Sunday : isoDay - 1;
 
     /// <summary>

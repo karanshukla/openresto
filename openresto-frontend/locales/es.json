@@ -451,7 +451,9 @@
       "turn_time_minutes_invalid": "Los minutos de una duración de mesa deben ser uno de estos valores: {{allowed}}.",
       "turn_time_seats_out_of_range": "El tamaño de grupo de una duración de mesa debe estar entre {{min}} y {{max}}.",
       "walk_in_days_invalid": "WalkInDays debe ser una lista de números de día ISO del 1 (lunes) al 7 (domingo), separados por comas.",
-      "max_covers_invalid": "El máximo de comensales por franja debe ser 1 o más, o quedar vacío para no tener límite."
+      "max_covers_invalid": "El máximo de comensales por franja debe ser 1 o más, o quedar vacío para no tener límite.",
+      "past_last_booking": "La última reserva de ese día es a las {{time}}. Elija una hora anterior.",
+      "last_booking_outside_hours": "La hora de última reserva debe estar dentro del horario de apertura de ese día ({{open}}–{{close}})."
     },
     "social_link": {
       "label_required": "La etiqueta del enlace social no puede estar vacía.",
@@ -639,7 +641,8 @@
       "thursday": "Jueves",
       "tuesday": "Martes",
       "walkIn": "Sin reserva",
-      "wednesday": "Miércoles"
+      "wednesday": "Miércoles",
+      "lastBooking": "Última reserva {{time}}"
     },
     "seatingMap": {
       "combinableHeading": "Mesas que podemos combinar",
@@ -1359,7 +1362,12 @@
         "dayStateOpen": "abierto",
         "dayStateClosed": "cerrado",
         "copyHoursLabel": "Copiar el horario del {{day}} a todos los días",
-        "overnightHint": "Una hora de cierre igual o anterior a la de apertura significa que el restaurante cierra después de medianoche."
+        "overnightHint": "Una hora de cierre igual o anterior a la de apertura significa que el restaurante cierra después de medianoche.",
+        "lastBookingLabel": "Última reserva",
+        "lastBookingShortLabel": "Últ.",
+        "lastBookingUntilClose": "Hasta el cierre",
+        "lastBookingDayLabel": "Hora de última reserva para {{day}}",
+        "lastBookingHint": "La última reserva es la hora de inicio más tardía que un cliente puede reservar en línea. Los clientes siguen viendo el horario completo; solo las franjas ofrecidas terminan antes."
       },
       "walkInPolicy": {
         "title": "Política de acceso sin reserva",
@@ -1432,7 +1440,7 @@
         "unavailable": "No se ha podido generar la vista previa."
       },
       "bookingConfirmation": {
-        "sectionLabel": "Confirmaciones de reserva",
+        "sectionLabel": "Correos automáticos",
         "toggleLabel": "Enviar correos de confirmación de reserva",
         "title": "Confirmación de reserva",
         "subtitle": "Se envía en el momento en que un cliente reserva una mesa.",
@@ -1960,7 +1968,8 @@
         "maxCoversLabel": "Máx. de comensales por franja",
         "maxCoversPlaceholder": "Sin límite",
         "maxCoversHint": "Limita los comensales cuyas reservas en línea empiezan en cada franja de {{minutes}} minutos. Las reservas del personal y la lista de espera no tienen límite.",
-        "blockedInvalidMaxCovers": "El máximo de comensales por franja debe ser un número entero de 1 o más, o quedar vacío."
+        "blockedInvalidMaxCovers": "El máximo de comensales por franja debe ser un número entero de 1 o más, o quedar vacío.",
+        "blockedLastBookingOutsideHours": "La hora de última reserva debe estar dentro del horario de apertura de ese día."
       },
       "accountRoute": {
         "title": "Cuenta",
@@ -2072,6 +2081,11 @@
       },
       "brandAutosave": {
         "serverUnreachable": "No se pudo contactar con el servidor."
+      },
+      "restaurantAlerts": {
+        "toggleLabel": "Enviar correo al restaurante sobre las reservas",
+        "title": "Avisos de reserva al restaurante",
+        "subtitle": "Se envían al correo de contacto de cada local (o de la marca) cuando se hace o cancela una reserva."
       }
     },
     "sidebar": {

@@ -555,6 +555,8 @@ export interface EmailSettingsDto {
   fromEmail?: string;
   isConfigured: boolean;
   sendBookingConfirmations: boolean;
+  /** Email each location's contact address when a booking is created or cancelled. */
+  sendRestaurantBookingAlerts: boolean;
 }
 
 export async function getEmailSettings(): Promise<EmailSettingsDto> {
@@ -571,6 +573,7 @@ export async function getEmailSettings(): Promise<EmailSettingsDto> {
       enableSsl: true,
       isConfigured: false,
       sendBookingConfirmations: false,
+      sendRestaurantBookingAlerts: false,
     };
   }
 }

@@ -187,4 +187,28 @@ public class EmailSettingsServiceTests
 
         Assert.Empty(failures);
     }
+
+
+    [Fact]
+    public async Task SaveAsync_SetsSendRestaurantBookingAlerts()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_SetsSendRestaurantBookingAlerts));
+        var svc = CreateService(db);
+        await svc.SaveAsync("smtp.test.com", 587, "user", null, true, null, null, sendRestaurantBookingAlerts: true);
+
+        EmailSettings? result = await db.Set<EmailSettings>().FirstOrDefaultAsync();
+        Assert.True(result!.SendRestaurantBookingAlerts);
+        Assert.False(result.SendBookingConfirmations);
+    }
+
+    [Fact]
+    public async Task SaveAsync_LeavesRestaurantBookingAlertsOff_ByDefault()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_LeavesRestaurantBookingAlertsOff_ByDefault));
+        var svc = CreateService(db);
+        await svc.SaveAsync("smtp.test.com", 587, "user", null, true, null, null);
+
+        EmailSettings? result = await db.Set<EmailSettings>().FirstOrDefaultAsync();
+        Assert.False(result!.SendRestaurantBookingAlerts);
+    }
 }

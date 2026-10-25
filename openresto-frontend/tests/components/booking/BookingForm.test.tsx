@@ -605,6 +605,17 @@ describe("BookingForm", () => {
     expect(text).toContain("|23:45");
   });
 
+  it("caps the picker at the day's last booking time", () => {
+    render(
+      <BookingForm
+        restaurant={{ ...mockRestaurantAllDays, lastBookingTime: "20:00" }}
+        onSubmit={jest.fn()}
+      />
+    );
+    const text = screen.getByTestId("time-picker").props.children.join("");
+    expect(text).toContain("|11:00|20:00");
+  });
+
   it("resets hold status to idle when the table is changed while held", async () => {
     mockHoldStatus = "held";
     render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);

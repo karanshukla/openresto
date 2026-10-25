@@ -26,6 +26,7 @@ export const styles = StyleSheet.create({
   dayChipLabel: { fontSize: 12, fontWeight: "600" },
   timeField: { flex: 1, minWidth: 96 },
   timeSeparator: { fontSize: 12 },
+  lastBookingLabel: { fontSize: 11, fontWeight: "600", textTransform: "uppercase" },
   copyBtn: {
     width: 32,
     height: 32,

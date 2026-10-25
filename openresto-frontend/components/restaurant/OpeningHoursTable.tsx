@@ -4,7 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { RestaurantDto } from "@/api/restaurants";
-import { getHoursForDay, parseOpenDays } from "@/utils/openingHours";
+import { getHoursForDay, getLastBookingForDay, parseOpenDays } from "@/utils/openingHours";
 import { isWalkInOnlyOnDay } from "@/utils/walkIn";
 import { getRestaurantNow } from "@/utils/restaurantTime";
 import { styles } from "./OpeningHoursTable.styles";
@@ -37,6 +37,10 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
         const isOpenDay = openDays.includes(isoDay);
         const isToday = isoDay === todayIsoDay;
         const walkInToday = isWalkInOnlyOnDay(restaurant, isoDay);
+        // The hours stay the real hours; the cutoff is a second line, and only where a guest
+        // could book online at all.
+        const lastBooking =
+          isOpenDay && !walkInToday ? getLastBookingForDay(restaurant, isoDay) : null;
 
         return (
           <View
@@ -67,15 +71,22 @@ export default function OpeningHoursTable({ restaurant }: { restaurant: Restaura
 
             <View style={styles.hoursCell}>
               {isOpenDay ? (
-                <ThemedText
-                  style={[
-                    styles.hoursText,
-                    isToday && { color: colors.text, fontWeight: "600" },
-                    !isToday && { color: colors.muted },
-                  ]}
-                >
-                  {open} – {close}
-                </ThemedText>
+                <View style={styles.hoursColumn}>
+                  <ThemedText
+                    style={[
+                      styles.hoursText,
+                      isToday && { color: colors.text, fontWeight: "600" },
+                      !isToday && { color: colors.muted },
+                    ]}
+                  >
+                    {open} – {close}
+                  </ThemedText>
+                  {lastBooking && (
+                    <ThemedText style={[styles.lastBookingText, { color: colors.muted }]}>
+                      {t("restaurant.openingHours.lastBooking", { time: lastBooking })}
+                    </ThemedText>
+                  )}
+                </View>
               ) : (
                 <ThemedText style={[styles.closedText, { color: colors.muted }]}>
                   {t("restaurant.openingHours.closed")}

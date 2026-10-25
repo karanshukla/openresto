@@ -19,6 +19,14 @@ public static class OpeningHours
 
         [JsonPropertyName("close")]
         public string Close { get; set; } = OpeningHourDefaults.Close;
+
+        /// <summary>
+        /// The latest start a booking may have on this day, as HH:mm inside the day's service
+        /// window. Null means bookings run up to <see cref="Close"/>.
+        /// </summary>
+        [JsonPropertyName("lastBooking")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? LastBooking { get; set; }
     }
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -38,6 +46,28 @@ public static class OpeningHours
         }
 
         return (restaurant.OpenTime, restaurant.CloseTime);
+    }
+
+    /// <summary>
+    /// The last booking time for <paramref name="isoDay"/>: the day's own override when it
+    /// carries one, otherwise <see cref="Restaurant.LastBookingTime"/>, otherwise null, which
+    /// means bookings run up to closing time. Whether the value sits inside the day's window is
+    /// <c>ServiceWindowHelper</c>'s question; this only answers which value applies.
+    /// </summary>
+    /// <seealso>OpeningHoursHelperTests.GetLastBookingForDay_UsesTheDaysOverride</seealso>
+    /// <seealso>OpeningHoursHelperTests.GetLastBookingForDay_FallsBackToTheRestaurantWideValue</seealso>
+    /// <seealso>OpeningHoursHelperTests.GetLastBookingForDay_IsNullWhenNothingIsSet</seealso>
+    public static string? GetLastBookingForDay(Restaurant restaurant, int isoDay)
+    {
+        Dictionary<int, DayHours>? overrides = Parse(restaurant.OpenHoursJson);
+        if (overrides != null
+            && overrides.TryGetValue(isoDay, out DayHours? hours)
+            && IsValidTime(hours.LastBooking))
+        {
+            return hours.LastBooking;
+        }
+
+        return IsValidTime(restaurant.LastBookingTime) ? restaurant.LastBookingTime : null;
     }
 
     public static Dictionary<int, DayHours>? Parse(string? json)

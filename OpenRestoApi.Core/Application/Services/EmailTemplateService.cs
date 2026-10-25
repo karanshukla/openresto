@@ -146,4 +146,106 @@ public sealed class EmailTemplateService : IEmailTemplateService
 
         return EmailTemplateBuilder.Wrap(primaryColor, appName, cleanWebsiteUrl, headerHtml, contentHtml);
     }
+
+    public string BuildRestaurantAlertSubject(Booking booking, Restaurant restaurant, RestaurantAlertKind kind)
+    {
+        string guests = $"{booking.Seats} {(booking.Seats == 1 ? "guest" : "guests")}";
+        string when = DateFormatter.FormatTime(TimeZoneHelper.ConvertUtcToLocal(booking.Date, restaurant.Timezone));
+        return kind == RestaurantAlertKind.Cancelled
+            ? $"Booking cancelled \u2013 {restaurant.Name}: {guests} at {when}"
+            : $"New booking \u2013 {restaurant.Name}: {guests} at {when}";
+    }
+
+    /// <seealso>EmailTemplateServiceTests.BuildRestaurantAlertEmail_ListsTheBookingAndLinksToItInTheAdmin</seealso>
+    /// <seealso>EmailTemplateServiceTests.BuildRestaurantAlertEmail_SaysCancelled_ForACancellation</seealso>
+    public string BuildRestaurantAlertEmail(Booking booking, Restaurant restaurant, BrandSettings brand, string websiteUrl, RestaurantAlertKind kind)
+    {
+        DateTime localDate = TimeZoneHelper.ConvertUtcToLocal(booking.Date, restaurant.Timezone);
+        string dateStr = DateFormatter.FormatLongDate(localDate);
+        string timeStr = booking.EndTime is DateTime end
+            ? DateFormatter.FormatTimeRange(localDate, TimeZoneHelper.ConvertUtcToLocal(end, restaurant.Timezone))
+            : DateFormatter.FormatTime(localDate);
+
+        string primaryColor = brand.PrimaryColor ?? "#0a7ea4";
+        string appName = brand.AppName ?? "Open Resto";
+        string cleanWebsiteUrl = websiteUrl.TrimEnd('/');
+        string adminUrl = $"{cleanWebsiteUrl}/admin/bookings?query={Uri.EscapeDataString(booking.BookingRef ?? "")}";
+
+        bool cancelled = kind == RestaurantAlertKind.Cancelled;
+        string headline = cancelled ? "Booking cancelled" : "New booking";
+        string lede = cancelled
+            ? "A guest has cancelled their booking. The table is free again."
+            : "A guest has just booked a table online.";
+
+        string headerHtml = !string.IsNullOrEmpty(brand.FaviconIcon)
+            ? EmailTemplateBuilder.IconHeader($"{cleanWebsiteUrl}/api/brand/pwa-icon.svg", appName, restaurant.Name, headline)
+            : $"""
+                <tr><td style="padding:40px 40px 24px;text-align:center;background-color:#ffffff;">
+                  <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827;">{WebUtility.HtmlEncode(restaurant.Name)}</h1>
+                  <p style="margin:8px 0 0;font-size:16px;color:#6b7280;">{headline}</p>
+                </td></tr>
+                """;
+
+        string guestName = string.IsNullOrWhiteSpace(booking.CustomerName) ? "Guest" : booking.CustomerName;
+        string guestHtml = string.IsNullOrWhiteSpace(booking.CustomerEmail)
+            ? WebUtility.HtmlEncode(guestName)
+            : $"{WebUtility.HtmlEncode(guestName)}<br><span style='color:#6b7280;'>{WebUtility.HtmlEncode(booking.CustomerEmail)}</span>";
+
+        string? tableLabel = booking.Table?.Name ?? (booking.TableId.HasValue ? $"Table #{booking.TableId}" : null);
+        tableLabel ??= booking.TableGroup is not null ? BookingMapper.GroupLabel(booking.TableGroup) : null;
+        string seatingHtml = Row("Section", booking.Section?.Name) + Row("Table", tableLabel);
+        string specialReqsHtml = Row("Special requests", booking.SpecialRequests);
+
+        string contentHtml = $"""
+            <tr><td style="padding:0 40px;">
+              <div style="background-color:{primaryColor}10;border-radius:12px;padding:24px;text-align:center;border:1px solid {primaryColor}20;">
+                <p style="margin:0;font-size:18px;font-weight:600;color:{primaryColor};">{headline}</p>
+                <p style="margin:4px 0 0;font-size:14px;color:{primaryColor};opacity:0.8;">{lede}</p>
+              </div>
+            </td></tr>
+
+            <tr><td style="padding:32px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:12px 0;color:#6b7280;font-size:14px;width:140px;vertical-align:top;">Guest</td>
+                  <td style="padding:12px 0;font-size:14px;color:#111827;">{guestHtml}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;color:#6b7280;font-size:14px;">Party size</td>
+                  <td style="padding:12px 0;font-size:14px;color:#111827;">{booking.Seats} {(booking.Seats == 1 ? "guest" : "guests")}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;color:#6b7280;font-size:14px;">Date</td>
+                  <td style="padding:12px 0;font-size:14px;color:#111827;">{dateStr}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;color:#6b7280;font-size:14px;">Time</td>
+                  <td style="padding:12px 0;font-size:14px;color:#111827;">{timeStr}</td>
+                </tr>
+                {seatingHtml}
+                <tr>
+                  <td style="padding:12px 0;color:#6b7280;font-size:14px;">Reference</td>
+                  <td style="padding:12px 0;font-size:14px;font-weight:700;color:#111827;letter-spacing:0.05em;">{WebUtility.HtmlEncode(booking.BookingRef ?? "")}</td>
+                </tr>
+                {specialReqsHtml}
+              </table>
+            </td></tr>
+
+            <tr><td style="padding:0 40px 32px;text-align:center;">
+              <a href="{adminUrl}" style="display:inline-block;background-color:{primaryColor};color:#ffffff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">Open in the admin</a>
+            </td></tr>
+            """;
+
+        return EmailTemplateBuilder.Wrap(primaryColor, appName, cleanWebsiteUrl, headerHtml, contentHtml);
+    }
+
+    private static string Row(string label, string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? ""
+            : $"""
+               <tr>
+                 <td style='padding:12px 0;color:#6b7280;font-size:14px;vertical-align:top;white-space:nowrap;'>{label}</td>
+                 <td style='padding:12px 0;font-size:14px;color:#111827;'>{WebUtility.HtmlEncode(value)}</td>
+               </tr>
+               """;
 }

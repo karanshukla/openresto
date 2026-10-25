@@ -29,6 +29,28 @@ jest.mock("@/components/common/TimePicker", () => {
   };
 });
 
+jest.mock("@/components/admin/settings/LastBookingPicker", () => {
+  const { View, Text, Pressable } = require("react-native");
+  return {
+    LastBookingPicker: ({
+      value,
+      onChange,
+      accessibilityLabel,
+    }: {
+      value: string | null;
+      onChange: (t: string | null) => void;
+      accessibilityLabel: string;
+    }) => (
+      <View accessibilityLabel={accessibilityLabel}>
+        <Text>{value ?? "until-close"}</Text>
+        <Pressable onPress={() => onChange("20:00")}>
+          <Text>Pick Last</Text>
+        </Pressable>
+      </View>
+    ),
+  };
+});
+
 jest.mock("@/components/common/Input", () => {
   const { TextInput } = require("react-native");
   return {
@@ -59,20 +81,22 @@ describe("OpeningHoursSection", () => {
     customHours: false,
     openTime: "09:00",
     closeTime: "22:00",
+    lastBookingTime: null,
     weekHours: {
-      1: { open: "09:00", close: "22:00" },
-      2: { open: "09:00", close: "22:00" },
-      3: { open: "09:00", close: "22:00" },
-      4: { open: "09:00", close: "22:00" },
-      5: { open: "09:00", close: "22:00" },
-      6: { open: "10:00", close: "23:00" },
-      7: { open: "10:00", close: "23:00" },
+      1: { open: "09:00", close: "22:00", lastBooking: null },
+      2: { open: "09:00", close: "22:00", lastBooking: null },
+      3: { open: "09:00", close: "22:00", lastBooking: null },
+      4: { open: "09:00", close: "22:00", lastBooking: null },
+      5: { open: "09:00", close: "22:00", lastBooking: "20:15" },
+      6: { open: "10:00", close: "23:00", lastBooking: null },
+      7: { open: "10:00", close: "23:00", lastBooking: null },
     },
     openDays: [1, 2, 3, 4, 5],
     anyOvernight: false,
     onSetCustomHours: jest.fn(),
     onSetOpenTime: jest.fn(),
     onSetCloseTime: jest.fn(),
+    onSetLastBookingTime: jest.fn(),
     onSetDayHours: jest.fn(),
     onCopyHoursToAllDays: jest.fn(),
     onToggleDay: jest.fn(),
@@ -118,6 +142,24 @@ describe("OpeningHoursSection", () => {
         "A closing time at or before opening means the restaurant closes after midnight."
       )
     ).toBeTruthy();
+  });
+
+  it("offers a last booking time in uniform mode and reports a pick", () => {
+    render(<OpeningHoursSection {...baseProps} lastBookingTime="21:00" />);
+    expect(screen.getByText("Last booking")).toBeTruthy();
+    expect(screen.getByText("21:00")).toBeTruthy();
+    fireEvent.press(screen.getByText("Pick Last"));
+    expect(baseProps.onSetLastBookingTime).toHaveBeenCalledWith("20:00");
+  });
+
+  it("offers a last booking time per open day in custom mode", () => {
+    render(<OpeningHoursSection {...baseProps} customHours={true} />);
+    // Five open days, so five pickers; Friday's shows the value it already holds.
+    expect(screen.getAllByText("Pick Last")).toHaveLength(5);
+    expect(screen.getByText("20:15")).toBeTruthy();
+    expect(screen.getByLabelText("Last booking time for Friday")).toBeTruthy();
+    fireEvent.press(screen.getAllByText("Pick Last")[0]);
+    expect(baseProps.onSetDayHours).toHaveBeenCalledWith(1, { lastBooking: "20:00" });
   });
 
   it("collapses when the header is pressed", () => {

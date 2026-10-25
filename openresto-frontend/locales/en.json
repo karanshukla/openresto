@@ -451,7 +451,9 @@
       "turn_time_minutes_invalid": "Turn time minutes must be one of: {{allowed}}.",
       "turn_time_seats_out_of_range": "Turn time party sizes must be between {{min}} and {{max}}.",
       "walk_in_days_invalid": "WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday).",
-      "max_covers_invalid": "Max guests per slot must be 1 or more, or blank for no limit."
+      "max_covers_invalid": "Max guests per slot must be 1 or more, or blank for no limit.",
+      "past_last_booking": "The last booking for that day is at {{time}}. Please choose an earlier time.",
+      "last_booking_outside_hours": "Last booking time must fall within that day's opening hours ({{open}}–{{close}})."
     },
     "social_link": {
       "label_required": "Social link label cannot be empty.",
@@ -639,7 +641,8 @@
       "thursday": "Thursday",
       "tuesday": "Tuesday",
       "walkIn": "Walk-in",
-      "wednesday": "Wednesday"
+      "wednesday": "Wednesday",
+      "lastBooking": "Last booking {{time}}"
     },
     "seatingMap": {
       "combinableHeading": "Tables we can combine",
@@ -1359,7 +1362,12 @@
         "dayStateOpen": "open",
         "dayStateClosed": "closed",
         "copyHoursLabel": "Copy {{day}}'s hours to every day",
-        "overnightHint": "A closing time at or before opening means the restaurant closes after midnight."
+        "overnightHint": "A closing time at or before opening means the restaurant closes after midnight.",
+        "lastBookingLabel": "Last booking",
+        "lastBookingShortLabel": "Last",
+        "lastBookingUntilClose": "Until close",
+        "lastBookingDayLabel": "Last booking time for {{day}}",
+        "lastBookingHint": "Last booking is the latest start a guest can book online. Guests still see the full opening hours; only the slots offered stop earlier."
       },
       "walkInPolicy": {
         "title": "Walk-in Policy",
@@ -1432,7 +1440,7 @@
         "unavailable": "The preview could not be rendered."
       },
       "bookingConfirmation": {
-        "sectionLabel": "Booking confirmations",
+        "sectionLabel": "Automatic emails",
         "toggleLabel": "Send booking confirmation emails",
         "title": "Booking confirmation",
         "subtitle": "Sent the moment a guest books a table.",
@@ -1960,7 +1968,8 @@
         "maxCoversLabel": "Max guests starting per slot",
         "maxCoversPlaceholder": "No limit",
         "maxCoversHint": "Caps the guests whose online bookings start in each {{minutes}}-minute slot. Staff bookings and the waitlist aren't limited.",
-        "blockedInvalidMaxCovers": "Max guests per slot must be a whole number of 1 or more, or blank."
+        "blockedInvalidMaxCovers": "Max guests per slot must be a whole number of 1 or more, or blank.",
+        "blockedLastBookingOutsideHours": "A last booking time must fall within that day's opening hours."
       },
       "accountRoute": {
         "title": "Account",
@@ -2072,6 +2081,11 @@
       },
       "brandAutosave": {
         "serverUnreachable": "Couldn't reach the server."
+      },
+      "restaurantAlerts": {
+        "toggleLabel": "Email the restaurant about bookings",
+        "title": "Booking alerts to the restaurant",
+        "subtitle": "Sent to each location's contact email (or the brand's) when a booking is made or cancelled."
       }
     },
     "sidebar": {

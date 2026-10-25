@@ -49,6 +49,7 @@ public class EmailStatusController(
         {
             IsConfigured = settings != null,
             SendBookingConfirmations = settings?.SendBookingConfirmations ?? false,
+            SendRestaurantBookingAlerts = settings?.SendRestaurantBookingAlerts ?? false,
             FromEmail = settings?.FromEmail,
         });
     }
@@ -93,6 +94,7 @@ public class EmailStatusResponse
 {
     public bool IsConfigured { get; set; }
     public bool SendBookingConfirmations { get; set; }
+    public bool SendRestaurantBookingAlerts { get; set; }
     public string? FromEmail { get; set; }
 }
 

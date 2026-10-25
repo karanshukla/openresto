@@ -93,6 +93,11 @@ public class RestaurantManagementService(
 
         // After the entity is populated, so ApplyOpenHours can collapse identical days back
         // into OpenTime/CloseTime rather than storing redundant JSON.
+        if (!string.IsNullOrWhiteSpace(dto.LastBookingTime))
+        {
+            OpeningHoursHelper.ApplyLastBookingTime(entity, dto.LastBookingTime);
+        }
+
         if (dto.OpenHours is { Count: > 0 })
         {
             OpeningHoursHelper.ApplyOpenHours(entity, dto.OpenHours);
@@ -168,6 +173,11 @@ public class RestaurantManagementService(
         if (req.OpenDays != null)
         {
             r.OpenDays = req.OpenDays;
+        }
+
+        if (req.LastBookingTime != null)
+        {
+            OpeningHoursHelper.ApplyLastBookingTime(r, req.LastBookingTime);
         }
 
         if (req.OpenHours != null)
@@ -265,6 +275,7 @@ public class RestaurantManagementService(
             OpenTime = r.OpenTime,
             CloseTime = r.CloseTime,
             OpenHours = OpeningHoursHelper.ResolveWeek(r),
+            LastBookingTime = r.LastBookingTime,
             OpenDays = r.OpenDays,
             Timezone = r.Timezone,
             Tags = string.IsNullOrEmpty(r.Tags)
@@ -298,6 +309,7 @@ public class RestaurantManagementService(
         string OpenTime,
         string CloseTime,
         string? OpenHoursJson,
+        string? LastBookingTime,
         string OpenDays,
         string Timezone,
         string? Tags,
@@ -312,7 +324,7 @@ public class RestaurantManagementService(
     {
         public static RestaurantFields From(Restaurant r) => new(
             r.Name, r.Address, r.Description, r.MenuUrl, r.PhoneNumber, r.EmailAddress, r.OpenTime,
-            r.CloseTime, r.OpenHoursJson, r.OpenDays, r.Timezone, r.Tags,
+            r.CloseTime, r.OpenHoursJson, r.LastBookingTime, r.OpenDays, r.Timezone, r.Tags,
             r.DefaultBookingDurationMinutes, r.TurnTimesJson, r.BookingSlotIntervalMinutes, r.MaxTableOversizeSeats,
             r.MaxCoversPerSlot, r.BookingRefFormat, r.WalkInOnly, r.WalkInDays);
     }
@@ -328,6 +340,7 @@ public class RestaurantManagementService(
         _audit.RecordChange("openTime", before.OpenTime, after.OpenTime);
         _audit.RecordChange("closeTime", before.CloseTime, after.CloseTime);
         _audit.RecordChange("openHours", before.OpenHoursJson, after.OpenHoursJson);
+        _audit.RecordChange("lastBookingTime", before.LastBookingTime, after.LastBookingTime);
         _audit.RecordChange("openDays", before.OpenDays, after.OpenDays);
         _audit.RecordChange("timezone", before.Timezone, after.Timezone);
         _audit.RecordChange("tags", before.Tags, after.Tags);
@@ -878,6 +891,7 @@ public class RestaurantManagementService(
         OpenTime = r.OpenTime,
         CloseTime = r.CloseTime,
         OpenHours = OpeningHoursHelper.ResolveWeek(r),
+        LastBookingTime = r.LastBookingTime,
         OpenDays = r.OpenDays,
         Timezone = r.Timezone,
         Tags = string.IsNullOrEmpty(r.Tags)

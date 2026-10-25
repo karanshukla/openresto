@@ -20,6 +20,15 @@ Use these settings to say when each location takes bookings.
 - **Per-day hours.** Each day of the week can have its own open and close times. A service
   that closes after midnight belongs to the day it opened, so Saturday's 18:00–02:00 slots are
   Saturday's.
+- **Last booking time.** A venue open as a bar until 22:00 can stop taking tables at 20:15.
+  Guests still see the real opening hours; the slots offered and accepted just stop at the
+  cutoff, which is itself the last start allowed. It can be set for every day at once or per
+  day, must fall inside that day's hours, and follows a service past midnight the way the hours
+  do. Staff can still record a booking after it. A booking already on the books after the
+  cutoff is not a schedule conflict, because the kitchen is still open. API: `lastBookingTime`
+  on the restaurant (empty string clears), `lastBooking` on each `openHours` entry; a hold or
+  booking after it is refused with `restaurant.past_last_booking`, and a cutoff outside the
+  hours with `restaurant.last_booking_outside_hours`.
 - **Slot interval.** Bookings start on a 15, 30 or 60 minute grid (default 30). This is separate
   from how long a booking lasts.
 - **Schedule conflicts.** Changing hours, dropping an open day or changing the timezone never
@@ -185,12 +194,12 @@ native app also follows the phone's language.
 
 ## Configuration reference
 
-| Setting                                                                           | Purpose                                                      |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `OPENRESTO_DEFAULT_LOCALE` / `Locale:Default`                                     | Default language (`en`, `fr`, `es`, `de`)                    |
-| `Audit:RetentionDays`                                                             | Days to keep activity log entries (default 365)              |
-| `GuestPush__ReminderLeadHours`                                                    | Reminder times before a booking, in hours (default `24,2`)   |
-| `Wallet__Apple__*`, `Wallet__Google__*`                                           | Wallet pass issuers, see [native app guide](/guides/native-app/)    |
-| `Vapid__*`                                                                        | Web Push keys for admin notifications and browser reminders  |
-| `OPENRESTO_CLI_PACKAGE_URL`, `OPENRESTO_API_DOCS_URL`, `OPENRESTO_REPOSITORY_URL` | Where the API Keys screen links, for forks                   |
-| `WEBSITE_URL`                                                                     | Public address for email links, if not set in brand settings |
+| Setting                                                                           | Purpose                                                          |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `OPENRESTO_DEFAULT_LOCALE` / `Locale:Default`                                     | Default language (`en`, `fr`, `es`, `de`)                        |
+| `Audit:RetentionDays`                                                             | Days to keep activity log entries (default 365)                  |
+| `GuestPush__ReminderLeadHours`                                                    | Reminder times before a booking, in hours (default `24,2`)       |
+| `Wallet__Apple__*`, `Wallet__Google__*`                                           | Wallet pass issuers, see [native app guide](/guides/native-app/) |
+| `Vapid__*`                                                                        | Web Push keys for admin notifications and browser reminders      |
+| `OPENRESTO_CLI_PACKAGE_URL`, `OPENRESTO_API_DOCS_URL`, `OPENRESTO_REPOSITORY_URL` | Where the API Keys screen links, for forks                       |
+| `WEBSITE_URL`                                                                     | Public address for email links, if not set in brand settings     |

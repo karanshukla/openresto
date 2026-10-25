@@ -13,7 +13,11 @@ import { getNowInTimezone, formatCurrentTimeInTimezone, isViewerInTimezone } fro
 import { isValidEmail } from "@/utils/validation";
 import { groupDisplayName } from "@/utils/tableGroups";
 import { confirm } from "@/utils/confirm";
-import { getHoursForDate } from "@/utils/openingHours";
+import {
+  bookingTimePickerBounds,
+  getHoursForDate,
+  getLastBookingForDate,
+} from "@/utils/openingHours";
 import { getRestaurantDate } from "@/utils/restaurantTime";
 import { isWalkInOnlyOnDay, isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
 import WalkInNotice from "./WalkInNotice";
@@ -217,12 +221,11 @@ export default function BookingForm({
     value: i + 1,
   }));
 
-  const selectedDayHours = getHoursForDate(restaurant, date || getNowInTimezone(timezone).dateStr);
-  const minPickerTime = selectedDayHours.open;
-  // A close time at or before the open time is a past-midnight service, so the picker runs to
-  // the end of the day rather than to a close that reads as earlier than the open.
-  const maxPickerTime =
-    selectedDayHours.close <= selectedDayHours.open ? "23:45" : selectedDayHours.close;
+  const selectedDate = date || getNowInTimezone(timezone).dateStr;
+  const { min: minPickerTime, max: maxPickerTime } = bookingTimePickerBounds({
+    ...getHoursForDate(restaurant, selectedDate),
+    lastBooking: getLastBookingForDate(restaurant, selectedDate),
+  });
 
   const isValid =
     !partyTooLarge &&
