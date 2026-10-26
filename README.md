@@ -22,23 +22,49 @@ A self-hosted, zero-dependency restaurant booking system. Customers browse resta
 
 The Restaurant business has changed. Indie restaurants run on razor thin margins, and the cost of SaaS booking platforms only adds to the burden. Users don't want to install another app, give up their phone number to the cloud, or create another account to remember. OpenResto was designed to be as simple as possible for both customers and restaurant owners, while still being fully self-hosted, secure and customisable. Owners can manage bookings easily without friction. Customers book instantly without giving up any personal information, and can easily save their reservations to their calendar. Nothing in between.
 
-## Screenshots & Video
+## See it in action
 
-### Desktop
+Everything below is the real app, recorded with Playwright against the [live demo](https://openres.to) and its seed dataset. The first set frames each flow with step captions; the plain recordings follow underneath.
 
-https://github.com/user-attachments/assets/56bb85b8-1d00-4084-8a7d-c7974484340c
+### Booking a table
 
-https://github.com/user-attachments/assets/95e84bfe-0d5c-46a4-be00-e7d9501558ee
+Browse the locations, pick a party size, a date and a time, and the table is held while the guest types their details. Confirming lands on a page with calendar export, reminders and directions.
 
-<img width="2464" height="1371" alt="image" src="https://github.com/user-attachments/assets/605cce7a-dee3-472a-897b-291b6f23afe4" />
+<img src=".github/assets/styled-booking.gif" width="960" alt="Framed walkthrough of the guest booking flow on desktop, with captions: your restaurant, your site; pick guests, a date and a time; a name and an email, that is all; the table is held for five minutes; booked.">
 
-<img width="2464" height="1371" alt="image" src="https://github.com/user-attachments/assets/dd9d34ea-3305-471f-a20c-5614ac7e2000" />
+### Running the restaurant
 
-### Mobile
+Sign in to the dashboard, open the day's timetable and a booking's details, switch to the service view, scroll a location's policies, hours and tables, then edit the brand with the live preview updating as you type.
 
-<img src="https://github.com/user-attachments/assets/e24084f2-ca02-4740-9900-101bbfbe1203" width="320" alt="Mobile dashboard">
+<img src=".github/assets/styled-admin.gif" width="960" alt="Framed walkthrough of the admin on desktop, with captions: sign in; today at a glance; the day's timetable; open any booking; service view; hours, policies and pacing; sections and tables; make it yours.">
 
-<img src="https://github.com/user-attachments/assets/f6462b92-d45c-467d-9ed3-8852ff7c0d45" width="320" alt="Mobile booking">
+### On a phone
+
+The same site on a phone, nothing to install.
+
+<img src=".github/assets/styled-phone.gif" width="960" alt="Framed walkthrough of the booking flow on a phone, with captions: works on any phone; guests, date, time; a name and an email; held for five minutes; booked.">
+
+<details>
+<summary><strong>Plain recordings</strong> (no frame, no captions)</summary>
+
+<br>
+
+**Desktop**
+
+<img src=".github/assets/desktop-booking.gif" width="900" alt="A guest on the desktop site picks 4 guests, a date and a dinner slot, types their name and email while the table is held, confirms, and sees the booking confirmation with calendar and reminder options.">
+
+<img src=".github/assets/desktop-admin.gif" width="900" alt="An admin signs in, scrolls the dashboard, opens the bookings timetable and a booking's details, views the service board, scrolls a location's settings and tables, and edits the brand subtitle with the live preview following along.">
+
+**Phone and tablet**
+
+<table>
+  <tr>
+    <td valign="top"><img src=".github/assets/mobile-booking.gif" width="300" alt="The booking flow on a phone: locations list, party size, date and time pickers, the booking sheet with the table held, and the confirmation screen."></td>
+    <td valign="top"><img src=".github/assets/tablet-admin.gif" width="560" alt="The admin on a tablet: dashboard, bookings timetable and booking details, the list view, and a location's sections and tables."></td>
+  </tr>
+</table>
+
+</details>
 
 ## Tech Stack
 
