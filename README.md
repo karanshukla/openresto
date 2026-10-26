@@ -24,21 +24,38 @@ The Restaurant business has changed. Indie restaurants run on razor thin margins
 
 ## See it in action
 
-Every animation below is the real app, recorded with Playwright against the [live demo](https://openres.to) and its seed dataset. Nothing is mocked up.
+Everything below is the real app, recorded with Playwright against the [live demo](https://openres.to) and its seed dataset. The first set frames each flow with step captions; the plain recordings follow underneath.
 
-### Desktop
+### Booking a table
 
-**Booking a table.** Browse the locations, pick a party size, a date and a time, and the table is held while the guest types their details. Confirming lands on a page with calendar export, reminders and directions.
+Browse the locations, pick a party size, a date and a time, and the table is held while the guest types their details. Confirming lands on a page with calendar export, reminders and directions.
+
+<img src=".github/assets/styled-booking.gif" width="960" alt="Framed walkthrough of the guest booking flow on desktop, with captions: your restaurant, your site; pick guests, a date and a time; a name and an email, that is all; the table is held for five minutes; booked.">
+
+### Running the restaurant
+
+Sign in to the dashboard, open the day's timetable and a booking's details, switch to the service view, scroll a location's policies, hours and tables, then edit the brand with the live preview updating as you type.
+
+<img src=".github/assets/styled-admin.gif" width="960" alt="Framed walkthrough of the admin on desktop, with captions: sign in; today at a glance; the day's timetable; open any booking; service view; hours, policies and pacing; sections and tables; make it yours.">
+
+### On a phone
+
+The same site on a phone, nothing to install.
+
+<img src=".github/assets/styled-phone.gif" width="960" alt="Framed walkthrough of the booking flow on a phone, with captions: works on any phone; guests, date, time; a name and an email; held for five minutes; booked.">
+
+<details>
+<summary><strong>Plain recordings</strong> (no frame, no captions)</summary>
+
+<br>
+
+**Desktop**
 
 <img src=".github/assets/desktop-booking.gif" width="900" alt="A guest on the desktop site picks 4 guests, a date and a dinner slot, types their name and email while the table is held, confirms, and sees the booking confirmation with calendar and reminder options.">
 
-**Running the restaurant.** Sign in to the dashboard, open the day's timetable and a booking's details, switch to the service view, scroll a location's policies, hours and tables, then edit the brand with the live preview updating as you type.
-
 <img src=".github/assets/desktop-admin.gif" width="900" alt="An admin signs in, scrolls the dashboard, opens the bookings timetable and a booking's details, views the service board, scrolls a location's settings and tables, and edits the brand subtitle with the live preview following along.">
 
-### Mobile
-
-The same build, on a phone and on a tablet.
+**Phone and tablet**
 
 <table>
   <tr>
@@ -46,6 +63,8 @@ The same build, on a phone and on a tablet.
     <td valign="top"><img src=".github/assets/tablet-admin.gif" width="560" alt="The admin on a tablet: dashboard, bookings timetable and booking details, the list view, and a location's sections and tables."></td>
   </tr>
 </table>
+
+</details>
 
 ## Tech Stack
 
