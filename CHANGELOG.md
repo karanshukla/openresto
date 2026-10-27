@@ -10,10 +10,20 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-27
+
 ### Added
 
 - A location can set a last booking time, separate from its closing time, for the whole week or per day. Guests still see the real opening hours, but no slot after it is offered or accepted; a service that runs past midnight carries its cutoff with it. ([#505](https://github.com/karanshukla/openresto/issues/505))
 - The restaurant can be emailed when a booking is made or cancelled, as a second toggle beside the guest confirmation in **Settings → Email**. The alert goes to the location's contact address, falling back to the brand's, and links to the booking in the admin. ([#504](https://github.com/karanshukla/openresto/issues/504))
+
+### Fixed
+
+- In Safari, pressing Space in the admin New Booking dialog's guest name or email field no longer closes the dialog and discards what was typed. ([#503](https://github.com/karanshukla/openresto/pull/503))
+
+### Security
+
+- Documentation site build dependencies updated to clear the `vite` and `postcss-selector-parser` advisories. ([#501](https://github.com/karanshukla/openresto/pull/501))
 
 ## [2.4.1] - 2026-10-14
 
@@ -457,5 +467,7 @@ Hello! Thanks for reading, and for the 50 stars on GitHub! This release builds o
 [2.2.0]: https://github.com/karanshukla/openresto/releases/tag/v2.2.0
 [2.3.0]: https://github.com/karanshukla/openresto/releases/tag/v2.3.0
 [2.3.1]: https://github.com/karanshukla/openresto/releases/tag/v2.3.1
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/karanshukla/openresto/compare/v2.4.1...v2.5.0
+[2.4.1]: https://github.com/karanshukla/openresto/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/karanshukla/openresto/compare/v2.3.1...v2.4.0
