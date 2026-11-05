@@ -42,6 +42,7 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.md,
     padding: theme.spacing.lg,
   },
+  choosing: { borderLeftWidth: 4 },
   ticket: {
     ...theme.typography.bodyBold,
     fontSize: 18,
@@ -51,6 +52,7 @@ export const styles = StyleSheet.create({
   name: { ...theme.typography.bodyBold },
   meta: { fontSize: 13 },
   wait: { minWidth: 110, fontSize: 14, fontWeight: "600" },
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.xs },
+  // Shrinks to the row so the cluster wraps inside a narrow column instead of running off it.
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.xs, maxWidth: "100%" },
   error: { fontSize: 14 },
 });

@@ -13,6 +13,7 @@ How each feature behaves, its API fields and its error codes are in
 ### Added
 
 - A booking widget for the restaurant's own website: one line of HTML puts the booking form on another site, sized to fit, and shows the booking reference when it's done. An Owner chooses which sites may show it in **Settings → Website widget**; every other page still refuses to be framed. ([#513](https://github.com/karanshukla/openresto/issues/513))
+- **Tonight**, a host view for a tablet at the door: every table as a tile showing whether it's free, booked soon, seated (with minutes left) or overdue, tonight's arrivals grouped as late, due now and next hour, and the walk-in waitlist, on one screen that refreshes itself. Choose a party, then tap **Seat here** on a table to seat them there; finishing a table, checking a party in and marking a no-show are one press each, with an undo. ([#457](https://github.com/karanshukla/openresto/issues/457))
 
 ## [2.5.0] - 2026-10-27
 

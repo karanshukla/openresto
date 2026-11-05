@@ -168,4 +168,45 @@ describe("WaitlistRow", () => {
     );
     expect(screen.getByText(/ada@example.com/)).toBeTruthy();
   });
+
+  it("offers no Choose table outside the host view", () => {
+    renderWithProviders(
+      <WaitlistRow entry={entry()} busy={false} isLast={false} onAction={jest.fn()} />
+    );
+
+    expect(screen.queryByTestId("waitlist-choose-4")).toBeNull();
+  });
+
+  it("holds Choose table back while no table can take the party", () => {
+    renderWithProviders(
+      <WaitlistRow
+        entry={entry({ canSeatNow: false })}
+        busy={false}
+        isLast={false}
+        onAction={jest.fn()}
+        onChooseTable={jest.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("waitlist-choose-4")).toBeDisabled();
+  });
+
+  it("picks the party up for the floor, and shows it as picked", () => {
+    const onChooseTable = jest.fn();
+    renderWithProviders(
+      <WaitlistRow
+        entry={entry({ canSeatNow: true })}
+        busy={false}
+        isLast
+        onAction={jest.fn()}
+        choosing
+        onChooseTable={onChooseTable}
+      />
+    );
+
+    const choose = screen.getByTestId("waitlist-choose-4");
+    expect(choose).toBeSelected();
+    fireEvent.press(choose);
+    expect(onChooseTable).toHaveBeenCalled();
+  });
 });

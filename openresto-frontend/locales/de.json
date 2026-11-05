@@ -2142,6 +2142,7 @@
         "items": {
           "overview": "Übersicht",
           "bookings": "Buchungen",
+          "tonight": "Heute Abend",
           "locations": "Standorte",
           "notifications": "Benachrichtigungen",
           "activity": "Aktivität",
@@ -2168,6 +2169,101 @@
         "darkMode": "Dunkler Modus"
       },
       "logOut": "Abmelden"
+    },
+    "tonight": {
+      "title": "Heute Abend",
+      "noLocations": "Legen Sie einen Standort an, um die Empfangsansicht zu nutzen.",
+      "loadFailed": "Der Saal für heute Abend konnte nicht geladen werden.",
+      "updated": "Aktualisiert {{time}}",
+      "summary": {
+        "free_one": "1 frei",
+        "free_other": "{{count}} frei",
+        "seated_one": "1 besetzt",
+        "seated_other": "{{count}} besetzt",
+        "overdue_one": "1 überzogen",
+        "overdue_other": "{{count}} überzogen",
+        "waiting_one": "1 wartend",
+        "waiting_other": "{{count}} wartend"
+      },
+      "columns": {
+        "label": "Empfangsansicht",
+        "floor": "Saal",
+        "arrivals": "Ankünfte",
+        "waitlist": "Warteliste"
+      },
+      "state": {
+        "free": "Frei",
+        "bookedSoon": "Bald reserviert",
+        "seated": "Besetzt",
+        "overdue": "Überzogen"
+      },
+      "tile": {
+        "tableFallback": "Tisch {{id}}",
+        "combined": "Kombinierte Tische",
+        "seats_one": "1 Platz",
+        "seats_other": "{{count}} Plätze",
+        "walkIn": "Nur ohne Reservierung",
+        "minutesLeft": "noch {{minutes}} Min.",
+        "minutesOver": "{{minutes}} Min. überzogen",
+        "next": "Nächste um {{time}}",
+        "nothingNext": "Heute Abend nichts mehr reserviert",
+        "finish": "Abschließen",
+        "finishLabel": "{{table}} abschließen",
+        "seat": "Platzieren",
+        "seatLabel": "{{name}} an {{table}} platzieren",
+        "noShow": "Nicht erschienen",
+        "noShowLabel": "{{name}} als nicht erschienen markieren",
+        "seatHere": "Hier platzieren",
+        "fit": {
+          "taken": "Nicht frei",
+          "tooSmall": "Zu klein",
+          "groupMove": "Über die Reservierung platzieren",
+          "neededSoon": "Vor Ende ihres Besuchs reserviert"
+        }
+      },
+      "party": {
+        "hidden": "Gast",
+        "guests_one": "1 Gast",
+        "guests_other": "{{count}} Gäste",
+        "at": "{{time}} · {{table}}",
+        "lateBy": "{{minutes}} Min. zu spät",
+        "inMinutes": "in {{minutes}} Min.",
+        "checkedIn": "Angekommen"
+      },
+      "arrivals": {
+        "groups": {
+          "late": "Verspätet",
+          "dueNow": "Jetzt fällig",
+          "nextHour": "Nächste Stunde",
+          "later": "Später am Abend"
+        },
+        "empty": "Heute Abend wird niemand mehr erwartet",
+        "emptyBody": "Reservierungen erscheinen hier, bis sie platziert sind.",
+        "arrived": "Angekommen",
+        "arrivedLabel": "{{name}} als angekommen markieren",
+        "seatLabel": "{{name}} an {{table}} platzieren",
+        "chooseTable": "Tisch wählen",
+        "chooseTableLabel": "Einen Tisch für {{name}} wählen"
+      },
+      "waitlist": {
+        "empty": "Niemand wartet",
+        "emptyBody": "Laufkundschaft erscheint hier, sobald sie sich einträgt."
+      },
+      "pick": {
+        "title": "{{name}} platzieren, {{guests}}",
+        "hint": "Tippen Sie bei einem freien Tisch auf „Hier platzieren“.",
+        "cancel": "Abbrechen"
+      },
+      "done": {
+        "arrived": "{{name}} ist angekommen",
+        "seated": "{{name}} an {{table}} platziert",
+        "finished": "{{table}} ist frei",
+        "noShow": "{{name}} als nicht erschienen markiert",
+        "undone": "Rückgängig gemacht",
+        "undo": "Rückgängig",
+        "undoLabel": "Rückgängig: {{message}}",
+        "dismiss": "Schließen"
+      }
     },
     "waitlist": {
       "title": "Warteliste",
