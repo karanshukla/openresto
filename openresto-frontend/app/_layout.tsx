@@ -95,7 +95,7 @@ function AppWithTheme() {
 
     if (!primarySegment || (primarySegment as string) === "index") {
       setTabTitle();
-    } else if (primarySegment === "book") {
+    } else if (primarySegment === "book" || primarySegment === "embed") {
       setTabTitle("Reserve a Table");
     } else if (primarySegment === "lookup") {
       setTabTitle("Find My Booking");

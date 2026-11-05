@@ -72,6 +72,13 @@ public class BrandSettings
     public string? MinimumAppVersion { get; set; }
 
     /// <summary>
+    /// The sites allowed to frame the booking widget, in the form <see cref="EmbedOrigins"/>
+    /// stores. Null means the widget can't be embedded anywhere.
+    /// </summary>
+    [StringLength(4096)]
+    public string? EmbedOrigins { get; set; }
+
+    /// <summary>
     /// How the home page hero image is fit into its frame. Null/"Cover" (the default)
     /// keeps today's behaviour; "Contain" shows the whole image. See <see cref="HeaderImageFit"/>.
     /// </summary>

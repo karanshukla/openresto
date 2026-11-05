@@ -235,6 +235,11 @@
       "leaveFailed": "Couldn't leave the waitlist. Please try again.",
       "notFound": "We couldn't find that waitlist entry.",
       "loadFailed": "Couldn't refresh your place in line."
+    },
+    "embed": {
+      "bookAnother": "Book another table",
+      "unavailable": "Online booking isn't available right now.",
+      "viewBooking": "View booking"
     }
   },
   "common": {
@@ -506,6 +511,10 @@
       "not_active": "This party has already left the waitlist.",
       "no_table_free": "No free table can seat this party right now.",
       "push_invalid": "That device can't receive notifications from this site."
+    },
+    "embed": {
+      "origin_invalid": "\"{{origin}}\" isn't a site address. Use the form https://example.com.",
+      "too_many_origins": "At most {{max}} sites can show the booking widget."
     }
   },
   "lookup": {
@@ -769,7 +778,8 @@
         "waitlistAdd": "Added a party to the waitlist",
         "waitlistNotify": "Called a waitlist party",
         "waitlistSeat": "Seated a waitlist party",
-        "waitlistRemove": "Removed a waitlist party"
+        "waitlistRemove": "Removed a waitlist party",
+        "embedSettingsUpdate": "Updated the website widget's allowed sites"
       }
     },
     "bookings": {
@@ -2086,6 +2096,41 @@
         "toggleLabel": "Email the restaurant about bookings",
         "title": "Booking alerts to the restaurant",
         "subtitle": "Sent to each location's contact email (or the brand's) when a booking is made or cancelled."
+      },
+      "embed": {
+        "route": {
+          "title": "Website widget",
+          "subtitle": "Put the booking form on your restaurant's own website."
+        },
+        "origins": {
+          "title": "Allowed sites",
+          "subtitle": "Only these sites can show the booking widget",
+          "intro": "The widget only loads inside pages on these sites.",
+          "empty": "No sites yet, so the widget can't be shown anywhere.",
+          "loadFailed": "Couldn't load the allowed sites.",
+          "removeLabel": "Remove {{origin}}",
+          "add": "Add site"
+        },
+        "snippet": {
+          "title": "Snippet",
+          "subtitle": "Paste this into your site's HTML",
+          "locationLabel": "Location",
+          "allLocations": "All locations",
+          "scriptLabel": "Booking widget",
+          "linkLabel": "Link only"
+        },
+        "probe": {
+          "checking": "Checking that this server is set up for the widget…",
+          "ok": "This server sends the headers the widget needs.",
+          "recheck": "Check again",
+          "problems": {
+            "noOrigins": "Add an allowed site to get the widget snippet.",
+            "unreachable": "Couldn't load /embed or /embed.js from this server.",
+            "frameOptions": "The proxy sends X-Frame-Options on /embed, so browsers block the widget on every site.",
+            "frameAncestors": "The proxy doesn't send your allowed sites as frame-ancestors on /embed, so browsers block the widget on them.",
+            "loaderBlocked": "The proxy sends Cross-Origin-Resource-Policy on /embed.js that stops other sites loading it."
+          }
+        }
       }
     },
     "sidebar": {
@@ -2106,7 +2151,8 @@
           "apiKeys": "API Keys",
           "nativeApp": "Native app",
           "account": "Account",
-          "waitlist": "Waitlist"
+          "waitlist": "Waitlist",
+          "embed": "Website widget"
         },
         "unreadLabel_one": "{{label}}, {{count}} unread",
         "unreadLabel_other": "{{label}}, {{count}} unread"

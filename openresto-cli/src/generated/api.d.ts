@@ -2192,6 +2192,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/embed/frame-ancestors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The `frame-ancestors` source list for the widget page, as a header on an empty
+         *     response. nginx fetches it with `auth_request` on every `/embed` load and
+         *     copies it into that page's Content-Security-Policy, so a change in settings applies to
+         *     the next load without reloading nginx.
+         *     <seealso>EmbedSettingsControllerTests.FrameAncestors_FollowsTheSavedOrigins</seealso>
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/embed-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateEmbedSettingsRequest"];
+                    "text/json": components["schemas"]["UpdateEmbedSettingsRequest"];
+                    "application/*+json": components["schemas"]["UpdateEmbedSettingsRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/highlights": {
         parameters: {
             query?: never;
@@ -4625,6 +4721,9 @@ export interface components {
             minSeats?: number | string;
             /** Format: int32 */
             minutes?: number | string;
+        };
+        UpdateEmbedSettingsRequest: {
+            allowedOrigins?: string[];
         };
         UpdateHighlightRequest: {
             title?: string;

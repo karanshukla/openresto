@@ -164,7 +164,8 @@ that lists only a phone still shows the brand email. Social links are set for th
 
 ## Admin accounts and roles
 
-- **Owner** can also manage users, API keys and the activity log, and delete locations.
+- **Owner** can also manage users, API keys, the activity log and the website widget, and
+  delete locations.
   **Manager** can do everything else.
 - There is always at least one active Owner. You can't deactivate yourself or change your own
   role.
@@ -179,6 +180,16 @@ including declined attempts and failed sign-ins. Entries name the API key when o
   referred to by reference.
 - Entries can't be edited or deleted by hand. They are removed after `Audit:RetentionDays`
   (default 365).
+
+## Website widget
+
+The booking form can run inside the restaurant's own site. See
+[Booking widget for your website](/guides/booking-widget/).
+
+- `GET`/`PUT /api/admin/embed-settings` read and replace `allowedOrigins` (Owner only, and not
+  writable with an API key). Each entry is stored as `scheme://host[:port]`, lower-cased.
+- An entry with a path, query or wildcard is refused with `embed.origin_invalid` (400), and more
+  than 20 with `embed.too_many_origins` (400).
 
 ## Autosave
 

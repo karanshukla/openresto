@@ -235,6 +235,11 @@
       "leaveFailed": "Impossible de quitter la liste d'attente. Veuillez réessayer.",
       "notFound": "Nous n'avons pas trouvé cette inscription.",
       "loadFailed": "Impossible d'actualiser votre place dans la file."
+    },
+    "embed": {
+      "bookAnother": "Réserver une autre table",
+      "unavailable": "La réservation en ligne n'est pas disponible pour le moment.",
+      "viewBooking": "Voir la réservation"
     }
   },
   "common": {
@@ -506,6 +511,10 @@
       "not_active": "Ce groupe a déjà quitté la liste d'attente.",
       "no_table_free": "Aucune table libre ne peut accueillir ce groupe pour le moment.",
       "push_invalid": "Cet appareil ne peut pas recevoir de notifications de ce site."
+    },
+    "embed": {
+      "origin_invalid": "« {{origin}} » n'est pas une adresse de site. Utilisez la forme https://example.com.",
+      "too_many_origins": "Au plus {{max}} sites peuvent afficher le widget de réservation."
     }
   },
   "lookup": {
@@ -769,7 +778,8 @@
         "waitlistAdd": "A ajouté un groupe à la liste d'attente",
         "waitlistNotify": "A appelé un groupe en attente",
         "waitlistSeat": "A installé un groupe en attente",
-        "waitlistRemove": "A retiré un groupe de la liste d'attente"
+        "waitlistRemove": "A retiré un groupe de la liste d'attente",
+        "embedSettingsUpdate": "Sites autorisés du widget mis à jour"
       }
     },
     "bookings": {
@@ -2086,6 +2096,41 @@
         "toggleLabel": "Envoyer un e-mail au restaurant pour les réservations",
         "title": "Alertes de réservation au restaurant",
         "subtitle": "Envoyées à l'adresse de contact de chaque établissement (ou de la marque) quand une réservation est faite ou annulée."
+      },
+      "embed": {
+        "route": {
+          "title": "Widget pour site web",
+          "subtitle": "Ajoutez le formulaire de réservation au site de votre restaurant."
+        },
+        "origins": {
+          "title": "Sites autorisés",
+          "subtitle": "Seuls ces sites peuvent afficher le widget de réservation",
+          "intro": "Le widget ne se charge que dans les pages de ces sites.",
+          "empty": "Aucun site pour l'instant : le widget ne peut s'afficher nulle part.",
+          "loadFailed": "Impossible de charger les sites autorisés.",
+          "removeLabel": "Retirer {{origin}}",
+          "add": "Ajouter un site"
+        },
+        "snippet": {
+          "title": "Code à intégrer",
+          "subtitle": "Collez ceci dans le HTML de votre site",
+          "locationLabel": "Établissement",
+          "allLocations": "Tous les établissements",
+          "scriptLabel": "Widget de réservation",
+          "linkLabel": "Lien seul"
+        },
+        "probe": {
+          "checking": "Vérification de la configuration du serveur pour le widget…",
+          "ok": "Ce serveur envoie les en-têtes dont le widget a besoin.",
+          "recheck": "Vérifier à nouveau",
+          "problems": {
+            "noOrigins": "Ajoutez un site autorisé pour obtenir le code du widget.",
+            "unreachable": "Impossible de charger /embed ou /embed.js depuis ce serveur.",
+            "frameOptions": "Le proxy envoie X-Frame-Options sur /embed : les navigateurs bloquent le widget sur tous les sites.",
+            "frameAncestors": "Le proxy n'envoie pas vos sites autorisés en frame-ancestors sur /embed : les navigateurs y bloquent le widget.",
+            "loaderBlocked": "Le proxy envoie sur /embed.js un Cross-Origin-Resource-Policy qui empêche les autres sites de le charger."
+          }
+        }
       }
     },
     "sidebar": {
@@ -2106,7 +2151,8 @@
           "apiKeys": "Clés API",
           "nativeApp": "Application native",
           "account": "Compte",
-          "waitlist": "Liste d'attente"
+          "waitlist": "Liste d'attente",
+          "embed": "Widget pour site web"
         },
         "unreadLabel_one": "{{label}}, {{count}} non lue",
         "unreadLabel_other": "{{label}}, {{count}} non lues"

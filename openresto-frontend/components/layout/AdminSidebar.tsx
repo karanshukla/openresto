@@ -116,6 +116,14 @@ function getNavSections(t: TFunction): { heading: string; items: NavItem[] }[] {
           capability: "manage:api-keys" as const,
         },
         {
+          id: "embed",
+          label: t("admin.sidebar.nav.items.embed"),
+          icon: "code-slash-outline" as const,
+          href: "/admin/settings/embed" as const,
+          match: (p: string) => p === "/admin/settings/embed",
+          capability: "manage:embed" as const,
+        },
+        {
           id: "nativeApp",
           label: t("admin.sidebar.nav.items.nativeApp"),
           icon: "phone-portrait-outline" as const,

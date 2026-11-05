@@ -12,6 +12,7 @@ RUN mkdir -p /etc/nginx/ssl
 # Copy template, security headers and startup script
 COPY default.conf.template /tmp/default.conf.template
 COPY security-headers.conf /etc/nginx/conf.d/security-headers.conf
+COPY embed-headers.conf /etc/nginx/embed-headers.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 

@@ -68,6 +68,7 @@ public static class AuditActions
 
     // ── Instance settings ────────────────────────────────────────────────────
     public const string BrandUpdate = "brand.update";
+    public const string EmbedSettingsUpdate = "embed_settings.update";
     public const string EmailSettingsUpdate = "email_settings.update";
     public const string EmailSettingsTest = "email_settings.test";
 

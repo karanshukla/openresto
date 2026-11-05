@@ -398,6 +398,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AdminService>();
         services.AddScoped<RestaurantManagementService>();
         services.AddScoped<BrandService>();
+        services.AddScoped<EmbedSettingsService>();
         services.AddScoped<EmailSettingsService>();
         services.AddScoped<EmailPreviewService>();
         services.AddScoped<HighlightService>();

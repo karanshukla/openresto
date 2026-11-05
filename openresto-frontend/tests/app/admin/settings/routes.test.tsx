@@ -10,6 +10,7 @@ import AccountSettingsScreen from "@/app/admin/settings/account";
 import UserSettingsScreen from "@/app/admin/settings/users";
 import ApiKeysSettingsScreen from "@/app/admin/settings/api-keys";
 import NativeAppSettingsScreen from "@/app/admin/settings/native-app";
+import EmbedSettingsScreen from "@/app/admin/settings/embed";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
 const mockRedirect = jest.fn();
@@ -77,6 +78,15 @@ jest.mock("@/components/admin/settings/UsersCard", () => ({
 }));
 jest.mock("@/components/admin/settings/ApiKeysCard", () => ({
   ApiKeysCard: stub("ApiKeysCard"),
+}));
+jest.mock("@/components/admin/settings/EmbedOriginsCard", () => ({
+  EmbedOriginsCard: stub("EmbedOriginsCard"),
+}));
+jest.mock("@/components/admin/settings/EmbedSnippetCard", () => ({
+  EmbedSnippetCard: stub("EmbedSnippetCard"),
+}));
+jest.mock("@/hooks/use-embed-origins", () => ({
+  useEmbedOrigins: () => ({ origins: [], error: null, save: jest.fn() }),
 }));
 jest.mock("@/components/admin/settings/NativeAppReadinessCard", () => ({
   NativeAppReadinessCard: stub("NativeAppReadinessCard"),
@@ -169,6 +179,22 @@ describe("admin settings routes", () => {
   it("shows the API keys card to an Owner", async () => {
     renderWithProviders(<ApiKeysSettingsScreen />, { withAuth: true });
     await waitFor(() => expect(screen.getByText("ApiKeysCard")).toBeTruthy());
+  });
+
+  it("shows the website widget cards to an Owner", async () => {
+    renderWithProviders(<EmbedSettingsScreen />, { withAuth: true });
+    await waitFor(() => {
+      expect(screen.getByText("Website widget")).toBeTruthy();
+      expect(screen.getByText("EmbedOriginsCard")).toBeTruthy();
+      expect(screen.getByText("EmbedSnippetCard")).toBeTruthy();
+    });
+  });
+
+  it("redirects a Manager away from the website widget route", async () => {
+    asRole("Manager");
+    renderWithProviders(<EmbedSettingsScreen />, { withAuth: true });
+    await waitFor(() => expect(mockRedirect).toHaveBeenCalledWith("/admin/settings/account"));
+    expect(screen.queryByText("EmbedOriginsCard")).toBeNull();
   });
 
   it("renders the native app cards from one status request", async () => {

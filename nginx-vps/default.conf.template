@@ -80,6 +80,34 @@ server {
         proxy_pass http://frontend:8081;
     }
 
+    # Booking widget (issue #513): the one page another site may frame. nginx asks the backend
+    # which origins an Owner allowed on every load, so a settings change needs no reload; an
+    # unreachable backend fails the page closed rather than open.
+    location = /embed {
+        auth_request /_embed/frame-ancestors;
+        auth_request_set $embed_frame_ancestors $upstream_http_x_frame_ancestors;
+        include /etc/nginx/embed-headers.conf;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "no-cache" always;
+        limit_req zone=general burst=50 nodelay;
+        proxy_pass http://frontend:8081;
+    }
+
+    location = /_embed/frame-ancestors {
+        internal;
+        proxy_pass http://backend:8080/api/embed/frame-ancestors;
+    }
+
+    # The loader a restaurant's site includes, so it has to be loadable from any origin.
+    location = /embed.js {
+        limit_req zone=general burst=50 nodelay;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Cross-Origin-Resource-Policy "cross-origin" always;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age=3600" always;
+        proxy_pass http://frontend:8081;
+    }
+
     location / {
         limit_req zone=general burst=50 nodelay;
         include /etc/nginx/conf.d/security-headers.conf;

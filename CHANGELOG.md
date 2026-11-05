@@ -10,6 +10,10 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+### Added
+
+- A booking widget for the restaurant's own website: one line of HTML puts the booking form on another site, sized to fit, and shows the booking reference when it's done. An Owner chooses which sites may show it in **Settings → Website widget**; every other page still refuses to be framed. ([#513](https://github.com/karanshukla/openresto/issues/513))
+
 ## [2.5.0] - 2026-10-27
 
 ### Added

@@ -412,6 +412,10 @@ namespace OpenRestoApi.Migrations
                         .HasMaxLength(254)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EmbedOrigins")
+                        .HasMaxLength(4096)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FaviconIcon")
                         .HasMaxLength(32)
                         .HasColumnType("TEXT");

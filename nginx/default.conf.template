@@ -113,6 +113,35 @@ server {
         return 500 '{"error": "Internal Server Error", "message": "Service unavailable"}';
     }
 
+    # Booking widget (issue #513): the one page another site may frame. nginx asks the backend
+    # which origins an Owner allowed on every load, so a settings change needs no reload; an
+    # unreachable backend fails the page closed rather than open.
+    location = /embed {
+        auth_request /_embed/frame-ancestors;
+        auth_request_set $embed_frame_ancestors $upstream_http_x_frame_ancestors;
+        include /etc/nginx/embed-headers.conf;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "no-cache" always;
+        set $frontend_host ${FRONTEND_HOST};
+        proxy_pass http://$frontend_host:${FRONTEND_PORT};
+    }
+
+    location = /_embed/frame-ancestors {
+        internal;
+        set $backend_host ${BACKEND_HOST};
+        proxy_pass http://$backend_host:${BACKEND_PORT}/api/embed/frame-ancestors;
+    }
+
+    # The loader a restaurant's site includes, so it has to be loadable from any origin.
+    location = /embed.js {
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Cross-Origin-Resource-Policy "cross-origin" always;
+        proxy_hide_header Cache-Control;
+        add_header Cache-Control "public, max-age=3600" always;
+        set $frontend_host ${FRONTEND_HOST};
+        proxy_pass http://$frontend_host:${FRONTEND_PORT};
+    }
+
     # Frontend — Proxy to Static Server
     location / {
         include /etc/nginx/conf.d/security-headers.conf;
