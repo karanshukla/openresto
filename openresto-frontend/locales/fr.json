@@ -2118,6 +2118,18 @@
           "allLocations": "Tous les établissements",
           "scriptLabel": "Widget de réservation",
           "linkLabel": "Lien seul"
+        },
+        "probe": {
+          "checking": "Vérification de la configuration du serveur pour le widget…",
+          "ok": "Ce serveur envoie les en-têtes dont le widget a besoin.",
+          "recheck": "Vérifier à nouveau",
+          "problems": {
+            "noOrigins": "Ajoutez un site autorisé pour obtenir le code du widget.",
+            "unreachable": "Impossible de charger /embed ou /embed.js depuis ce serveur.",
+            "frameOptions": "Le proxy envoie X-Frame-Options sur /embed : les navigateurs bloquent le widget sur tous les sites.",
+            "frameAncestors": "Le proxy n'envoie pas vos sites autorisés en frame-ancestors sur /embed : les navigateurs y bloquent le widget.",
+            "loaderBlocked": "Le proxy envoie sur /embed.js un Cross-Origin-Resource-Policy qui empêche les autres sites de le charger."
+          }
         }
       }
     },

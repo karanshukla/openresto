@@ -24,6 +24,12 @@ Enter just the scheme and host (and the port, if it isn't the default). A path s
 
 ## 2. Paste the snippet
 
+Before it shows the script, the admin checks that your server sends the headers the widget
+needs, by loading `/embed` and `/embed.js` the way a browser would. If a proxy in front of
+OpenResto drops or overrides them, the snippet is held back and the card says which header is
+wrong. Fix the proxy (see [Using your own reverse proxy](#using-your-own-reverse-proxy)) and
+press **Check again**.
+
 Copy the snippet from **Snippet** on the same screen and paste it where the form should appear
 in your site's HTML:
 

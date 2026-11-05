@@ -5,6 +5,7 @@ import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { EmbedOriginsCard } from "@/components/admin/settings/EmbedOriginsCard";
 import { getEmbedOrigins, saveEmbedOrigins } from "@/api/embedSettings";
+import { useEmbedOrigins } from "@/hooks/use-embed-origins";
 
 jest.mock("@/api/embedSettings", () => ({
   getEmbedOrigins: jest.fn(),
@@ -20,6 +21,12 @@ jest.mock("@/hooks/use-persisted-state", () => ({
 
 const baseProps = { borderColor: "#ddd", mutedColor: "#888", cardBg: "#fff" };
 
+/** The card as the route mounts it: fed by the hook that owns the list. */
+function Harness() {
+  const { origins, error, save } = useEmbedOrigins();
+  return <EmbedOriginsCard {...baseProps} origins={origins ?? []} error={error} onSave={save} />;
+}
+
 const addSite = async (value: string) => {
   fireEvent.press(screen.getByLabelText("Add site"));
   fireEvent.changeText(screen.getByPlaceholderText("https://your-restaurant.com"), value);
@@ -31,7 +38,7 @@ describe("EmbedOriginsCard", () => {
 
   it("says the widget is shown nowhere while no site is allowed", async () => {
     (getEmbedOrigins as jest.Mock).mockResolvedValue([]);
-    render(<EmbedOriginsCard {...baseProps} />);
+    render(<Harness />);
     expect(await screen.findByText(/can't be shown anywhere/)).toBeTruthy();
   });
 
@@ -41,7 +48,7 @@ describe("EmbedOriginsCard", () => {
       ok: true,
       origins: ["https://a.example", "https://bistro.example"],
     });
-    render(<EmbedOriginsCard {...baseProps} />);
+    render(<Harness />);
     await screen.findByText("https://a.example");
 
     await addSite("https://Bistro.example/");
@@ -53,7 +60,7 @@ describe("EmbedOriginsCard", () => {
   it("removes a site", async () => {
     (getEmbedOrigins as jest.Mock).mockResolvedValue(["https://a.example", "https://b.example"]);
     (saveEmbedOrigins as jest.Mock).mockResolvedValue({ ok: true, origins: ["https://b.example"] });
-    render(<EmbedOriginsCard {...baseProps} />);
+    render(<Harness />);
 
     fireEvent.press(await screen.findByLabelText("Remove https://a.example"));
 
@@ -67,7 +74,7 @@ describe("EmbedOriginsCard", () => {
       ok: false,
       message: "Not a site address.",
     });
-    render(<EmbedOriginsCard {...baseProps} />);
+    render(<Harness />);
     await screen.findByText("https://a.example");
 
     await addSite("bistro");
@@ -78,13 +85,13 @@ describe("EmbedOriginsCard", () => {
 
   it("says so when the list can't be loaded", async () => {
     (getEmbedOrigins as jest.Mock).mockResolvedValue(null);
-    render(<EmbedOriginsCard {...baseProps} />);
+    render(<Harness />);
     expect(await screen.findByText("Couldn't load the allowed sites.")).toBeTruthy();
   });
 
   it("collapses", async () => {
     (getEmbedOrigins as jest.Mock).mockResolvedValue([]);
-    render(<EmbedOriginsCard {...baseProps} />);
+    render(<Harness />);
     fireEvent.press(screen.getByText("Allowed sites"));
     await waitFor(() => expect(getEmbedOrigins).toHaveBeenCalled());
   });

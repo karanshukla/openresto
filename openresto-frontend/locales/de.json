@@ -2118,6 +2118,18 @@
           "allLocations": "Alle Standorte",
           "scriptLabel": "Reservierungs-Widget",
           "linkLabel": "Nur Link"
+        },
+        "probe": {
+          "checking": "Prüfe, ob dieser Server für das Widget eingerichtet ist…",
+          "ok": "Dieser Server sendet die Header, die das Widget braucht.",
+          "recheck": "Erneut prüfen",
+          "problems": {
+            "noOrigins": "Fügen Sie eine erlaubte Website hinzu, um den Widget-Code zu erhalten.",
+            "unreachable": "/embed oder /embed.js konnte von diesem Server nicht geladen werden.",
+            "frameOptions": "Der Proxy sendet X-Frame-Options auf /embed, daher blockieren Browser das Widget auf jeder Website.",
+            "frameAncestors": "Der Proxy sendet Ihre erlaubten Websites nicht als frame-ancestors auf /embed, daher blockieren Browser das Widget dort.",
+            "loaderBlocked": "Der Proxy sendet auf /embed.js eine Cross-Origin-Resource-Policy, die das Laden durch andere Websites verhindert."
+          }
         }
       }
     },

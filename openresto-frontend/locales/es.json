@@ -2118,6 +2118,18 @@
           "allLocations": "Todos los locales",
           "scriptLabel": "Widget de reservas",
           "linkLabel": "Solo enlace"
+        },
+        "probe": {
+          "checking": "Comprobando que este servidor está listo para el widget…",
+          "ok": "Este servidor envía las cabeceras que necesita el widget.",
+          "recheck": "Comprobar de nuevo",
+          "problems": {
+            "noOrigins": "Añade un sitio permitido para obtener el código del widget.",
+            "unreachable": "No se pudo cargar /embed o /embed.js desde este servidor.",
+            "frameOptions": "El proxy envía X-Frame-Options en /embed, así que los navegadores bloquean el widget en todos los sitios.",
+            "frameAncestors": "El proxy no envía tus sitios permitidos como frame-ancestors en /embed, así que los navegadores bloquean el widget en ellos.",
+            "loaderBlocked": "El proxy envía en /embed.js un Cross-Origin-Resource-Policy que impide que otros sitios lo carguen."
+          }
         }
       }
     },

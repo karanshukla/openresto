@@ -85,6 +85,9 @@ jest.mock("@/components/admin/settings/EmbedOriginsCard", () => ({
 jest.mock("@/components/admin/settings/EmbedSnippetCard", () => ({
   EmbedSnippetCard: stub("EmbedSnippetCard"),
 }));
+jest.mock("@/hooks/use-embed-origins", () => ({
+  useEmbedOrigins: () => ({ origins: [], error: null, save: jest.fn() }),
+}));
 jest.mock("@/components/admin/settings/NativeAppReadinessCard", () => ({
   NativeAppReadinessCard: stub("NativeAppReadinessCard"),
 }));

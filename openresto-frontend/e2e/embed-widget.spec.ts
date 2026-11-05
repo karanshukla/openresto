@@ -98,6 +98,18 @@ test.describe("Embedded booking widget", () => {
     }
   );
 
+  test(
+    "the admin probe passes through the shipped proxy and offers the script",
+    { tag: "@smoke" },
+    async ({ browser }) => {
+      await asAdmin(browser, async (page) => {
+        await page.goto("/admin/settings/embed");
+        await expect(page.getByTestId("embed-probe-ok")).toBeVisible({ timeout: 20_000 });
+        await expect(page.getByTestId("embed-snippet-script")).toContainText("/embed.js");
+      });
+    }
+  );
+
   test("books end to end from the allowed site", async ({ page }) => {
     await page.goto(allowed.origin);
     const frame = page.frameLocator("iframe");
