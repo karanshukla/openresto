@@ -235,6 +235,11 @@
       "leaveFailed": "Die Warteliste konnte nicht verlassen werden. Bitte versuchen Sie es erneut.",
       "notFound": "Dieser Eintrag wurde nicht gefunden.",
       "loadFailed": "Ihr Platz konnte nicht aktualisiert werden."
+    },
+    "embed": {
+      "bookAnother": "Weiteren Tisch reservieren",
+      "unavailable": "Online-Reservierungen sind gerade nicht verfügbar.",
+      "viewBooking": "Reservierung ansehen"
     }
   },
   "common": {
@@ -506,6 +511,10 @@
       "not_active": "Diese Gruppe hat die Warteliste bereits verlassen.",
       "no_table_free": "Gerade ist kein passender Tisch für diese Gruppe frei.",
       "push_invalid": "Dieses Gerät kann keine Benachrichtigungen von dieser Website empfangen."
+    },
+    "embed": {
+      "origin_invalid": "„{{origin}}“ ist keine Website-Adresse. Verwenden Sie die Form https://example.com.",
+      "too_many_origins": "Höchstens {{max}} Websites können das Reservierungs-Widget zeigen."
     }
   },
   "lookup": {
@@ -769,7 +778,8 @@
         "waitlistAdd": "Gruppe zur Warteliste hinzugefügt",
         "waitlistNotify": "Wartende Gruppe aufgerufen",
         "waitlistSeat": "Wartende Gruppe platziert",
-        "waitlistRemove": "Gruppe von der Warteliste entfernt"
+        "waitlistRemove": "Gruppe von der Warteliste entfernt",
+        "embedSettingsUpdate": "Erlaubte Websites des Widgets aktualisiert"
       }
     },
     "bookings": {
@@ -2086,6 +2096,29 @@
         "toggleLabel": "Restaurant per E-Mail über Buchungen informieren",
         "title": "Buchungshinweise an das Restaurant",
         "subtitle": "Werden an die Kontaktadresse des Standorts (oder der Marke) gesendet, wenn eine Buchung erstellt oder storniert wird."
+      },
+      "embed": {
+        "route": {
+          "title": "Website-Widget",
+          "subtitle": "Das Reservierungsformular auf der eigenen Website Ihres Restaurants."
+        },
+        "origins": {
+          "title": "Erlaubte Websites",
+          "subtitle": "Nur diese Websites können das Reservierungs-Widget zeigen",
+          "intro": "Das Widget lädt nur in Seiten dieser Websites.",
+          "empty": "Noch keine Websites, daher kann das Widget nirgends angezeigt werden.",
+          "loadFailed": "Die erlaubten Websites konnten nicht geladen werden.",
+          "removeLabel": "{{origin}} entfernen",
+          "add": "Website hinzufügen"
+        },
+        "snippet": {
+          "title": "Code-Schnipsel",
+          "subtitle": "Fügen Sie dies in das HTML Ihrer Website ein",
+          "locationLabel": "Standort",
+          "allLocations": "Alle Standorte",
+          "scriptLabel": "Reservierungs-Widget",
+          "linkLabel": "Nur Link"
+        }
       }
     },
     "sidebar": {
@@ -2106,7 +2139,8 @@
           "apiKeys": "API-Schlüssel",
           "nativeApp": "Native App",
           "account": "Konto",
-          "waitlist": "Warteliste"
+          "waitlist": "Warteliste",
+          "embed": "Website-Widget"
         },
         "unreadLabel_one": "{{label}}, {{count}} ungelesen",
         "unreadLabel_other": "{{label}}, {{count}} ungelesen"

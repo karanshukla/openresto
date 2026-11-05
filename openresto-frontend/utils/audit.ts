@@ -107,6 +107,7 @@ const ACTION_LABEL_KEYS: Record<string, TranslationKey> = {
   "auth.password_reset": "admin.activity.actions.authPasswordReset",
 
   "brand.update": "admin.activity.actions.brandUpdate",
+  "embed_settings.update": "admin.activity.actions.embedSettingsUpdate",
   "email_settings.update": "admin.activity.actions.emailSettingsUpdate",
   "email_settings.test": "admin.activity.actions.emailSettingsTest",
 

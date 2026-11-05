@@ -29,11 +29,9 @@ import { ThemedView } from "@/components/themed-view";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { theme } from "@/theme/theme";
 import { RestaurantDto } from "@/api/restaurants";
-import { createBooking } from "@/api/bookings";
-import { rememberBooking } from "@/utils/bookingCache";
-import { convertLocalToUtc } from "@/utils/date";
 import { fmtDateString } from "@/utils/formatters";
 import BookingForm, { BookingFormData } from "@/components/booking/BookingForm";
+import { submitBooking } from "@/components/booking/submitBooking";
 import WaitlistPanel from "@/components/waitlist/WaitlistPanel";
 import Select from "@/components/common/Select";
 import { animateNode, EASE_ENTER, EASE_EXIT, prefersReducedMotion } from "@/utils/webAnimation";
@@ -243,42 +241,13 @@ export default function BookingDrawer({
    */
   const handleSubmit = async (data: BookingFormData, dismissSheet?: () => void) => {
     setSubmitError(null);
-    const dateTime = convertLocalToUtc(data.date, data.time, restaurant.timezone || "UTC");
-    // For "Any section" (null tableId/sectionId), the server auto-assigns the best table.
-    // For explicit selection, fall back to the table's owning section if sectionId wasn't set.
-    const resolvedSectionId =
-      data.sectionId ??
-      (data.tableId !== null
-        ? (restaurant.sections.find((s) => s.tables.some((t) => t.id === data.tableId))?.id ?? null)
-        : null);
     try {
-      const newBooking = await createBooking({
-        customerEmail: data.customerEmail,
-        customerName: data.customerName,
-        seats: data.seats,
-        tableId: data.tableId,
-        tableGroupId: data.tableGroupId,
-        holdId: data.holdId,
-        restaurantId: restaurant.id,
-        sectionId: resolvedSectionId,
-        date: dateTime,
-        specialRequests: data.specialRequests || null,
-      });
+      const newBooking = await submitBooking(restaurant, data);
       const email = encodeURIComponent(data.customerEmail);
       // Only once the booking is real: an error has to stay readable in the sheet it was
       // made in.
       if (newBooking) dismissSheet?.();
       if (newBooking?.bookingRef) {
-        // Native has no cookie jar, so the diner's own list of recent bookings is kept
-        // client-side; on web this is a no-op and the API's HttpOnly cookie still owns it.
-        rememberBooking({
-          bookingRef: newBooking.bookingRef,
-          email: data.customerEmail,
-          date: dateTime,
-          seats: data.seats,
-          restaurantName: restaurant.name,
-          createdAt: new Date().toISOString(),
-        });
         router.push(`/booking-confirmation/${newBooking.bookingRef}?email=${email}`);
       } else if (newBooking) {
         router.push(`/booking-confirmation/${newBooking.id}?email=${email}`);

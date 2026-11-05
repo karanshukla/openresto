@@ -1,4 +1,10 @@
-import { expect, type Page, type APIRequestContext, type Locator } from "@playwright/test";
+import {
+  expect,
+  type Page,
+  type APIRequestContext,
+  type FrameLocator,
+  type Locator,
+} from "@playwright/test";
 
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@openresto.com";
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "change-me-before-use";
@@ -114,7 +120,7 @@ export function futureDateStr(daysAhead = 7): string {
  * Opens the picker, clicks "next month" until the target day's cell is in the
  * DOM (cells for other months aren't rendered at all), then clicks it.
  */
-export async function selectBookingDate(page: Page, dateStr: string): Promise<void> {
+export async function selectBookingDate(page: Page | FrameLocator, dateStr: string): Promise<void> {
   await page.getByTestId("date-picker-trigger").click();
   await expect(page.getByTestId("date-picker-calendar")).toBeVisible({ timeout: 10_000 });
 

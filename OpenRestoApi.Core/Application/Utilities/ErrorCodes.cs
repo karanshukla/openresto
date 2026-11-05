@@ -159,6 +159,9 @@ public static class ErrorCodes
     public const string BrandPrivacyPolicyUrlInvalid = "brand.privacy_policy_url_invalid";
     public const string BrandMinimumAppVersionInvalid = "brand.minimum_app_version_invalid";
 
+    public const string EmbedOriginInvalid = "embed.origin_invalid";
+    public const string EmbedTooManyOrigins = "embed.too_many_origins";
+
     public const string HighlightTitleRequired = "highlight.title_required";
     public const string HighlightTitleTooLong = "highlight.title_too_long";
     public const string HighlightBodyTooLong = "highlight.body_too_long";

@@ -1857,6 +1857,61 @@
         }
       }
     },
+    "/api/embed/frame-ancestors": {
+      "get": {
+        "tags": [
+          "Embed"
+        ],
+        "summary": "The \u0060frame-ancestors\u0060 source list for the widget page, as a header on an empty\nresponse. nginx fetches it with \u0060auth_request\u0060 on every \u0060/embed\u0060 load and\ncopies it into that page\u0027s Content-Security-Policy, so a change in settings applies to\nthe next load without reloading nginx.\n\u003Cseealso\u003EEmbedSettingsControllerTests.FrameAncestors_FollowsTheSavedOrigins\u003C/seealso\u003E",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/admin/embed-settings": {
+      "get": {
+        "tags": [
+          "EmbedSettings"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "EmbedSettings"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmbedSettingsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmbedSettingsRequest"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEmbedSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/highlights": {
       "get": {
         "tags": [
@@ -5186,6 +5241,17 @@
         },
         "description": "A party of int TurnTimeDto.MinSeats or more holds its table for int TurnTimeDto.Minutes, up to the next rule."
       },
+      "UpdateEmbedSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "allowedOrigins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "UpdateHighlightRequest": {
         "type": "object",
         "properties": {
@@ -5549,6 +5615,12 @@
     },
     {
       "name": "EmailStatus"
+    },
+    {
+      "name": "Embed"
+    },
+    {
+      "name": "EmbedSettings"
     },
     {
       "name": "Highlights"

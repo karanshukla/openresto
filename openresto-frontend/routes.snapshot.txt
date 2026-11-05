@@ -40,6 +40,7 @@
 /admin/settings/api-keys
 /admin/settings/brand
 /admin/settings/email
+/admin/settings/embed
 /admin/settings/index
 /admin/settings/native-app
 /admin/settings/users
@@ -47,6 +48,7 @@
 /book
 /book/[restaurantId]
 /booking-confirmation/[bookingRef]
+/embed
 /index
 /locations/[id]
 /locations/index

@@ -235,6 +235,11 @@
       "leaveFailed": "No se pudo salir de la lista de espera. Inténtelo de nuevo.",
       "notFound": "No encontramos esa inscripción.",
       "loadFailed": "No se pudo actualizar su lugar en la fila."
+    },
+    "embed": {
+      "bookAnother": "Reservar otra mesa",
+      "unavailable": "La reserva en línea no está disponible en este momento.",
+      "viewBooking": "Ver la reserva"
     }
   },
   "common": {
@@ -506,6 +511,10 @@
       "not_active": "Este grupo ya salió de la lista de espera.",
       "no_table_free": "Ahora no hay ninguna mesa libre para este grupo.",
       "push_invalid": "Ese dispositivo no puede recibir notificaciones de este sitio."
+    },
+    "embed": {
+      "origin_invalid": "«{{origin}}» no es una dirección de sitio. Usa el formato https://example.com.",
+      "too_many_origins": "Como máximo {{max}} sitios pueden mostrar el widget de reservas."
     }
   },
   "lookup": {
@@ -769,7 +778,8 @@
         "waitlistAdd": "Añadió un grupo a la lista de espera",
         "waitlistNotify": "Avisó a un grupo en espera",
         "waitlistSeat": "Sentó a un grupo en espera",
-        "waitlistRemove": "Quitó un grupo de la lista de espera"
+        "waitlistRemove": "Quitó un grupo de la lista de espera",
+        "embedSettingsUpdate": "Sitios permitidos del widget actualizados"
       }
     },
     "bookings": {
@@ -2086,6 +2096,29 @@
         "toggleLabel": "Enviar correo al restaurante sobre las reservas",
         "title": "Avisos de reserva al restaurante",
         "subtitle": "Se envían al correo de contacto de cada local (o de la marca) cuando se hace o cancela una reserva."
+      },
+      "embed": {
+        "route": {
+          "title": "Widget para la web",
+          "subtitle": "Añade el formulario de reservas a la web de tu restaurante."
+        },
+        "origins": {
+          "title": "Sitios permitidos",
+          "subtitle": "Solo estos sitios pueden mostrar el widget de reservas",
+          "intro": "El widget solo se carga dentro de páginas de estos sitios.",
+          "empty": "Aún no hay sitios, así que el widget no se puede mostrar en ninguna parte.",
+          "loadFailed": "No se pudieron cargar los sitios permitidos.",
+          "removeLabel": "Quitar {{origin}}",
+          "add": "Añadir sitio"
+        },
+        "snippet": {
+          "title": "Código",
+          "subtitle": "Pega esto en el HTML de tu sitio",
+          "locationLabel": "Local",
+          "allLocations": "Todos los locales",
+          "scriptLabel": "Widget de reservas",
+          "linkLabel": "Solo enlace"
+        }
       }
     },
     "sidebar": {
@@ -2106,7 +2139,8 @@
           "apiKeys": "Claves de API",
           "nativeApp": "Aplicación nativa",
           "account": "Cuenta",
-          "waitlist": "Lista de espera"
+          "waitlist": "Lista de espera",
+          "embed": "Widget para la web"
         },
         "unreadLabel_one": "{{label}}, {{count}} no leída",
         "unreadLabel_other": "{{label}}, {{count}} no leídas"
