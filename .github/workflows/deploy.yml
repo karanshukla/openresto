@@ -131,13 +131,14 @@ jobs:
 
       - name: Update deployment status (success)
         if: ${{ success() && steps.deployment.outcome == 'success' }}
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           DEPLOYMENT_ID="${{ steps.deployment.outputs.deployment_id }}"
           echo "==> Marking deployment #$DEPLOYMENT_ID as successful..."
-          curl -sf -X POST \
+          curl -sS --fail-with-body --retry 3 --retry-all-errors -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -148,13 +149,14 @@ jobs:
 
       - name: Update deployment status (failure)
         if: ${{ failure() && steps.deployment.outcome == 'success' }}
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           DEPLOYMENT_ID="${{ steps.deployment.outputs.deployment_id }}"
           echo "==> Marking deployment #$DEPLOYMENT_ID as failed..."
-          curl -sf -X POST \
+          curl -sS --fail-with-body --retry 3 --retry-all-errors -X POST \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
