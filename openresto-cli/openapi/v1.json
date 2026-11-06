@@ -3406,6 +3406,30 @@
         }
       }
     },
+    "/api/admin/restaurants/{restaurantId}/tonight": {
+      "get": {
+        "tags": [
+          "Tonight"
+        ],
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/admin/users": {
       "get": {
         "tags": [
@@ -5642,6 +5666,9 @@
     },
     {
       "name": "SocialLinks"
+    },
+    {
+      "name": "Tonight"
     },
     {
       "name": "Users"

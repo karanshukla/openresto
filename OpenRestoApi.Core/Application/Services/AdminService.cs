@@ -136,6 +136,9 @@ public class AdminService(
         };
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     /// <seealso>AdminServiceTests.GetOverviewAsync_ReportsTodaysCoversPerSlot_ForACappedLocation</seealso>
     private static LocationPacingDto PacingFor(Restaurant restaurant, int cap, IEnumerable<Booking> todayBookings) => new()
     {
@@ -930,6 +933,10 @@ public class AdminService(
     }
 
     // ── Mapping ─────────────────────────────────────────────────────────────
+
+    /// <summary>Maps bookings for another admin read (the host stand), through the same redaction.</summary>
+    public virtual List<BookingDetailDto> ToAdminDtos(IEnumerable<Booking> bookings)
+        => bookings.Select(ToDetailDto).ToList();
 
     // Instance rather than static so the single mapping choke point can also apply
     // BookingGuestVisibility — every caller returning a BookingDetailDto routes through here, so

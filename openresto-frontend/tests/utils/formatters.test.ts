@@ -3,6 +3,7 @@ import {
   fmtDateString,
   fmtDateTime,
   fmtDateTimeInZone,
+  fmtTimeInZone,
   fmtLongDate,
   fmtMonthDay,
   fmtNumber,
@@ -87,6 +88,14 @@ describe("formatters - fmtDateTimeInZone", () => {
     // 2026-04-18T23:30:00Z is already the 19th in a zone ahead of UTC.
     const result = fmtDateTimeInZone("2026-04-18T23:30:00Z", "Pacific/Auckland");
     expect(result).toMatch(/19/);
+  });
+});
+
+describe("formatters - fmtTimeInZone", () => {
+  it("reads the time off the restaurant's clock, not the viewer's", () => {
+    setActiveLocale("en-GB");
+    expect(fmtTimeInZone("2026-11-05T23:30:00Z", "America/New_York")).toBe("18:30");
+    expect(fmtTimeInZone("2026-11-05T23:30:00Z", "UTC")).toBe("23:30");
   });
 });
 

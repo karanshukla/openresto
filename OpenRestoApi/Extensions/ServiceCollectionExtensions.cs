@@ -404,6 +404,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<HighlightService>();
         services.AddScoped<SocialLinkService>();
         services.AddScoped<WaitlistService>();
+        services.AddScoped<TonightService>();
         services.AddScoped<IAvailabilityService, AvailabilityService>();
         services.AddSingleton<IMediaStore, OpenRestoApi.Infrastructure.Media.MediaStore>();
         services.AddScoped<MediaService>();
