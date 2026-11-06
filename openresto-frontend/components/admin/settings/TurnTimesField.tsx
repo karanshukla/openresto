@@ -65,6 +65,9 @@ export function TurnTimesField({
       <ThemedText style={[settingsStyles.fieldLabel, { color: mutedColor }]}>
         {t("admin.settings.restaurantInfo.turnTimesLabel")}
       </ThemedText>
+      <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
+        {t("admin.settings.restaurantInfo.turnTimesHint")}
+      </ThemedText>
       {ranges.map((range, index) => (
         <View key={index} style={styles.row} testID={`turn-time-row-${index}`}>
           <View style={styles.seatsSelect}>
@@ -105,9 +108,6 @@ export function TurnTimesField({
           />
         </View>
       ))}
-      <ThemedText style={[settingsStyles.fieldHint, { color: mutedColor }]}>
-        {t("admin.settings.restaurantInfo.turnTimesHint")}
-      </ThemedText>
       <ButtonRow align="start">
         <Button size="md" icon="add" onPress={add}>
           {t("admin.settings.restaurantInfo.turnTimesAdd")}

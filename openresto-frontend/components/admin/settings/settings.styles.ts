@@ -80,8 +80,8 @@ export const styles = StyleSheet.create({
   fieldHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   fieldCharCount: { fontSize: 11 },
   // lineHeight is explicit because ThemedText's default variant carries a 24px one, which
-  // leaves a wrapped 11px hint reading as two unrelated lines.
-  fieldHint: { fontSize: 11, lineHeight: 15, marginTop: theme.spacing.xs },
+  // leaves a wrapped 12px hint reading as two unrelated lines.
+  fieldHint: { fontSize: 12, lineHeight: 16, marginTop: theme.spacing.xs },
   secHeader: {
     flexDirection: "row",
     alignItems: "center",

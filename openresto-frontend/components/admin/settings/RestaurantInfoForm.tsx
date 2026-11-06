@@ -105,9 +105,10 @@ const TIMEZONE_OPTIONS: SelectOption[] = TIMEZONES.map((tz) => ({
   label: tz.replace(/_/g, " "),
 }));
 
-const DURATION_OPTIONS: SelectOption[] = [30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480].map(
-  (minutes) => ({ value: minutes, label: formatDurationLabel(minutes) })
-);
+// Must match the server-side allow-list (BookingDuration.AllowedMinutes).
+const DURATION_OPTIONS: SelectOption[] = [
+  30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480,
+].map((minutes) => ({ value: minutes, label: formatDurationLabel(minutes) }));
 
 // Allowed start-time intervals — must match the server-side allow-list
 // (RestaurantManagementService._allowedBookingSlotIntervalsMinutes). Kept small so
@@ -886,170 +887,202 @@ export function RestaurantInfoForm({
         />
         <AnimatedAccordion expanded={bookingExpanded}>
           <View style={[sharedStyles.secForm, { borderTopColor: borderColor }]}>
-            <View style={styles.fieldGrid}>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.timezoneLabel")}
-                </ThemedText>
-                <Select
-                  accessibilityLabel={t("admin.settings.restaurantInfo.timezoneLabel")}
-                  options={TIMEZONE_OPTIONS}
-                  selectedValue={timezone}
-                  onSelect={(value) => setTimezone(String(value))}
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.timezoneHint")}
-                </ThemedText>
-                <TimezoneRebaseWarning
-                  upcomingBookingsCount={upcomingBookingsCount}
-                  warningColor={colors.warning}
-                />
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.durationLabel")}
-                </ThemedText>
-                <Select
-                  accessibilityLabel={t("admin.settings.restaurantInfo.durationLabel")}
-                  options={DURATION_OPTIONS}
-                  selectedValue={defaultBookingDurationMinutes}
-                  onSelect={(value) => setDefaultBookingDurationMinutes(Number(value))}
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.durationHint")}
-                </ThemedText>
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.slotIntervalLabel")}
-                </ThemedText>
-                <Select
-                  accessibilityLabel={t("admin.settings.restaurantInfo.slotIntervalLabel")}
-                  options={SLOT_INTERVAL_OPTIONS}
-                  selectedValue={bookingSlotIntervalMinutes}
-                  onSelect={(value) => setBookingSlotIntervalMinutes(Number(value))}
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.slotIntervalHint")}
-                </ThemedText>
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.oversizeLabel")}
-                </ThemedText>
-                <Select
-                  accessibilityLabel={t("admin.settings.restaurantInfo.oversizeLabel")}
-                  options={getOversizeOptions(t)}
-                  selectedValue={maxTableOversizeSeats ?? OVERSIZE_OFF}
-                  onSelect={(value) =>
-                    setMaxTableOversizeSeats(value === OVERSIZE_OFF ? null : Number(value))
-                  }
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.oversizeHint")}
-                </ThemedText>
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.maxCoversLabel")}
-                </ThemedText>
-                <Input
-                  testID="max-covers-input"
-                  accessibilityLabel={t("admin.settings.restaurantInfo.maxCoversLabel")}
-                  value={maxCoversText}
-                  onChangeText={setMaxCoversText}
-                  keyboardType="number-pad"
-                  placeholder={t("admin.settings.restaurantInfo.maxCoversPlaceholder")}
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.maxCoversHint", {
-                    minutes: bookingSlotIntervalMinutes,
-                  })}
-                </ThemedText>
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.refFormatLabel")}
-                </ThemedText>
-                <Select
-                  accessibilityLabel={t("admin.settings.restaurantInfo.refFormatLabel")}
-                  options={getBookingRefFormatOptions(t)}
-                  selectedValue={bookingRefFormat}
-                  onSelect={(value) => setBookingRefFormat(value as BookingRefFormat)}
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.refFormatHint")}
-                </ThemedText>
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.horizonLabel")}
-                </ThemedText>
-                <Input
-                  testID="max-days-ahead-input"
-                  accessibilityLabel={t("admin.settings.restaurantInfo.horizonLabel")}
-                  value={maxDaysAheadText}
-                  onChangeText={setMaxDaysAheadText}
-                  keyboardType="number-pad"
-                  placeholder={t("admin.settings.restaurantInfo.horizonPlaceholder")}
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.horizonHint")}
-                </ThemedText>
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.noticeLabel")}
-                </ThemedText>
-                <Input
-                  testID="min-notice-input"
-                  accessibilityLabel={t("admin.settings.restaurantInfo.noticeLabel")}
-                  value={minNoticeText}
-                  onChangeText={setMinNoticeText}
-                  keyboardType="number-pad"
-                  placeholder={t("admin.settings.restaurantInfo.noticePlaceholder")}
-                />
-                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.noticeHint")}
-                </ThemedText>
-              </View>
-              <View style={styles.gridField}>
-                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.onlinePartyLabel")}
-                </ThemedText>
-                <View style={styles.limitPair}>
-                  <Input
-                    testID="min-party-input"
-                    accessibilityLabel={t("admin.settings.restaurantInfo.onlinePartyMinLabel")}
-                    value={minPartyText}
-                    onChangeText={setMinPartyText}
-                    keyboardType="number-pad"
-                    placeholder={t("admin.settings.restaurantInfo.onlinePartyMinPlaceholder")}
-                    style={styles.limitPairInput}
+            <View style={styles.fieldGroup}>
+              <ThemedText style={styles.fieldGroupTitle}>
+                {t("admin.settings.restaurantInfo.timingGroupTitle")}
+              </ThemedText>
+              <View style={styles.fieldGrid}>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.timezoneLabel")}
+                  </ThemedText>
+                  <Select
+                    accessibilityLabel={t("admin.settings.restaurantInfo.timezoneLabel")}
+                    options={TIMEZONE_OPTIONS}
+                    selectedValue={timezone}
+                    onSelect={(value) => setTimezone(String(value))}
                   />
-                  <ThemedText style={{ color: mutedColor }}>–</ThemedText>
-                  <Input
-                    testID="max-party-input"
-                    accessibilityLabel={t("admin.settings.restaurantInfo.onlinePartyMaxLabel")}
-                    value={maxPartyText}
-                    onChangeText={setMaxPartyText}
-                    keyboardType="number-pad"
-                    placeholder={t("admin.settings.restaurantInfo.onlinePartyMaxPlaceholder")}
-                    style={styles.limitPairInput}
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.timezoneHint")}
+                  </ThemedText>
+                  <TimezoneRebaseWarning
+                    upcomingBookingsCount={upcomingBookingsCount}
+                    warningColor={colors.warning}
                   />
                 </View>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.durationLabel")}
+                  </ThemedText>
+                  <Select
+                    accessibilityLabel={t("admin.settings.restaurantInfo.durationLabel")}
+                    options={DURATION_OPTIONS}
+                    selectedValue={defaultBookingDurationMinutes}
+                    onSelect={(value) => setDefaultBookingDurationMinutes(Number(value))}
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.durationHint")}
+                  </ThemedText>
+                </View>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.slotIntervalLabel")}
+                  </ThemedText>
+                  <Select
+                    accessibilityLabel={t("admin.settings.restaurantInfo.slotIntervalLabel")}
+                    options={SLOT_INTERVAL_OPTIONS}
+                    selectedValue={bookingSlotIntervalMinutes}
+                    onSelect={(value) => setBookingSlotIntervalMinutes(Number(value))}
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.slotIntervalHint")}
+                  </ThemedText>
+                </View>
+              </View>
+              <TurnTimesField
+                rules={turnTimes}
+                onChange={setTurnTimes}
+                defaultMinutes={defaultBookingDurationMinutes}
+                durationOptions={DURATION_OPTIONS}
+                mutedColor={mutedColor}
+              />
+            </View>
+
+            <View
+              style={[styles.fieldGroup, styles.fieldGroupDivided, { borderTopColor: borderColor }]}
+            >
+              <View style={styles.fieldGroupHeader}>
+                <ThemedText style={styles.fieldGroupTitle}>
+                  {t("admin.settings.restaurantInfo.onlineGroupTitle")}
+                </ThemedText>
                 <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
-                  {t("admin.settings.restaurantInfo.onlinePartyHint")}
+                  {t("admin.settings.restaurantInfo.onlineGroupHint")}
                 </ThemedText>
               </View>
+              <View style={styles.fieldGrid}>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.horizonLabel")}
+                  </ThemedText>
+                  <Input
+                    testID="max-days-ahead-input"
+                    accessibilityLabel={t("admin.settings.restaurantInfo.horizonLabel")}
+                    value={maxDaysAheadText}
+                    onChangeText={setMaxDaysAheadText}
+                    keyboardType="number-pad"
+                    placeholder={t("admin.settings.restaurantInfo.horizonPlaceholder")}
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.horizonHint")}
+                  </ThemedText>
+                </View>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.noticeLabel")}
+                  </ThemedText>
+                  <Input
+                    testID="min-notice-input"
+                    accessibilityLabel={t("admin.settings.restaurantInfo.noticeLabel")}
+                    value={minNoticeText}
+                    onChangeText={setMinNoticeText}
+                    keyboardType="number-pad"
+                    placeholder={t("admin.settings.restaurantInfo.noticePlaceholder")}
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.noticeHint")}
+                  </ThemedText>
+                </View>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.onlinePartyLabel")}
+                  </ThemedText>
+                  <View style={styles.limitPair}>
+                    <View style={styles.limitPairInput}>
+                      <Input
+                        testID="min-party-input"
+                        accessibilityLabel={t("admin.settings.restaurantInfo.onlinePartyMinLabel")}
+                        value={minPartyText}
+                        onChangeText={setMinPartyText}
+                        keyboardType="number-pad"
+                        placeholder={t("admin.settings.restaurantInfo.onlinePartyMinPlaceholder")}
+                      />
+                    </View>
+                    <ThemedText style={{ color: mutedColor }}>–</ThemedText>
+                    <View style={styles.limitPairInput}>
+                      <Input
+                        testID="max-party-input"
+                        accessibilityLabel={t("admin.settings.restaurantInfo.onlinePartyMaxLabel")}
+                        value={maxPartyText}
+                        onChangeText={setMaxPartyText}
+                        keyboardType="number-pad"
+                        placeholder={t("admin.settings.restaurantInfo.onlinePartyMaxPlaceholder")}
+                      />
+                    </View>
+                  </View>
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.onlinePartyHint")}
+                  </ThemedText>
+                </View>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.maxCoversLabel")}
+                  </ThemedText>
+                  <Input
+                    testID="max-covers-input"
+                    accessibilityLabel={t("admin.settings.restaurantInfo.maxCoversLabel")}
+                    value={maxCoversText}
+                    onChangeText={setMaxCoversText}
+                    keyboardType="number-pad"
+                    placeholder={t("admin.settings.restaurantInfo.maxCoversPlaceholder")}
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.maxCoversHint", {
+                      minutes: bookingSlotIntervalMinutes,
+                    })}
+                  </ThemedText>
+                </View>
+              </View>
             </View>
-            <TurnTimesField
-              rules={turnTimes}
-              onChange={setTurnTimes}
-              defaultMinutes={defaultBookingDurationMinutes}
-              durationOptions={DURATION_OPTIONS}
-              mutedColor={mutedColor}
-            />
+
+            <View
+              style={[styles.fieldGroup, styles.fieldGroupDivided, { borderTopColor: borderColor }]}
+            >
+              <ThemedText style={styles.fieldGroupTitle}>
+                {t("admin.settings.restaurantInfo.tablesGroupTitle")}
+              </ThemedText>
+              <View style={styles.fieldGrid}>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.oversizeLabel")}
+                  </ThemedText>
+                  <Select
+                    accessibilityLabel={t("admin.settings.restaurantInfo.oversizeLabel")}
+                    options={getOversizeOptions(t)}
+                    selectedValue={maxTableOversizeSeats ?? OVERSIZE_OFF}
+                    onSelect={(value) =>
+                      setMaxTableOversizeSeats(value === OVERSIZE_OFF ? null : Number(value))
+                    }
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.oversizeHint")}
+                  </ThemedText>
+                </View>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.refFormatLabel")}
+                  </ThemedText>
+                  <Select
+                    accessibilityLabel={t("admin.settings.restaurantInfo.refFormatLabel")}
+                    options={getBookingRefFormatOptions(t)}
+                    selectedValue={bookingRefFormat}
+                    onSelect={(value) => setBookingRefFormat(value as BookingRefFormat)}
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.refFormatHint")}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
           </View>
         </AnimatedAccordion>
       </View>

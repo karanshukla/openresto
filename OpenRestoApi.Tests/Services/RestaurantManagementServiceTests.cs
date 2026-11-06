@@ -1003,7 +1003,7 @@ public class RestaurantManagementServiceTests
     }
 
     [Theory]
-    [InlineData(45)]
+    [InlineData(75)]
     [InlineData(0)]
     [InlineData(-30)]
     [InlineData(500)]
