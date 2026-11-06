@@ -219,4 +219,19 @@ describe("DateExceptionsSection", () => {
     expect(screen.queryByTestId("date-exception-form")).toBeNull();
     expect(screen.getByText("Add date")).toBeTruthy();
   });
+
+  it("collapses and expands from its header, and a type can be changed back to closed", () => {
+    const { onAdd } = renderSection([]);
+
+    fireEvent.press(screen.getByText("Dates"));
+    fireEvent.press(screen.getByText("Dates"));
+
+    fireEvent.press(screen.getByText("Add date"));
+    fireEvent.press(screen.getByText("Pick Christmas"));
+    fireEvent.press(screen.getByTestId("date-exception-type-special-hours"));
+    fireEvent.press(screen.getByTestId("date-exception-type-closed"));
+    fireEvent.press(screen.getByText("Add"));
+
+    expect(onAdd).toHaveBeenCalledWith({ date: "2026-12-25", type: "closed" });
+  });
 });

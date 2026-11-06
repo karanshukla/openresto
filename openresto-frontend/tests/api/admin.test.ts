@@ -29,6 +29,7 @@ import {
   adminLookupBookings,
   sendBookingEmail,
   pauseRestaurantBookings,
+  PAUSE_REST_OF_TODAY,
   unpauseRestaurantBookings,
   extendRestaurantBookings,
   getEmailFailures,
@@ -1064,26 +1065,56 @@ describe("sendBookingEmail", () => {
 });
 
 describe("pauseRestaurantBookings", () => {
-  it("posts to /admin/restaurants/{id}/pause and returns true on success", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true });
+  it("posts minutes to /admin/restaurants/{id}/pause and returns when the pause lifts", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "ok", bookingsPausedUntil: "2026-11-06T23:00:00Z" }),
+    });
 
     const result = await pauseRestaurantBookings(3, 30);
 
-    expect(result).toBe(true);
+    expect(result).toEqual({ ok: true, bookingsPausedUntil: "2026-11-06T23:00:00Z" });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/admin/restaurants/3/pause");
     expect(opts.method).toBe("POST");
     expect(JSON.parse(opts.body)).toEqual({ minutes: 30 });
   });
 
-  it("returns false on non-ok response", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false });
-    expect(await pauseRestaurantBookings(3, 30)).toBe(false);
+  it("posts until: endOfService for the rest of today", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ bookingsPausedUntil: "2026-11-06T23:00:00Z" }),
+    });
+
+    await pauseRestaurantBookings(3, PAUSE_REST_OF_TODAY);
+
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({ until: "endOfService" });
   });
 
-  it("returns false on network error", async () => {
+  it("returns the server's code on a refusal", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ code: "restaurant.no_service_left_today" }),
+    });
+    expect(await pauseRestaurantBookings(3, PAUSE_REST_OF_TODAY)).toEqual({
+      ok: false,
+      code: "restaurant.no_service_left_today",
+    });
+  });
+
+  it("returns not ok without a code when the refusal carries no body", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => {
+        throw new Error("empty");
+      },
+    });
+    expect(await pauseRestaurantBookings(3, 30)).toEqual({ ok: false, code: undefined });
+  });
+
+  it("returns not ok on network error", async () => {
     mockFetch.mockRejectedValueOnce(new Error("offline"));
-    expect(await pauseRestaurantBookings(3, 30)).toBe(false);
+    expect(await pauseRestaurantBookings(3, 30)).toEqual({ ok: false });
   });
 });
 

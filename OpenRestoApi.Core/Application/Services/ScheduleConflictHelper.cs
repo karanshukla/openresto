@@ -58,6 +58,9 @@ public static class ScheduleConflictHelper
             .Where(x => x.Reason != ScheduleConflictReason.None)
             .ToList();
 
+    /// <summary>
+    /// 
+    /// </summary>
     /// <seealso>ScheduleConflictHelperTests.Evaluate_FlagsSittingOnAClosedDate</seealso>
     /// <seealso>ScheduleConflictHelperTests.Evaluate_FlagsSittingOutsideSpecialHours</seealso>
     /// <seealso>ScheduleConflictHelperTests.Evaluate_KeepsSittingInsideSpecialHours</seealso>

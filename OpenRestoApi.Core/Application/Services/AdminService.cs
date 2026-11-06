@@ -136,6 +136,9 @@ public class AdminService(
         };
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     /// <seealso>AdminServiceTests.GetOverviewAsync_ReportsTodaysCoversPerSlot_ForACappedLocation</seealso>
     private static LocationPacingDto PacingFor(Restaurant restaurant, int cap, IEnumerable<Booking> todayBookings) => new()
     {

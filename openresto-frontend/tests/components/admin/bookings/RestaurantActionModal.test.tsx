@@ -324,6 +324,10 @@ describe("RestaurantActionModal", () => {
         "Pausing turns away new bookings until today's service closes. Tomorrow stays bookable."
       )
     ).toBeTruthy();
+    // Switching back and forth lands on the rest of today.
+    fireEvent.press(getByTestId("pause-length-hour"));
+    expect(getByText(/Will pause bookings up to/)).toBeTruthy();
+    fireEvent.press(getByTestId("pause-length-rest-of-today"));
     fireEvent.press(getByText("Test Restaurant 1"));
 
     await waitFor(() => {
