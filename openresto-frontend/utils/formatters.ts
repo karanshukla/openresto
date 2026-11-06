@@ -28,6 +28,15 @@ export function fmtTime(d: Date): string {
   return d.toLocaleTimeString(getActiveLocale(), { hour: "2-digit", minute: "2-digit" });
 }
 
+/** A time on the restaurant's clock rather than the viewer's, e.g. "19:30" or "7:30 PM". */
+export function fmtTimeInZone(iso: string, timezone: string): string {
+  return new Date(iso).toLocaleTimeString(getActiveLocale(), {
+    timeZone: timezone,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /** Compact date + time, e.g. "Sat, Apr 18, 7:30 PM". */
 export function fmtDateTime(d: Date): string {
   return d.toLocaleString(getActiveLocale(), {

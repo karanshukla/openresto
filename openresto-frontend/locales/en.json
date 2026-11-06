@@ -2218,6 +2218,7 @@
         "items": {
           "overview": "Overview",
           "bookings": "Bookings",
+          "tonight": "Tonight",
           "locations": "Locations",
           "notifications": "Notifications",
           "activity": "Activity",
@@ -2244,6 +2245,101 @@
         "darkMode": "Dark mode"
       },
       "logOut": "Log out"
+    },
+    "tonight": {
+      "title": "Tonight",
+      "noLocations": "Add a location to run the host view.",
+      "loadFailed": "Couldn't load tonight's floor.",
+      "updated": "Updated {{time}}",
+      "summary": {
+        "free_one": "1 free",
+        "free_other": "{{count}} free",
+        "seated_one": "1 seated",
+        "seated_other": "{{count}} seated",
+        "overdue_one": "1 overdue",
+        "overdue_other": "{{count}} overdue",
+        "waiting_one": "1 waiting",
+        "waiting_other": "{{count}} waiting"
+      },
+      "columns": {
+        "label": "Host view",
+        "floor": "Floor",
+        "arrivals": "Arrivals",
+        "waitlist": "Waitlist"
+      },
+      "state": {
+        "free": "Free",
+        "bookedSoon": "Booked soon",
+        "seated": "Seated",
+        "overdue": "Overdue"
+      },
+      "tile": {
+        "tableFallback": "Table {{id}}",
+        "combined": "Combined tables",
+        "seats_one": "1 seat",
+        "seats_other": "{{count}} seats",
+        "walkIn": "Walk-in only",
+        "minutesLeft": "{{minutes}} min left",
+        "minutesOver": "{{minutes}} min over",
+        "next": "Next at {{time}}",
+        "nothingNext": "Nothing else booked tonight",
+        "finish": "Finish",
+        "finishLabel": "Finish {{table}}",
+        "seat": "Seat",
+        "seatLabel": "Seat {{name}} at {{table}}",
+        "noShow": "No-show",
+        "noShowLabel": "Mark {{name}} as a no-show",
+        "seatHere": "Seat here",
+        "fit": {
+          "taken": "Not free",
+          "tooSmall": "Too small",
+          "groupMove": "Seat from the booking instead",
+          "neededSoon": "Booked before they'd finish"
+        }
+      },
+      "party": {
+        "hidden": "Guest",
+        "guests_one": "1 guest",
+        "guests_other": "{{count}} guests",
+        "at": "{{time}} · {{table}}",
+        "lateBy": "{{minutes}} min late",
+        "inMinutes": "in {{minutes}} min",
+        "checkedIn": "Checked in"
+      },
+      "arrivals": {
+        "groups": {
+          "late": "Late",
+          "dueNow": "Due now",
+          "nextHour": "Next hour",
+          "later": "Later tonight"
+        },
+        "empty": "No one else is due tonight",
+        "emptyBody": "Bookings appear here until they're seated.",
+        "arrived": "Arrived",
+        "arrivedLabel": "Mark {{name}} as arrived",
+        "seatLabel": "Seat {{name}} at {{table}}",
+        "chooseTable": "Choose table",
+        "chooseTableLabel": "Choose a table for {{name}}"
+      },
+      "waitlist": {
+        "empty": "No one is waiting",
+        "emptyBody": "Walk-ins appear here as they join."
+      },
+      "pick": {
+        "title": "Seating {{name}}, {{guests}}",
+        "hint": "Tap “Seat here” on a free table.",
+        "cancel": "Cancel"
+      },
+      "done": {
+        "arrived": "{{name}} checked in",
+        "seated": "{{name}} seated at {{table}}",
+        "finished": "{{table}} is free",
+        "noShow": "{{name}} marked as a no-show",
+        "undone": "Undone",
+        "undo": "Undo",
+        "undoLabel": "Undo: {{message}}",
+        "dismiss": "Dismiss"
+      }
     },
     "waitlist": {
       "title": "Waitlist",

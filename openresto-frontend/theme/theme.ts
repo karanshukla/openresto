@@ -133,6 +133,27 @@ export const theme = {
     },
   },
 
+  // The host view's tiles. Each state pairs a text colour that clears 4.5:1 on its own fill,
+  // in both themes, so the label stays readable on the tint rather than relying on hue alone.
+  floor: {
+    free: {
+      bg: { light: "#dcfce7", dark: "rgba(34,197,94,0.14)" },
+      text: { light: "#15803d", dark: "#4ade80" },
+    },
+    bookedSoon: {
+      bg: { light: "#fef9c3", dark: "rgba(234,179,8,0.14)" },
+      text: { light: "#854d0e", dark: "#facc15" },
+    },
+    seated: {
+      bg: { light: "#e0f2fe", dark: "rgba(56,189,248,0.14)" },
+      text: { light: "#075985", dark: "#7dd3fc" },
+    },
+    overdue: {
+      bg: { light: "#ffedd5", dark: "rgba(249,115,22,0.16)" },
+      text: { light: "#9a3412", dark: "#fdba74" },
+    },
+  },
+
   badge: {
     active: {
       bg: "#dcfce7",

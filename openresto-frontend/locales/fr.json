@@ -2218,6 +2218,7 @@
         "items": {
           "overview": "Aperçu",
           "bookings": "Réservations",
+          "tonight": "Ce soir",
           "locations": "Établissements",
           "notifications": "Notifications",
           "activity": "Activité",
@@ -2244,6 +2245,101 @@
         "darkMode": "Mode sombre"
       },
       "logOut": "Se déconnecter"
+    },
+    "tonight": {
+      "title": "Ce soir",
+      "noLocations": "Ajoutez un établissement pour utiliser la vue d'accueil.",
+      "loadFailed": "Impossible de charger la salle de ce soir.",
+      "updated": "Mis à jour {{time}}",
+      "summary": {
+        "free_one": "1 libre",
+        "free_other": "{{count}} libres",
+        "seated_one": "1 installée",
+        "seated_other": "{{count}} installées",
+        "overdue_one": "1 en retard",
+        "overdue_other": "{{count}} en retard",
+        "waiting_one": "1 en attente",
+        "waiting_other": "{{count}} en attente"
+      },
+      "columns": {
+        "label": "Vue d'accueil",
+        "floor": "Salle",
+        "arrivals": "Arrivées",
+        "waitlist": "Liste d'attente"
+      },
+      "state": {
+        "free": "Libre",
+        "bookedSoon": "Réservée bientôt",
+        "seated": "Occupée",
+        "overdue": "Dépassée"
+      },
+      "tile": {
+        "tableFallback": "Table {{id}}",
+        "combined": "Tables combinées",
+        "seats_one": "1 place",
+        "seats_other": "{{count}} places",
+        "walkIn": "Sans réservation",
+        "minutesLeft": "{{minutes}} min restantes",
+        "minutesOver": "{{minutes}} min de dépassement",
+        "next": "Prochaine à {{time}}",
+        "nothingNext": "Plus rien de réservé ce soir",
+        "finish": "Terminer",
+        "finishLabel": "Terminer {{table}}",
+        "seat": "Installer",
+        "seatLabel": "Installer {{name}} à {{table}}",
+        "noShow": "Absent",
+        "noShowLabel": "Marquer {{name}} comme absent",
+        "seatHere": "Installer ici",
+        "fit": {
+          "taken": "Occupée",
+          "tooSmall": "Trop petite",
+          "groupMove": "Installer depuis la réservation",
+          "neededSoon": "Réservée avant la fin de leur repas"
+        }
+      },
+      "party": {
+        "hidden": "Client",
+        "guests_one": "1 convive",
+        "guests_other": "{{count}} convives",
+        "at": "{{time}} · {{table}}",
+        "lateBy": "{{minutes}} min de retard",
+        "inMinutes": "dans {{minutes}} min",
+        "checkedIn": "Arrivé"
+      },
+      "arrivals": {
+        "groups": {
+          "late": "En retard",
+          "dueNow": "Attendus maintenant",
+          "nextHour": "Dans l'heure",
+          "later": "Plus tard ce soir"
+        },
+        "empty": "Plus personne n'est attendu ce soir",
+        "emptyBody": "Les réservations restent ici jusqu'à leur installation.",
+        "arrived": "Arrivé",
+        "arrivedLabel": "Marquer {{name}} comme arrivé",
+        "seatLabel": "Installer {{name}} à {{table}}",
+        "chooseTable": "Choisir la table",
+        "chooseTableLabel": "Choisir une table pour {{name}}"
+      },
+      "waitlist": {
+        "empty": "Personne n'attend",
+        "emptyBody": "Les clients sans réservation apparaissent ici dès qu'ils s'inscrivent."
+      },
+      "pick": {
+        "title": "Installation de {{name}}, {{guests}}",
+        "hint": "Touchez « Installer ici » sur une table libre.",
+        "cancel": "Annuler"
+      },
+      "done": {
+        "arrived": "{{name}} est arrivé",
+        "seated": "{{name}} installé à {{table}}",
+        "finished": "{{table}} est libre",
+        "noShow": "{{name}} marqué comme absent",
+        "undone": "Annulé",
+        "undo": "Annuler",
+        "undoLabel": "Annuler : {{message}}",
+        "dismiss": "Fermer"
+      }
     },
     "waitlist": {
       "title": "Liste d'attente",

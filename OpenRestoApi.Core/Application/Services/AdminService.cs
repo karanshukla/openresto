@@ -970,6 +970,10 @@ public class AdminService(
 
     // ── Mapping ─────────────────────────────────────────────────────────────
 
+    /// <summary>Maps bookings for another admin read (the host stand), through the same redaction.</summary>
+    public virtual List<BookingDetailDto> ToAdminDtos(IEnumerable<Booking> bookings)
+        => bookings.Select(ToDetailDto).ToList();
+
     // Instance rather than static so the single mapping choke point can also apply
     // BookingGuestVisibility — every caller returning a BookingDetailDto routes through here, so
     // that is the one place the redaction rule needs to live.

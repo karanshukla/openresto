@@ -17,18 +17,24 @@ type WaitlistAction = "notify" | "seat" | "remove";
  *
  * @see [WaitlistRow.test.tsx](../../../tests/components/admin/waitlist/WaitlistRow.test.tsx) —
  * pins Seat following `canSeatNow`, the free-now label naming the party it skips, the call-again
- * label, and the hidden-guest fallback.
+ * label, the hidden-guest fallback, and Choose table appearing only where the host view asks.
  */
 export default function WaitlistRow({
   entry,
   busy,
   isLast,
   onAction,
+  choosing,
+  onChooseTable,
 }: {
   entry: WaitlistEntry;
   busy: boolean;
   isLast: boolean;
   onAction: (action: WaitlistAction) => void;
+  /** The host view's tap-source state: this party is the one being placed on the floor. */
+  choosing?: boolean;
+  /** Offered by the host view only, which has a floor to pick a table on. */
+  onChooseTable?: () => void;
 }) {
   const { t } = useTranslation();
   const { colors, primaryColor, isDark } = useAppTheme();
@@ -49,7 +55,14 @@ export default function WaitlistRow({
   return (
     <View
       testID={`waitlist-row-${entry.id}`}
-      style={[styles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+      style={[
+        styles.row,
+        !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+        choosing && [
+          styles.choosing,
+          { borderLeftColor: primaryColor, backgroundColor: colors.surfaceAlt },
+        ],
+      ]}
     >
       <ThemedText style={[styles.ticket, { color: called ? primaryColor : colors.text }]}>
         #{entry.number}
@@ -91,6 +104,18 @@ export default function WaitlistRow({
           onPress={() => onAction("notify")}
           testID={`waitlist-call-${entry.id}`}
         />
+        {onChooseTable && (
+          <RowTextButton
+            label={t("admin.tonight.arrivals.chooseTable")}
+            accessibilityLabel={t("admin.tonight.arrivals.chooseTableLabel", { name: who })}
+            color={primaryColor}
+            icon="grid-outline"
+            selected={choosing ?? false}
+            disabled={busy || !entry.canSeatNow}
+            onPress={onChooseTable}
+            testID={`waitlist-choose-${entry.id}`}
+          />
+        )}
         <RowTextButton
           label={t("admin.waitlist.seat")}
           accessibilityLabel={t("admin.waitlist.seatLabel", { name: who })}
