@@ -15,7 +15,7 @@ public static class BookingDuration
 
     /// <summary>The sitting lengths a location may choose, for its default and for each turn time.</summary>
     public static readonly IReadOnlySet<int> AllowedMinutes =
-        new HashSet<int> { 30, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480 };
+        new HashSet<int> { 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480 };
 
     /// <summary>
     /// How long a new sitting for a party of <paramref name="seats"/> holds its table: the turn
