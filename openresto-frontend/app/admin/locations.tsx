@@ -12,6 +12,8 @@ import {
   adminSetRestaurantArchived,
   pauseRestaurantBookings,
   unpauseRestaurantBookings,
+  PAUSE_REST_OF_TODAY,
+  type PauseDuration,
   extendRestaurantBookings,
   AdminRestaurantSummary,
   BookingDetailDto,
@@ -58,6 +60,7 @@ export default function AdminLocationsScreen() {
   const [savingLocation, setSavingLocation] = useState(false);
   const [allRestaurants, setAllRestaurants] = useState<AdminRestaurantSummary[]>([]);
   const [pausing, setPausing] = useState(false);
+  const [pauseError, setPauseError] = useState<string | null>(null);
   const [extending, setExtending] = useState(false);
   const [extendedBookings, setExtendedBookings] = useState<BookingDetailDto[] | null>(null);
   const [extendNoActive, setExtendNoActive] = useState(false);
@@ -134,6 +137,33 @@ export default function AdminLocationsScreen() {
     setSelectedId(id);
     setPersistedSelectedId(id);
   };
+
+  /**
+   * Pauses the selected location for an hour or for the rest of today. The lift time shown
+   * afterwards is the server's answer, since only it knows when today's service closes; a
+   * refusal (nothing left of today to pause) is said under the buttons rather than swallowed.
+   */
+  async function pause(restaurantId: number, duration: PauseDuration) {
+    setPausing(true);
+    setPauseError(null);
+    const result = await pauseRestaurantBookings(restaurantId, duration);
+    if (result.ok) {
+      const pausedUntil =
+        result.bookingsPausedUntil ?? new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      setAllRestaurants((prev) =>
+        prev.map((r) => (r.id === restaurantId ? { ...r, bookingsPausedUntil: pausedUntil } : r))
+      );
+    } else {
+      setPauseError(
+        t(
+          result.code === "restaurant.no_service_left_today"
+            ? "admin.locations.pauseButton.noServiceLeft"
+            : "admin.locations.pauseButton.pauseFailed"
+        )
+      );
+    }
+    setPausing(false);
+  }
 
   function handleSelectLocation(id: number) {
     selectAndRemember(id);
@@ -251,52 +281,69 @@ export default function AdminLocationsScreen() {
 
         {selectedRestaurant && (
           <View style={styles.bulkActions}>
-            <Button
-              variant="secondary"
-              tone={isPaused ? "success" : "warning"}
-              size="md"
-              style={styles.bulkAction}
-              icon={isPaused ? "play-circle-outline" : "pause-circle-outline"}
-              disabled={pausing}
-              loading={pausing}
-              accessibilityLabel={
-                isPaused
-                  ? t("admin.locations.pauseButton.resumeLabel", { name: selectedRestaurant.name })
-                  : t("admin.locations.pauseButton.pauseLabel", { name: selectedRestaurant.name })
-              }
-              onPress={async () => {
-                setPausing(true);
-                if (isPaused) {
+            {isPaused ? (
+              <Button
+                variant="secondary"
+                tone="success"
+                size="md"
+                style={styles.bulkAction}
+                icon="play-circle-outline"
+                disabled={pausing}
+                loading={pausing}
+                accessibilityLabel={t("admin.locations.pauseButton.resumeLabel", {
+                  name: selectedRestaurant.name,
+                })}
+                onPress={async () => {
+                  setPausing(true);
+                  setPauseError(null);
                   await unpauseRestaurantBookings(selectedRestaurant.id);
                   setAllRestaurants((prev) =>
                     prev.map((r) =>
                       r.id === selectedRestaurant.id ? { ...r, bookingsPausedUntil: undefined } : r
                     )
                   );
-                } else {
-                  await pauseRestaurantBookings(selectedRestaurant.id, 60);
-                  setAllRestaurants((prev) =>
-                    prev.map((r) =>
-                      r.id === selectedRestaurant.id
-                        ? {
-                            ...r,
-                            bookingsPausedUntil: new Date(
-                              Date.now() + 60 * 60 * 1000
-                            ).toISOString(),
-                          }
-                        : r
-                    )
-                  );
-                }
-                setPausing(false);
-              }}
-            >
-              {pausing
-                ? t("common.status.saving")
-                : isPaused
-                  ? t("admin.locations.pauseButton.resumeUntil", { time: pausedUntilText })
-                  : t("admin.locations.pauseButton.pauseFor60")}
-            </Button>
+                  setPausing(false);
+                }}
+              >
+                {pausing
+                  ? t("common.status.saving")
+                  : t("admin.locations.pauseButton.resumeUntil", { time: pausedUntilText })}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="secondary"
+                  tone="warning"
+                  size="md"
+                  style={styles.bulkAction}
+                  icon="pause-circle-outline"
+                  disabled={pausing}
+                  loading={pausing}
+                  accessibilityLabel={t("admin.locations.pauseButton.pauseLabel", {
+                    name: selectedRestaurant.name,
+                  })}
+                  onPress={() => pause(selectedRestaurant.id, 60)}
+                >
+                  {pausing
+                    ? t("common.status.saving")
+                    : t("admin.locations.pauseButton.pauseFor60")}
+                </Button>
+                <Button
+                  variant="secondary"
+                  tone="warning"
+                  size="md"
+                  style={styles.bulkAction}
+                  icon="moon-outline"
+                  disabled={pausing}
+                  accessibilityLabel={t("admin.locations.pauseButton.pauseRestOfTodayLabel", {
+                    name: selectedRestaurant.name,
+                  })}
+                  onPress={() => pause(selectedRestaurant.id, PAUSE_REST_OF_TODAY)}
+                >
+                  {t("admin.locations.pauseButton.pauseRestOfToday")}
+                </Button>
+              </>
+            )}
 
             <Button
               variant="secondary"
@@ -334,6 +381,16 @@ export default function AdminLocationsScreen() {
                       : t("admin.locations.extendButton.noActive")}
             </Button>
           </View>
+        )}
+
+        {pauseError && selectedRestaurant && (
+          <ThemedText
+            style={{ fontSize: 13, color: colors.error }}
+            role="alert"
+            testID="pause-error"
+          >
+            {pauseError}
+          </ThemedText>
         )}
 
         {allRestaurants.length === 0 ? (

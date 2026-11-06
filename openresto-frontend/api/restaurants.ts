@@ -43,7 +43,8 @@ export interface DeleteImpactDto {
  * is deliberately not one: it stops new online bookings, it does not close the location, so a
  * sitting already on the books stands.
  */
-export type ScheduleConflictReason = "closedDay" | "outsideHours";
+export type ScheduleConflictReason =
+  "closedDay" | "outsideHours" | "closedDate" | "outsideSpecialHours";
 
 /**
  * An upcoming booking the location's current schedule would no longer accept. Editing hours,
@@ -58,6 +59,24 @@ export interface ScheduleConflictDto {
   date: string;
   seats: number;
   reason: ScheduleConflictReason;
+}
+
+/** What a date exception does to the weekly schedule on its date. Mirrors the backend wire names. */
+export type DateExceptionType = "closed" | "specialHours" | "walkInOnly";
+
+/**
+ * One date that departs from the weekly schedule: closed (no service), special hours (its own
+ * open/close and last booking, replacing the weekly hours and opening the date even on a closed
+ * weekday) or walk-in only (open on the weekly hours, no online bookings). `open`, `close` and
+ * `lastBooking` are set for `specialHours` only.
+ */
+export interface DateExceptionDto {
+  /** Local calendar date, "YYYY-MM-DD". */
+  date: string;
+  type: DateExceptionType;
+  open?: string | null;
+  close?: string | null;
+  lastBooking?: string | null;
 }
 
 /** A party of `minSeats` or more holds its table for `minutes`, up to the next rule. */
@@ -125,6 +144,16 @@ export interface RestaurantDto {
   maxCoversPerSlot?: number | null;
   /** Format of references minted for new bookings; existing bookings keep theirs. */
   bookingRefFormat?: BookingRefFormat;
+  /** Dates that depart from the weekly schedule, earliest first. Empty or absent when none. */
+  dateExceptions?: DateExceptionDto[];
+  /** How many days ahead guests may book online (0 is today only), or null for no limit. */
+  maxBookingDaysAhead?: number | null;
+  /** Least notice, in minutes, an online booking must give, or null for none. */
+  minBookingNoticeMinutes?: number | null;
+  /** Smallest party that may book online, or null for 1. */
+  minOnlinePartySize?: number | null;
+  /** Largest party that may book online; bigger parties are asked to get in touch. Null is no limit. */
+  maxOnlinePartySize?: number | null;
   sections: SectionDto[];
   /** Combinable-table groups defined for this restaurant (#271/#273). Empty/undefined when none. */
   groups?: TableGroupDto[];
@@ -229,6 +258,13 @@ export async function updateRestaurant(
     bookingRefFormat?: BookingRefFormat;
     walkInOnly?: boolean;
     walkInDays?: string;
+    /** Replaces the stored list; `[]` clears it, undefined leaves it alone. */
+    dateExceptions?: DateExceptionDto[];
+    /** The four limits are assigned unconditionally: null clears, like `maxCoversPerSlot`. */
+    maxBookingDaysAhead?: number | null;
+    minBookingNoticeMinutes?: number | null;
+    minOnlinePartySize?: number | null;
+    maxOnlinePartySize?: number | null;
     description?: string | null;
     menuUrl?: string | null;
     phoneNumber?: string | null;

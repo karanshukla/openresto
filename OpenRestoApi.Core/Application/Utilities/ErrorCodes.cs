@@ -53,6 +53,10 @@ public static class ErrorCodes
     public const string BookingNoShowBeforeStart = "booking.no_show_before_start";
     public const string BookingPacingFull = "booking.pacing_full";
     public const string BookingEmailInvalid = "booking.email_invalid";
+    public const string BookingBeyondHorizon = "booking.beyond_horizon";
+    public const string BookingTooSoon = "booking.too_soon";
+    public const string BookingPartyBelowOnlineMin = "booking.party_below_online_min";
+    public const string BookingPartyAboveOnlineMax = "booking.party_above_online_max";
 
     public const string TableSeatsExceeded = "table.seats_exceeded";
     public const string TableOversizeCap = "table.oversize_cap";
@@ -101,6 +105,15 @@ public static class ErrorCodes
     public const string RestaurantTurnTimeDuplicateSeats = "restaurant.turn_time_duplicate_seats";
     public const string RestaurantTurnTimeMinutesInvalid = "restaurant.turn_time_minutes_invalid";
     public const string RestaurantTurnTimeSeatsOutOfRange = "restaurant.turn_time_seats_out_of_range";
+    public const string RestaurantNoServiceLeftToday = "restaurant.no_service_left_today";
+    public const string RestaurantPauseRequestInvalid = "restaurant.pause_request_invalid";
+    public const string RestaurantDateExceptionDateInvalid = "restaurant.date_exception_date_invalid";
+    public const string RestaurantDateExceptionDuplicateDate = "restaurant.date_exception_duplicate_date";
+    public const string RestaurantDateExceptionTypeInvalid = "restaurant.date_exception_type_invalid";
+    public const string RestaurantDateExceptionHoursRequired = "restaurant.date_exception_hours_required";
+    public const string RestaurantBookingHorizonInvalid = "restaurant.booking_horizon_invalid";
+    public const string RestaurantBookingNoticeInvalid = "restaurant.booking_notice_invalid";
+    public const string RestaurantOnlinePartySizeInvalid = "restaurant.online_party_size_invalid";
 
     // ── Waitlist ─────────────────────────────────────────────────────────────
     public const string WaitlistNotFound = "waitlist.not_found";

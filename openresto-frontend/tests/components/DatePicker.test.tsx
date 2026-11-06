@@ -281,3 +281,28 @@ describe("DatePicker (native)", () => {
     });
   });
 });
+
+describe("generateDateOptions window (#522)", () => {
+  function localValue(d: Date): string {
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  }
+
+  it("runs to the horizon the caller sets, shorter or longer than the month", () => {
+    expect(generateDateOptions({ maxDaysAhead: 6 })).toHaveLength(7);
+    expect(generateDateOptions({ maxDaysAhead: 90 })).toHaveLength(91);
+  });
+
+  it("offers today only for a horizon of zero", () => {
+    const options = generateDateOptions({ maxDaysAhead: 0 });
+    expect(options).toHaveLength(1);
+    expect(options[0].value).toBe(localValue(new Date()));
+  });
+
+  it("hands the same window to the system calendar's range", () => {
+    const lastOffered = new Date();
+    lastOffered.setDate(lastOffered.getDate() + 6);
+    expect(localValue(pickerRange(false, 6).maximumDate)).toBe(localValue(lastOffered));
+  });
+});

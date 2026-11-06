@@ -59,7 +59,7 @@ public class HoldsControllerGroupHoldTests
     }
 
     private void SetupEligiblePolicy(Restaurant? restaurant = null)
-        => _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>()))
+        => _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Eligible(
                 restaurant ?? new Restaurant { Id = 1, DefaultBookingDurationMinutes = 90 }, BookingDate));
 
@@ -74,13 +74,13 @@ public class HoldsControllerGroupHoldTests
         BadRequestObjectResult bad = Assert.IsType<BadRequestObjectResult>(result);
         MessageResponse msg = Assert.IsType<MessageResponse>(bad.Value);
         Assert.Equal("Specify either TableId or TableGroupId, not both.", msg.Message);
-        _mockPolicy.Verify(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>()), Times.Never);
+        _mockPolicy.Verify(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
     public async Task PlaceGroupHold_ReturnsNotFound_WhenRestaurantMissing()
     {
-        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>()))
+        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.NotFound());
 
         var result = await _controller.PlaceHold(GroupRequest());
@@ -92,7 +92,7 @@ public class HoldsControllerGroupHoldTests
     [Fact]
     public async Task PlaceGroupHold_ReturnsBadRequest_WhenPolicyRejects()
     {
-        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>()))
+        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Rejected("The restaurant is closed at the requested time."));
 
         var result = await _controller.PlaceHold(GroupRequest());
@@ -107,7 +107,7 @@ public class HoldsControllerGroupHoldTests
     [Fact]
     public async Task PlaceGroupHold_ReturnsConflict_WhenPolicyReportsExistingBooking()
     {
-        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>()))
+        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Booked("This table is already booked for that time."));
 
         var result = await _controller.PlaceHold(GroupRequest());

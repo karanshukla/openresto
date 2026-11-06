@@ -76,7 +76,9 @@
       "tableLabel": "Table",
       "timeLabel": "Time",
       "timezoneHint": "All times are in {{timezone}} (currently {{time}} there)",
-      "walkInsOnlyReason": "Walk-ins only"
+      "walkInsOnlyReason": "Walk-ins only",
+      "partySizeMore": "{{count}}+ guests",
+      "partyBelowMinNotice": "Online bookings are for parties of {{min}} or more. For a smaller party, just come in or give us a call."
     },
     "guestDetails": {
       "bookedUnder": "Booked under {{name}}",
@@ -106,7 +108,9 @@
       "gotItLabel": "Got it",
       "modalMessage": "Our largest table seats {{count}}, so a booking for a bigger group needs to be arranged directly. Please get in touch and we'll happily sort something out.",
       "noContactsMessage": "No contact details are listed yet. Please reach out to us directly.",
-      "title": "Large party"
+      "title": "Large party",
+      "onlineMaxBody": "We take online bookings for up to {{count}} guests. Get in touch to arrange a booking for a bigger group.",
+      "onlineMaxModalMessage": "For parties of {{count}} or more, please get in touch and we'll happily sort something out."
     },
     "moveNotice": {
       "body": "We have moved your booking at {{venue}}.\n\nPreviously: {{previous}}\nNow: {{next}}\n\nEverything else about the booking stays the same.{{referenceLine}}\n\nIf the new time does not work for you, reply to this email and we will sort it out.",
@@ -390,7 +394,11 @@
       "table_not_in_section": "Table not found in the specified section.",
       "walk_in_only": "This location accepts walk-ins only and does not take online bookings.",
       "walk_in_only_today": "This location accepts walk-ins only on the selected day. Please choose another day or just come in.",
-      "pacing_full": "Only {{remaining}} more guests can start at {{time}}. Please pick another time."
+      "pacing_full": "Only {{remaining}} more guests can start at {{time}}. Please pick another time.",
+      "beyond_horizon": "Online bookings can be made up to {{days}} days ahead.",
+      "too_soon": "Online bookings need at least {{minutes}} minutes' notice.",
+      "party_below_online_min": "Online bookings are for parties of {{min}} or more.",
+      "party_above_online_max": "Online bookings are for parties of up to {{max}}. Please contact us for a larger group."
     },
     "brand": {
       "accent_color_invalid": "Invalid accent color hex code.",
@@ -458,7 +466,16 @@
       "walk_in_days_invalid": "WalkInDays must be a comma-separated list of ISO day numbers 1 (Monday) through 7 (Sunday).",
       "max_covers_invalid": "Max guests per slot must be 1 or more, or blank for no limit.",
       "past_last_booking": "The last booking for that day is at {{time}}. Please choose an earlier time.",
-      "last_booking_outside_hours": "Last booking time must fall within that day's opening hours ({{open}}–{{close}})."
+      "last_booking_outside_hours": "Last booking time must fall within that day's opening hours ({{open}}–{{close}}).",
+      "no_service_left_today": "There is no service left today to pause.",
+      "pause_request_invalid": "Give either a number of minutes or until: endOfService.",
+      "date_exception_date_invalid": "Date exceptions must name a date as YYYY-MM-DD.",
+      "date_exception_duplicate_date": "Date exceptions list {{date}} more than once.",
+      "date_exception_type_invalid": "A date exception must be closed, special hours or walk-in only.",
+      "date_exception_hours_required": "Special hours on {{date}} need an opening and a closing time.",
+      "booking_horizon_invalid": "Days ahead must be between 0 and {{max}}, or blank for no limit.",
+      "booking_notice_invalid": "Minimum notice must be between 1 and {{max}} minutes, or blank for none.",
+      "online_party_size_invalid": "Online party size limits must run from at least {{min}} to at most {{max}}, smallest first."
     },
     "social_link": {
       "label_required": "Social link label cannot be empty.",
@@ -651,7 +668,10 @@
       "tuesday": "Tuesday",
       "walkIn": "Walk-in",
       "wednesday": "Wednesday",
-      "lastBooking": "Last booking {{time}}"
+      "lastBooking": "Last booking {{time}}",
+      "upcomingDatesTitle": "Upcoming dates",
+      "dateClosed": "Closed",
+      "dateWalkIn": "Walk-ins only"
     },
     "seatingMap": {
       "combinableHeading": "Tables we can combine",
@@ -1010,7 +1030,14 @@
         "noActiveToExtend": "No active bookings found to extend for {{name}}.",
         "resumedSuccess": "Bookings for {{name}} have been resumed.",
         "pausedSuccess": "Bookings for {{name}} up to {{time}} are paused. Later times stay open.",
-        "doneAction": "Done"
+        "doneAction": "Done",
+        "durationLabel": "Pause for",
+        "durationHour": "1 hour",
+        "durationRestOfToday": "Rest of today",
+        "pauseSubtitleRestOfToday": "Pausing turns away new bookings until today's service closes. Tomorrow stays bookable.",
+        "willPauseRestOfToday": "Will pause bookings until today's service closes",
+        "noServiceLeft": "{{name}} has no service left today to pause.",
+        "pauseFailed": "Couldn't pause bookings for {{name}}. Please try again."
       },
       "lookup": {
         "placeholder": "Name, email or reference…",
@@ -1123,7 +1150,11 @@
         "resumeLabel": "Resume bookings for {{name}}",
         "pauseLabel": "Pause the next hour of bookings at {{name}}",
         "resumeUntil": "Resume New Bookings now (paused up to {{time}})",
-        "pauseFor60": "Pause New Bookings for the next 60m"
+        "pauseFor60": "Pause New Bookings for the next 60m",
+        "pauseRestOfToday": "Pause New Bookings for the rest of today",
+        "pauseRestOfTodayLabel": "Pause bookings at {{name}} for the rest of today",
+        "noServiceLeft": "No service left today to pause.",
+        "pauseFailed": "Couldn't pause bookings. Please try again."
       },
       "extendButton": {
         "a11yLabel": "Extend all active bookings at {{name}} by an hour",
@@ -1200,7 +1231,9 @@
         "allClear": "Every upcoming booking fits this schedule.",
         "reason": {
           "closedDay": "Now a closed day",
-          "outsideHours": "Now outside opening hours"
+          "outsideHours": "Now outside opening hours",
+          "closedDate": "Closed on this date",
+          "outsideSpecialHours": "Outside this date's special hours"
         },
         "guestCount_one": "{{count}} guest",
         "guestCount_other": "{{count}} guests",
@@ -1979,7 +2012,22 @@
         "maxCoversPlaceholder": "No limit",
         "maxCoversHint": "Caps the guests whose online bookings start in each {{minutes}}-minute slot. Staff bookings and the waitlist aren't limited.",
         "blockedInvalidMaxCovers": "Max guests per slot must be a whole number of 1 or more, or blank.",
-        "blockedLastBookingOutsideHours": "A last booking time must fall within that day's opening hours."
+        "blockedLastBookingOutsideHours": "A last booking time must fall within that day's opening hours.",
+        "horizonLabel": "Book up to (days ahead)",
+        "horizonPlaceholder": "No limit",
+        "horizonHint": "Guests can book at most this many days ahead; 0 is today only. Blank is no limit. Staff can always book further out.",
+        "noticeLabel": "Minimum notice (minutes)",
+        "noticePlaceholder": "None",
+        "noticeHint": "A sitting starting sooner than this from now isn't offered online.",
+        "onlinePartyLabel": "Online party size",
+        "onlinePartyMinLabel": "Smallest party",
+        "onlinePartyMaxLabel": "Largest party",
+        "onlinePartyMinPlaceholder": "1",
+        "onlinePartyMaxPlaceholder": "No limit",
+        "onlinePartyHint": "Parties outside this range are asked to get in touch instead of being shown no times. Staff can still book any size.",
+        "blockedInvalidHorizon": "Days ahead must be a whole number from 0 to 365.",
+        "blockedInvalidNotice": "Minimum notice must be a whole number of minutes from 1 to 10080.",
+        "blockedInvalidPartyRange": "Online party size must run from at least 1 to at most 50, smallest first."
       },
       "accountRoute": {
         "title": "Account",
@@ -2131,6 +2179,34 @@
             "loaderBlocked": "The proxy sends Cross-Origin-Resource-Policy on /embed.js that stops other sites loading it."
           }
         }
+      },
+      "dateExceptions": {
+        "title": "Dates",
+        "subtitleEmpty": "Every date follows the weekly hours",
+        "subtitle_one": "{{count}} upcoming date differs from the weekly hours",
+        "subtitle_other": "{{count}} upcoming dates differ from the weekly hours",
+        "hint": "Plan around a specific date instead of the weekly hours: close for a bank holiday or a private event, run special hours, or take walk-ins only. Nothing here repeats, so add a date each year. Staff can still record bookings on any of them.",
+        "addLabel": "Add date",
+        "dateLabel": "Date",
+        "typeLabel": "On that date",
+        "typeClosed": "Closed",
+        "typeSpecialHours": "Special hours",
+        "typeWalkInOnly": "Walk-ins only",
+        "opensLabel": "Opens",
+        "closesLabel": "Closes",
+        "lastBookingLabel": "Last booking",
+        "removeLabel": "Remove",
+        "removeDateLabel": "Remove {{date}}",
+        "rowClosed": "Closed",
+        "rowSpecialHours": "{{open}} – {{close}}",
+        "rowWalkInOnly": "Walk-ins only",
+        "rowLastBooking": "last booking {{time}}",
+        "closedDescription": "No service that day. Existing bookings are flagged under schedule conflicts.",
+        "specialHoursDescription": "Replaces the weekly hours for that date, with its own last booking time. Bookings outside the new hours are flagged.",
+        "walkInOnlyDescription": "Open on the usual hours, but no online bookings. Existing bookings stand.",
+        "replaceHint": "That date is already listed; adding it again replaces the earlier entry.",
+        "cancelLabel": "Cancel add",
+        "addAction": "Add"
       }
     },
     "sidebar": {

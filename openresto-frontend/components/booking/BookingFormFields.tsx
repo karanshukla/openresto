@@ -76,6 +76,10 @@ export function DateField({
   date,
   openDays,
   walkInDays,
+  closedDates,
+  openDates,
+  walkInDates,
+  maxDaysAhead,
   onChange,
 }: {
   date: string;
@@ -83,6 +87,12 @@ export function DateField({
   openDays?: number[];
   /** Open days that take no online bookings. Listed but unpickable, so the reason is visible. */
   walkInDays?: number[];
+  /** Date exceptions: shut on these, open on these despite the weekday, walk-in only on these. */
+  closedDates?: string[];
+  openDates?: string[];
+  walkInDates?: string[];
+  /** The location's booking horizon in days, when it sets one. */
+  maxDaysAhead?: number;
   onChange: (date: string) => void;
 }) {
   const { t } = useTranslation();
@@ -95,6 +105,10 @@ export function DateField({
         onSelect={onChange}
         openDays={openDays}
         unavailableDays={walkInDays}
+        closedDates={closedDates}
+        openDates={openDates}
+        unavailableDates={walkInDates}
+        maxDaysAhead={maxDaysAhead}
         unavailableReason={t("booking.form.walkInsOnlyReason")}
       />
     </Field>

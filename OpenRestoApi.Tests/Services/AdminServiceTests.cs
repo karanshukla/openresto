@@ -5,6 +5,7 @@ using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -2128,5 +2129,78 @@ public partial class AdminServiceTests : IDisposable
         List<BookingDetailDto> active = await svc.GetBookingsAsync(1, null, "active");
 
         Assert.Equal(active.Count, unrecognized.Count);
+    }
+
+
+    // ── Pause for the rest of today (#520) ────────────────────────────────────
+
+    [Fact]
+    public async Task PauseRestaurantBookingsAsync_EndOfService_PausesUntilTodaysClose()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test", Timezone = "UTC", OpenTime = "00:00", CloseTime = "23:59" });
+        await _db.SaveChangesAsync();
+
+        DateTime? pausedUntil = await svc.PauseRestaurantBookingsAsync(1, new PauseRestaurantRequest { Until = "endOfService" });
+
+        Assert.Equal(DateTime.UtcNow.Date.AddHours(23).AddMinutes(59), pausedUntil);
+        Restaurant restaurant = await _db.Restaurants.SingleAsync(r => r.Id == 1);
+        Assert.Equal(pausedUntil, restaurant.BookingsPausedUntil);
+    }
+
+    [Fact]
+    public async Task PauseRestaurantBookingsAsync_EndOfService_RefusesWhenTodayIsClosed()
+    {
+        AdminService svc = CreateService();
+        _db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Test", Timezone = "UTC", OpenTime = "00:00", CloseTime = "23:59",
+            DateExceptionsJson = $$"""[{"date":"{{DateTime.UtcNow:yyyy-MM-dd}}","type":"closed"}]""",
+        });
+        await _db.SaveChangesAsync();
+
+        BusinessRuleException ex = await Assert.ThrowsAsync<BusinessRuleException>(
+            () => svc.PauseRestaurantBookingsAsync(1, new PauseRestaurantRequest { Until = "endOfService" }));
+
+        Assert.Equal(ErrorCodes.RestaurantNoServiceLeftToday, ex.Code);
+        Assert.Null((await _db.Restaurants.SingleAsync(r => r.Id == 1)).BookingsPausedUntil);
+    }
+
+    [Fact]
+    public async Task PauseRestaurantBookingsAsync_Minutes_PausesForThatLong()
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+        DateTime before = DateTime.UtcNow;
+
+        DateTime? pausedUntil = await svc.PauseRestaurantBookingsAsync(1, new PauseRestaurantRequest { Minutes = 90 });
+
+        Assert.InRange(pausedUntil!.Value, before.AddMinutes(90), DateTime.UtcNow.AddMinutes(90));
+    }
+
+    [Fact]
+    public async Task PauseRestaurantBookingsAsync_ReturnsNull_WhenRestaurantNotFound()
+    {
+        AdminService svc = CreateService();
+
+        Assert.Null(await svc.PauseRestaurantBookingsAsync(999, new PauseRestaurantRequest { Until = "endOfService" }));
+    }
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData(60, "endOfService")]
+    [InlineData(null, "tomorrow")]
+    [InlineData(0, null)]
+    public async Task PauseRestaurantBookingsAsync_RefusesARequestNamingNeitherMinutesNorUntil(int? minutes, string? until)
+    {
+        AdminService svc = CreateService();
+        SeedBase(1);
+        await _db.SaveChangesAsync();
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(
+            () => svc.PauseRestaurantBookingsAsync(1, new PauseRestaurantRequest { Minutes = minutes, Until = until }));
+
+        Assert.Equal(ErrorCodes.RestaurantPauseRequestInvalid, ex.Code);
     }
 }

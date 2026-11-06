@@ -25,6 +25,7 @@ jest.mock("@/api/admin", () => ({
   pauseRestaurantBookings: jest.fn(),
   unpauseRestaurantBookings: jest.fn(),
   extendRestaurantBookings: jest.fn(),
+  PAUSE_REST_OF_TODAY: "endOfService",
 }));
 const mockPush = jest.fn();
 const mockSearchParams: { location?: string } = {};
@@ -83,7 +84,10 @@ describe("AdminLocationsScreen", () => {
     (fetchScheduleConflicts as jest.Mock).mockResolvedValue([]);
     (fetchRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
     (adminGetRestaurants as jest.Mock).mockResolvedValue(mockRestaurants);
-    (pauseRestaurantBookings as jest.Mock).mockResolvedValue(true);
+    (pauseRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: true,
+      bookingsPausedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    });
     (unpauseRestaurantBookings as jest.Mock).mockResolvedValue(true);
     (extendRestaurantBookings as jest.Mock).mockResolvedValue({ ok: true, extendedBookings: [] });
   });
@@ -244,6 +248,42 @@ describe("AdminLocationsScreen", () => {
       fireEvent.press(screen.getByText("Pause New Bookings for the next 60m"));
     });
     expect(pauseRestaurantBookings).toHaveBeenCalledWith(1, 60);
+  });
+
+  it("pauses for the rest of today and shows the lift time the server answered with", async () => {
+    (pauseRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: true,
+      bookingsPausedUntil: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+    });
+    renderScreen();
+    await waitFor(() =>
+      expect(screen.getByText("Pause New Bookings for the rest of today")).toBeTruthy()
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Pause New Bookings for the rest of today"));
+    });
+    expect(pauseRestaurantBookings).toHaveBeenCalledWith(1, "endOfService");
+    await waitFor(() => expect(screen.getByText(/Resume New Bookings now/)).toBeTruthy());
+  });
+
+  it("says so when nothing of today is left to pause", async () => {
+    (pauseRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: false,
+      code: "restaurant.no_service_left_today",
+    });
+    renderScreen();
+    await waitFor(() =>
+      expect(screen.getByText("Pause New Bookings for the rest of today")).toBeTruthy()
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText("Pause New Bookings for the rest of today"));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("pause-error").props.children).toBe(
+        "No service left today to pause."
+      )
+    );
+    expect(screen.getByText("Pause New Bookings for the rest of today")).toBeTruthy();
   });
 
   it("resumes bookings when Resume button is pressed", async () => {

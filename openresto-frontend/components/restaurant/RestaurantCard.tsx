@@ -9,10 +9,10 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
-import { getHoursForDay, hasCustomHours } from "@/utils/openingHours";
-import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
+import { getHoursForDate, hasCustomHours, isOpenOnDate } from "@/utils/openingHours";
+import { isWalkInOnlyOnDate, walkInBadgeLabel } from "@/utils/walkIn";
 import { hexToRgb } from "@/utils/colors";
-import { getRestaurantDate, getRestaurantNow, getOpenDaysList } from "@/utils/restaurantTime";
+import { getRestaurantDate, getRestaurantNow } from "@/utils/restaurantTime";
 import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 import { styles } from "./RestaurantCard.styles";
 import { Icon } from "@/components/common/Icon";
@@ -20,13 +20,17 @@ import { RestaurantTags } from "@/components/restaurant/RestaurantTags";
 import { resolveServerUrl } from "@/utils/serverUrl";
 import { APPLE_MAPS_SEARCH, GOOGLE_MAPS_SEARCH, openDirections } from "@/utils/directions";
 
+/**
+ * Both "open now" readings judge today as a date, so a closed date exception reads as shut and
+ * a special-hours date reads on its own hours, the way the server answers for it.
+ */
 function opensLaterToday(restaurant: RestaurantDto, t: TFunction): string | null {
   const timezone = restaurant.timezone ?? "UTC";
-  const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
-  const { open: openTime } = getHoursForDay(restaurant, isoDay);
+  const { totalMins } = getRestaurantNow(timezone || "UTC");
+  const today = getRestaurantDate(timezone || "UTC");
+  const { open: openTime } = getHoursForDate(restaurant, today);
   const [oh, om] = openTime.split(":").map(Number);
-  const openDaysList = getOpenDaysList(restaurant);
-  if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) return null;
+  if (!isOpenOnDate(restaurant, today)) return null;
   const openMins = oh * 60 + (om || 0);
   if (totalMins >= openMins) return null;
   const diffMins = openMins - totalMins;
@@ -41,13 +45,13 @@ function opensLaterToday(restaurant: RestaurantDto, t: TFunction): string | null
 
 function isOpenNow(restaurant: RestaurantDto): boolean {
   const timezone = restaurant.timezone ?? "UTC";
-  const { totalMins, isoDay } = getRestaurantNow(timezone || "UTC");
-  const { open: openTime, close: closeTime } = getHoursForDay(restaurant, isoDay);
+  const { totalMins } = getRestaurantNow(timezone || "UTC");
+  const today = getRestaurantDate(timezone || "UTC");
+  const { open: openTime, close: closeTime } = getHoursForDate(restaurant, today);
   const [oh, om] = openTime.split(":").map(Number);
   const [ch, cm] = closeTime.split(":").map(Number);
   if (isNaN(oh) || isNaN(ch)) return true;
-  const openDaysList = getOpenDaysList(restaurant);
-  if (openDaysList.length > 0 && !openDaysList.includes(isoDay)) return false;
+  if (!isOpenOnDate(restaurant, today)) return false;
   return totalMins >= oh * 60 + om && totalMins < ch * 60 + cm;
 }
 
@@ -75,19 +79,17 @@ export default function RestaurantCard({
 
   useEffect(() => {
     const tz = restaurant.timezone ?? "UTC";
-    const { totalMins, isoDay } = getRestaurantNow(tz);
-    const openDaysList = getOpenDaysList(restaurant);
-    if (
-      (openDaysList.length > 0 && !openDaysList.includes(isoDay)) ||
-      isWalkInOnlyOnDay(restaurant, isoDay)
-    ) {
+    const { totalMins } = getRestaurantNow(tz);
+    const date = getRestaurantDate(tz);
+    // Today is judged as a date: a closed date exception or a walk-in-only date shuts the
+    // strip the way a closed or walk-in weekday does, and special hours open a closed weekday.
+    if (!isOpenOnDate(restaurant, date) || isWalkInOnlyOnDate(restaurant, date)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlots([]);
 
       setSlotsLoading(false);
       return;
     }
-    const date = getRestaurantDate(tz);
     fetchAvailability(restaurant.id, date, party).then((data) => {
       if (data && Array.isArray(data.slots)) {
         const future = data.slots.filter((s) => {
@@ -108,20 +110,19 @@ export default function RestaurantCard({
     restaurant.openDays,
     restaurant.walkInOnly,
     restaurant.walkInDays,
+    restaurant.dateExceptions,
     party,
   ]);
 
   const open = isOpenNow(restaurant);
   const opensLabel = !open ? opensLaterToday(restaurant, t) : null;
   const walkInLocation = !!restaurant.walkInOnly;
-  const walkInToday =
-    !walkInLocation &&
-    isWalkInOnlyOnDay(restaurant, getRestaurantNow(restaurant.timezone ?? "UTC").isoDay);
+  const todayDate = getRestaurantDate(restaurant.timezone ?? "UTC");
+  const walkInToday = !walkInLocation && isWalkInOnlyOnDate(restaurant, todayDate);
   const walkInBadgeText = walkInBadgeLabel(restaurant);
-  const todayIsoDay = getRestaurantNow(restaurant.timezone ?? "UTC").isoDay;
-  const todayHours = getHoursForDay(restaurant, todayIsoDay);
+  const todayHours = getHoursForDate(restaurant, todayDate);
   const hoursVary = hasCustomHours(restaurant);
-  const closedToday = !getOpenDaysList(restaurant).includes(todayIsoDay);
+  const closedToday = !isOpenOnDate(restaurant, todayDate);
   const tags = restaurant.tags ?? [];
   const address = restaurant.address || "";
 

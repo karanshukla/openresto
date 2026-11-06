@@ -6,15 +6,24 @@ import { hexToRgb } from "@/utils/colors";
 import { styles } from "./LargePartyNotice.styles";
 import { Icon } from "@/components/common/Icon";
 
+/** Why the party is too big to book online: no table seats it, or the location caps online parties. */
+export type LargePartyReason = "capacity" | "onlineMax";
+
 /**
  * Inline bubble shown in the booking form when the selected party size exceeds the
- * location's largest bookable capacity; "Contact us" opens the large-party modal.
+ * location's largest bookable capacity, or the largest party it takes online (#522);
+ * "Contact us" opens the large-party modal.
+ *
+ * @see [LargePartyNotice.test.tsx](../../tests/components/booking/LargePartyNotice.test.tsx)
+ * — pins that each reason gets its own wording.
  */
 export default function LargePartyNotice({
   maxCapacity,
+  reason = "capacity",
   onContact,
 }: {
   maxCapacity: number;
+  reason?: LargePartyReason;
   onContact: () => void;
 }) {
   const { t } = useTranslation();
@@ -43,7 +52,9 @@ export default function LargePartyNotice({
           {t("booking.largeParty.title")}
         </ThemedText>
         <ThemedText style={[styles.body, { color: colors.muted }]}>
-          {t("booking.largeParty.body", { count: maxCapacity })}
+          {reason === "onlineMax"
+            ? t("booking.largeParty.onlineMaxBody", { count: maxCapacity })
+            : t("booking.largeParty.body", { count: maxCapacity })}
         </ThemedText>
         <ThemedText style={[styles.contactLink, { color: primaryColor }]}>
           {t("booking.largeParty.contactLink")}

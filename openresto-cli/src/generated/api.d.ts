@@ -4477,6 +4477,20 @@ export interface components {
             displayName?: null | string;
             role?: string;
         };
+        /**
+         * @description One date that departs from the weekly schedule. string? DateExceptionDto.Open, string? DateExceptionDto.Close and
+         *     string? DateExceptionDto.LastBooking are read for `specialHours` only and must be set for it.
+         */
+        DateExceptionDto: {
+            /** @description Local calendar date, yyyy-MM-dd. */
+            date?: string;
+            /** @description "closed", "specialHours" or "walkInOnly". */
+            type?: string;
+            open?: null | string;
+            close?: null | string;
+            /** @description Latest start (HH:mm) for a special-hours date, inside its own window. Null runs up to string? DateExceptionDto.Close. */
+            lastBooking?: null | string;
+        };
         DayHoursDto: {
             /**
              * Format: int32
@@ -4547,9 +4561,16 @@ export interface components {
             email?: string;
             password?: string;
         };
+        /**
+         * @description Pause online bookings for a window starting now: either int? PauseRestaurantRequest.Minutes long, or, with
+         *     string? PauseRestaurantRequest.Until set to `endOfService`, until the current or next service today ends.
+         *     Exactly one of the two is given.
+         */
         PauseRestaurantRequest: {
             /** Format: int32 */
-            minutes?: number | string;
+            minutes?: null | number | string;
+            /** @description Only `endOfService` is recognised: pause until today's service closes. */
+            until?: null | string;
         };
         PlaceHoldRequest: {
             /** Format: int32 */
@@ -4659,6 +4680,28 @@ export interface components {
             maxCoversPerSlot?: null | number | string;
             /** @description Format of references minted for new bookings: "AlphaNumeric" or "Numeric". */
             bookingRefFormat?: string;
+            /** @description Dates that depart from the weekly schedule, earliest first. Empty when none. */
+            dateExceptions?: components["schemas"]["DateExceptionDto"][];
+            /**
+             * Format: int32
+             * @description How many days ahead guests may book online, or null for no limit.
+             */
+            maxBookingDaysAhead?: null | number | string;
+            /**
+             * Format: int32
+             * @description Least notice, in minutes, an online booking must give, or null for none.
+             */
+            minBookingNoticeMinutes?: null | number | string;
+            /**
+             * Format: int32
+             * @description Smallest party that may book online, or null for 1.
+             */
+            minOnlinePartySize?: null | number | string;
+            /**
+             * Format: int32
+             * @description Largest party that may book online, or null for no limit.
+             */
+            maxOnlinePartySize?: null | number | string;
             sections?: components["schemas"]["SectionDto"][];
             /** @description Combinable-table groups defined for this restaurant (#271). Empty when none. */
             groups?: components["schemas"]["TableGroupDto"][];
@@ -4810,6 +4853,35 @@ export interface components {
             walkInOnly?: null | boolean;
             /** @description Comma-separated ISO days (1=Monday … 7=Sunday) that are walk-in only. Empty string clears. */
             walkInDays?: null | string;
+            /**
+             * @description Per-date overrides of the weekly schedule. Null leaves the stored list untouched; an empty
+             *     list clears it. Each date may appear once; dates already past are dropped on save.
+             */
+            dateExceptions?: null | components["schemas"]["DateExceptionDto"][];
+            /**
+             * Format: int32
+             * @description How many days ahead guests may book online (0 is today only). Null clears the limit. Always
+             *     assigned from the settings form, like int? UpdateRestaurantRequest.MaxCoversPerSlot; validated as 0–365.
+             */
+            maxBookingDaysAhead?: null | number | string;
+            /**
+             * Format: int32
+             * @description Least notice, in minutes, an online booking must give. Null clears it. Always assigned
+             *     from the settings form; validated as 1 minute to 7 days.
+             */
+            minBookingNoticeMinutes?: null | number | string;
+            /**
+             * Format: int32
+             * @description Smallest party that may book online. Null clears it (1). Always assigned from the settings form.
+             */
+            minOnlinePartySize?: null | number | string;
+            /**
+             * Format: int32
+             * @description Largest party that may book online; bigger parties are asked to get in touch. Null clears
+             *     it. Always assigned from the settings form; validated as at least the minimum and at most
+             *     int BookingLimits.MaxSeats.
+             */
+            maxOnlinePartySize?: null | number | string;
         };
         UpdateSectionRequest: {
             name?: string;

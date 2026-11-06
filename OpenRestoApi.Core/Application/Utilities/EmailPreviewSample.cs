@@ -82,9 +82,10 @@ public static class EmailPreviewSample
         DateTime day = TimeZoneHelper.ConvertUtcToLocal(nowUtc, restaurant.Timezone).Date.AddDays(1);
 
         // An OpenDays naming no recognisable day means every day (ServiceWindowHelper.IsOpenOn),
-        // and anything it does name is inside 1..7, so a week's walk always lands on an open day.
-        // The bound is there so a future change to that reading cannot spin the request forever.
-        for (int ahead = 0; ahead < 7 && !ServiceWindowHelper.IsOpenOn(restaurant, IsoDay.Of(day)); ahead++)
+        // and anything it does name is inside 1..7, so a week's walk lands on an open day unless
+        // date exceptions close every one of them. The bound keeps a fortnight of closed dates
+        // from spinning the request forever; the sample then just falls on a closed date.
+        for (int ahead = 0; ahead < 14 && !ServiceWindowHelper.IsOpenOn(restaurant, day); ahead++)
         {
             day = day.AddDays(1);
         }

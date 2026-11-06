@@ -20,7 +20,7 @@ public sealed class HoldPolicyService(
 
     public async Task<HoldPolicyResult> ValidateAsync(int restaurantId, int tableId, DateTime requestedDate, int seats)
     {
-        HoldPolicyResult restaurantPolicy = await ValidateRestaurantPolicyAsync(restaurantId, requestedDate);
+        HoldPolicyResult restaurantPolicy = await ValidateRestaurantPolicyAsync(restaurantId, requestedDate, seats);
         if (restaurantPolicy.Status != HoldPolicyStatus.Eligible)
         {
             return restaurantPolicy;
@@ -47,12 +47,12 @@ public sealed class HoldPolicyService(
         return restaurantPolicy;
     }
 
-    public async Task<HoldPolicyResult> ValidateAnyTableAsync(int restaurantId, DateTime requestedDate)
+    public async Task<HoldPolicyResult> ValidateAnyTableAsync(int restaurantId, DateTime requestedDate, int seats)
     {
         // Same restaurant-level policy gates as ValidateAsync, but no per-table booking
         // check — the caller will compute the candidate pool and HoldService.PlaceAutoHold
         // will atomically pick the first free table under its lock.
-        return await ValidateRestaurantPolicyAsync(restaurantId, requestedDate);
+        return await ValidateRestaurantPolicyAsync(restaurantId, requestedDate, seats);
     }
 
     /// <summary>
@@ -62,7 +62,13 @@ public sealed class HoldPolicyService(
     /// date, or the appropriate rejection status. The per-table booking check is left to
     /// the callers because auto-assign needs to evaluate it per-candidate, not upfront.
     /// </summary>
-    private async Task<HoldPolicyResult> ValidateRestaurantPolicyAsync(int restaurantId, DateTime requestedDate)
+    /// <seealso>HoldPolicyServiceTests.ValidateAsync_ReturnsRejected_PastTheBookingHorizon</seealso>
+    /// <seealso>HoldPolicyServiceTests.ValidateAsync_ReturnsEligible_OnTheLastDayOfTheBookingHorizon</seealso>
+    /// <seealso>HoldPolicyServiceTests.ValidateAsync_ReturnsRejected_InsideTheMinimumNotice</seealso>
+    /// <seealso>HoldPolicyServiceTests.ValidateAsync_ReturnsRejected_ForAPartyOverTheOnlineMaximum</seealso>
+    /// <seealso>HoldPolicyServiceTests.ValidateAsync_ReturnsRejected_OnAClosedDate</seealso>
+    /// <seealso>HoldPolicyServiceTests.ValidateAsync_ReturnsRejected_OnAWalkInOnlyDate</seealso>
+    private async Task<HoldPolicyResult> ValidateRestaurantPolicyAsync(int restaurantId, DateTime requestedDate, int seats)
     {
         // 1. Fetch restaurant first to get its timezone.
         Restaurant? restaurant = await _restaurantRepository.GetByIdAsync(restaurantId);
@@ -87,7 +93,13 @@ public sealed class HoldPolicyService(
             return HoldPolicyResult.Rejected(pause.Message, pause.Code, pause.Args);
         }
 
-        // 5. Walk-in-only policy (location-wide or per ISO day).
+        // 5. Booking horizon, minimum notice and online party size.
+        if (BookingLimitsHelper.RejectionFor(restaurant, bookingDate, seats, DateTime.UtcNow) is BookingLimitsHelper.Rejection limit)
+        {
+            return HoldPolicyResult.Rejected(limit.Message, limit.Code, limit.Args);
+        }
+
+        // 6. Walk-in-only policy (location-wide, per ISO day or per date).
         if (restaurant.IsWalkInOnlyAt(bookingDate))
         {
             return HoldPolicyResult.Rejected(
@@ -97,13 +109,13 @@ public sealed class HoldPolicyService(
                 restaurant.WalkInOnly ? ErrorCodes.BookingWalkInOnly : ErrorCodes.BookingWalkInOnlyToday);
         }
 
-        // 6. Operating hours / open days.
+        // 7. Operating hours / open days / closed dates.
         if (!restaurant.IsOpenAt(bookingDate))
         {
             return HoldPolicyResult.Rejected("The restaurant is closed at the requested time.", ErrorCodes.RestaurantClosedAtTime);
         }
 
-        // 7. Last booking time — open, but the book for that service has closed.
+        // 8. Last booking time — open, but the book for that service has closed.
         if (!restaurant.IsAcceptingBookingsAt(bookingDate))
         {
             LastBookingHelper.Rejection cutoff = LastBookingHelper.RejectionFor(restaurant, bookingDate);

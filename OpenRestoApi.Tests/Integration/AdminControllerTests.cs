@@ -758,6 +758,67 @@ public class AdminControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
+    public async Task PauseRestaurant_ReturnsWhenThePauseLifts()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+        DateTime before = DateTime.UtcNow;
+
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { minutes = 30 });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        DateTime pausedUntil = body.GetProperty("bookingsPausedUntil").GetDateTime().ToUniversalTime();
+        Assert.InRange(pausedUntil, before.AddMinutes(30), DateTime.UtcNow.AddMinutes(30));
+    }
+
+    [Fact]
+    public async Task PauseRestaurant_ForTheRestOfToday_PausesUntilTheServiceCloses()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+        // Open all day in UTC, so "the rest of today" always ends at 23:59 UTC today.
+        HttpResponseMessage hours = await client.PutAsJsonAsync($"/api/restaurants/{r}",
+            new { name = "Test", openTime = "00:00", closeTime = "23:59", openDays = "1,2,3,4,5,6,7", timezone = "UTC", dateExceptions = Array.Empty<object>() });
+        Assert.Equal(HttpStatusCode.OK, hours.StatusCode);
+
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { until = "endOfService" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(DateTime.UtcNow.Date.AddHours(23).AddMinutes(59), body.GetProperty("bookingsPausedUntil").GetDateTime().ToUniversalTime());
+    }
+
+    [Fact]
+    public async Task PauseRestaurant_ForTheRestOfToday_Returns400_WhenTodayIsClosed()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+        HttpResponseMessage hours = await client.PutAsJsonAsync($"/api/restaurants/{r}",
+            new { name = "Test", timezone = "UTC", dateExceptions = new[] { new { date = DateTime.UtcNow.ToString("yyyy-MM-dd"), type = "closed" } } });
+        Assert.Equal(HttpStatusCode.OK, hours.StatusCode);
+
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { until = "endOfService" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("restaurant.no_service_left_today", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task PauseRestaurant_Returns400_WithoutMinutesOrUntil()
+    {
+        HttpClient client = _factory.CreateAuthenticatedClient();
+        (int r, _, _) = GetSeededIds();
+
+        HttpResponseMessage response = await client.PostAsJsonAsync($"/api/admin/restaurants/{r}/pause", new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("restaurant.pause_request_invalid", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
     public async Task UnpauseRestaurant_Succeeds()
     {
         HttpClient client = _factory.CreateAuthenticatedClient();

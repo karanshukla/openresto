@@ -212,4 +212,43 @@ public class ScheduleConflictHelperTests
 
         Assert.Equal(ScheduleConflictReason.None, ScheduleConflictHelper.Evaluate(restaurant, MondayAt(21)));
     }
+
+
+    // ── Date exceptions (#521) ────────────────────────────────────────────────
+
+    [Fact]
+    public void Evaluate_FlagsSittingOnAClosedDate()
+    {
+        Restaurant r = Restaurant();
+        r.DateExceptionsJson = """[{"date":"2026-08-24","type":"closed"}]""";
+
+        Assert.Equal(ScheduleConflictReason.ClosedDate, ScheduleConflictHelper.Evaluate(r, MondayAt(19)));
+    }
+
+    [Fact]
+    public void Evaluate_FlagsSittingOutsideSpecialHours()
+    {
+        Restaurant r = Restaurant();
+        r.DateExceptionsJson = """[{"date":"2026-08-24","type":"specialHours","open":"12:00","close":"16:00"}]""";
+
+        Assert.Equal(ScheduleConflictReason.OutsideSpecialHours, ScheduleConflictHelper.Evaluate(r, MondayAt(19)));
+    }
+
+    [Fact]
+    public void Evaluate_KeepsSittingInsideSpecialHours()
+    {
+        Restaurant r = Restaurant();
+        r.DateExceptionsJson = """[{"date":"2026-08-24","type":"specialHours","open":"12:00","close":"16:00"}]""";
+
+        Assert.Equal(ScheduleConflictReason.None, ScheduleConflictHelper.Evaluate(r, MondayAt(14)));
+    }
+
+    [Fact]
+    public void Evaluate_KeepsSittingOnAWalkInOnlyDate()
+    {
+        Restaurant r = Restaurant();
+        r.DateExceptionsJson = """[{"date":"2026-08-24","type":"walkInOnly"}]""";
+
+        Assert.Equal(ScheduleConflictReason.None, ScheduleConflictHelper.Evaluate(r, MondayAt(19)));
+    }
 }

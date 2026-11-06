@@ -31,6 +31,23 @@ Use these settings to say when each location takes bookings.
   hours with `restaurant.last_booking_outside_hours`.
 - **Slot interval.** Bookings start on a 15, 30 or 60 minute grid (default 30). This is separate
   from how long a booking lasts.
+- **Date exceptions.** One date can depart from the weekly schedule without changing it. A
+  `closed` date has no service: no slots are offered, and a hold or booking on it is refused with
+  `restaurant.closed_at_time`. A `specialHours` date replaces that day's hours with its own
+  `open` and `close`, opens the date even if the weekday is normally closed, and uses only its
+  own `lastBooking`, never the weekly cutoff. A `walkInOnly` date keeps the weekly hours but
+  takes no online bookings (`booking.walk_in_only_today`), the one-day form of a walk-in-only
+  day. Staff bookings are exempt from all three. API: `dateExceptions` on the restaurant, a list
+  of `{ date, type, open?, close?, lastBooking? }` with `date` as `yyyy-MM-dd` and times as
+  `HH:mm`. On `PUT`, `null` leaves the stored list alone, `[]` clears it, and any other list
+  replaces it; dates already past are dropped on save, and each date appears at most once.
+  Validation errors: `restaurant.date_exception_date_invalid`,
+  `restaurant.date_exception_duplicate_date`, `restaurant.date_exception_type_invalid`,
+  `restaurant.date_exception_hours_required` (special hours without `open` and `close`) and
+  `restaurant.last_booking_outside_hours`. A booking already taken on a date that is later
+  closed, or outside its special hours, is listed as a schedule conflict with the reason
+  `closedDate` or `outsideSpecialHours`; a walk-in-only date never conflicts. CLI:
+  `openresto locations dates list|add|remove`.
 - **Schedule conflicts.** Changing hours, dropping an open day or changing the timezone never
   touches existing bookings. If some upcoming bookings no longer fit, the Locations page lists
   them and the dashboard shows the total. A walk-in-only day does not count as a conflict,
@@ -119,11 +136,45 @@ one booking slot (`null` means no cap). Parties already seated from an earlier s
 - The cap applies per slot, so a location on a 15-minute grid gets a tighter limit than one on 30.
 - The admin overview carries `todayPacing` for the dashboard's "Arrivals per Slot Today" card.
 
+## Booking horizon and party size limits
+
+Four optional limits on the restaurant shape what guests can book online. Each is `null` by
+default, meaning no limit, and staff bookings are never subject to them.
+
+- `maxBookingDaysAhead` (0–365): how many days ahead a guest may book; `0` is today only. A date
+  past the horizon has no slots, and a hold or booking on it is refused with
+  `booking.beyond_horizon` (carries `days`).
+- `minBookingNoticeMinutes` (1–10080, a week): the least notice a booking must give. A slot
+  inside the notice is marked unavailable, and a hold or booking there is refused with
+  `booking.too_soon` (carries `minutes`).
+- `minOnlinePartySize` and `maxOnlinePartySize` (at most 50; the maximum must be at least the
+  minimum): the party sizes that may book online. A party outside the range gets no slots, and a
+  hold or booking is refused with `booking.party_below_online_min` (carries `min`) or
+  `booking.party_above_online_max` (carries `max`). Above the maximum, the booking form asks the
+  guest to get in touch instead.
+
+Availability, holds and booking creation all enforce them. On `PUT /api/restaurants/{id}` the
+four are always assigned, so `null` clears one, the same contract as `maxCoversPerSlot`; a value
+out of range is refused with `restaurant.booking_horizon_invalid`,
+`restaurant.booking_notice_invalid` or `restaurant.online_party_size_invalid`. CLI:
+`openresto locations update <id> --max-days-ahead 30 --min-notice 120 --min-party 2 --max-party 8`,
+where `none` clears a limit; the command reads the location first, so its other settings stay as
+they are.
+
 ## Pausing bookings
 
 A pause closes sittings that **start** inside the pause window. Think of it as "stop seating new
 arrivals for the next hour", not "stop taking bookings". Bookings for later tonight or next
 week are unaffected, and the message the guest sees names the local time the pause ends.
+
+A pause can also run for the rest of today. `POST /api/admin/restaurants/{id}/pause` takes
+either `{ "minutes": n }` (at least 1) or `{ "until": "endOfService" }`, which closes bookings up
+to the end of the current or next service today in the location's timezone; in the small hours
+that is the service that opened yesterday, if it runs past midnight. The response carries
+`bookingsPausedUntil` (UTC) so the caller can say when the pause lifts. A body with neither or
+both is refused with `restaurant.pause_request_invalid`, and when today is closed or its service
+has already ended there is nothing to pause, which is refused with
+`restaurant.no_service_left_today` (400). CLI: `openresto locations pause <id> --rest-of-today`.
 
 ## Tables and combinable groups
 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
 import { isWalkInOnlyOnDate } from "@/utils/walkIn";
+import { isOpenOnDate } from "@/utils/openingHours";
+import { isPartyAboveOnlineMax, isPartyBelowOnlineMin } from "@/utils/bookingLimits";
 import type { RestaurantDto } from "@/api/restaurants";
 
 export interface UseBookingAvailabilityArgs {
@@ -15,8 +17,13 @@ export interface UseBookingAvailabilityArgs {
 /**
  * Availability for the booking form's current (date, party size).
  *
- * Closed and walk-in-only days short-circuit to an empty list rather than a request — the
- * server would return no slots for them anyway, and the form renders its own notice instead.
+ * Closed and walk-in-only dates, and a party outside the online size limits, short-circuit to
+ * an empty list rather than a request — the server would return no slots for them anyway, and
+ * the form renders its own notice instead. The date is judged as a date, not a weekday, so a
+ * closed date exception or a special-hours Sunday is answered the way the server answers it.
+ *
+ * @see [useBookingAvailability.test.tsx](../../tests/components/booking/useBookingAvailability.test.tsx)
+ * — pins that a closed date and a party over the online maximum fetch nothing.
  */
 export function useBookingAvailability({
   restaurant,
@@ -29,10 +36,13 @@ export function useBookingAvailability({
   const [loadingAvailability, setLoadingAvailability] = useState(false);
 
   useEffect(() => {
-    const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
-    const jsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
-    const isoDay = jsDay === 0 ? 7 : jsDay;
-    if (date && (!openDaysList.includes(isoDay) || isWalkInOnlyOnDate(restaurant, date))) {
+    if (
+      date &&
+      (!isOpenOnDate(restaurant, date) ||
+        isWalkInOnlyOnDate(restaurant, date) ||
+        isPartyAboveOnlineMax(restaurant, seats) ||
+        isPartyBelowOnlineMin(restaurant, seats))
+    ) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setAvailabilitySlots([]);
       setLoadingAvailability(false);

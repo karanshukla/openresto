@@ -67,5 +67,5 @@ public interface IHoldPolicyService
     /// atomically inside <c>HoldService</c>. Returns <see cref="HoldPolicyStatus.Eligible"/>
     /// with the resolved restaurant + UTC booking date.
     /// </summary>
-    Task<HoldPolicyResult> ValidateAnyTableAsync(int restaurantId, DateTime requestedDate);
+    Task<HoldPolicyResult> ValidateAnyTableAsync(int restaurantId, DateTime requestedDate, int seats);
 }

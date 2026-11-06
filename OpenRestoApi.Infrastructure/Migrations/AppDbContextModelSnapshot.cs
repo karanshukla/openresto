@@ -633,6 +633,9 @@ namespace OpenRestoApi.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DateExceptionsJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("DefaultBookingDurationMinutes")
                         .HasColumnType("INTEGER");
 
@@ -651,7 +654,13 @@ namespace OpenRestoApi.Migrations
                     b.Property<string>("LastBookingTime")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("MaxBookingDaysAhead")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("MaxCoversPerSlot")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MaxOnlinePartySize")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("MaxTableOversizeSeats")
@@ -659,6 +668,12 @@ namespace OpenRestoApi.Migrations
 
                     b.Property<string>("MenuUrl")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("MinBookingNoticeMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MinOnlinePartySize")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()

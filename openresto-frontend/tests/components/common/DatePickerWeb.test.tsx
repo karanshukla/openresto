@@ -485,3 +485,91 @@ describe("DatePicker (web) keyboard grid", () => {
     ).toBe(false);
   });
 });
+
+describe("DatePicker (web) date exceptions and horizon (#521, #522)", () => {
+  const onSelect = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    pinClockMidMonth();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  // The clock is pinned to Wed 2026-04-15, so these are the Thursday, Saturday and Sunday after.
+  const thursday = "2026-04-16";
+  const saturday = "2026-04-18";
+  const sunday = "2026-04-19";
+  const weekdaysOnly = [1, 2, 3, 4, 5];
+
+  function openCalendar() {
+    fireEvent.press(screen.getByTestId("date-picker-trigger"));
+  }
+
+  it("shuts a closed date on an open weekday", () => {
+    render(<DatePickerWeb onSelect={onSelect} openDays={weekdaysOnly} closedDates={[thursday]} />);
+    openCalendar();
+
+    fireEvent.press(screen.getByTestId(`date-picker-day-${thursday}`));
+
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(
+      screen.getByTestId(`date-picker-day-${thursday}`).props.accessibilityState.disabled
+    ).toBe(true);
+  });
+
+  it("opens a special-hours date on a closed weekday", () => {
+    render(<DatePickerWeb onSelect={onSelect} openDays={weekdaysOnly} openDates={[sunday]} />);
+    openCalendar();
+
+    fireEvent.press(screen.getByTestId(`date-picker-day-${saturday}`));
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByTestId(`date-picker-day-${sunday}`));
+
+    expect(onSelect).toHaveBeenCalledWith(sunday);
+  });
+
+  it("keeps a walk-in-only date unpickable and says why, without calling it closed", () => {
+    render(
+      <DatePickerWeb
+        onSelect={onSelect}
+        openDays={weekdaysOnly}
+        unavailableDates={[thursday]}
+        unavailableReason="Walk-ins only"
+      />
+    );
+    openCalendar();
+
+    const cell = screen.getByTestId(`date-picker-day-${thursday}`);
+    fireEvent.press(cell);
+
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(cell.props.accessibilityHint).toBe("Walk-ins only");
+  });
+
+  it("colours the trigger as closed for a selected closed date", () => {
+    render(
+      <DatePickerWeb
+        onSelect={onSelect}
+        selectedDate={thursday}
+        openDays={weekdaysOnly}
+        closedDates={[thursday]}
+      />
+    );
+
+    const trigger = screen.getByTestId("date-picker-trigger");
+    expect(StyleSheet.flatten(trigger.props.style).borderColor).toBe(theme.colors.error);
+  });
+
+  it("stops the window at the horizon", () => {
+    render(<DatePickerWeb onSelect={onSelect} maxDaysAhead={1} />);
+    openCalendar();
+
+    fireEvent.press(screen.getByTestId("date-picker-day-2026-04-17"));
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByTestId(`date-picker-day-${thursday}`));
+    expect(onSelect).toHaveBeenCalledWith(thursday);
+  });
+});

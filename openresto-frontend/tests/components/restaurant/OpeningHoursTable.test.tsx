@@ -88,4 +88,46 @@ describe("OpeningHoursTable", () => {
     const walkIn = screen.getAllByText("Walk-in");
     expect(walkIn.length).toBe(2);
   });
+
+  describe("upcoming dates (#521)", () => {
+    const withDates = {
+      ...baseRestaurant,
+      dateExceptions: [
+        { date: "2099-12-25", type: "closed" },
+        {
+          date: "2099-12-31",
+          type: "specialHours",
+          open: "18:00",
+          close: "01:00",
+          lastBooking: "23:00",
+        },
+        { date: "2099-12-24", type: "walkInOnly" },
+        { date: "2000-01-01", type: "closed" },
+      ],
+    };
+
+    it("lists upcoming dates with what happens on them, earliest first, and not dates past", () => {
+      renderWithProviders(<OpeningHoursTable restaurant={withDates as any} />);
+      expect(screen.getByText("Upcoming dates")).toBeTruthy();
+      expect(screen.queryByTestId("upcoming-date-2000-01-01")).toBeNull();
+      expect(screen.getByText("Walk-ins only")).toBeTruthy();
+      expect(screen.getByText("18:00 – 01:00")).toBeTruthy();
+      expect(screen.getByText("Last booking 23:00")).toBeTruthy();
+      // Saturday, Sunday and the closed date: three "Closed" labels, the date's last.
+      expect(screen.getAllByText("Closed")).toHaveLength(3);
+      const list = screen.getByTestId("upcoming-dates");
+      expect(
+        list.props.children[1].map((child: { props: { testID: string } }) => child.props.testID)
+      ).toEqual([
+        "upcoming-date-2099-12-24",
+        "upcoming-date-2099-12-25",
+        "upcoming-date-2099-12-31",
+      ]);
+    });
+
+    it("says nothing about dates when every date follows the week", () => {
+      renderWithProviders(<OpeningHoursTable restaurant={baseRestaurant as any} />);
+      expect(screen.queryByText("Upcoming dates")).toBeNull();
+    });
+  });
 });

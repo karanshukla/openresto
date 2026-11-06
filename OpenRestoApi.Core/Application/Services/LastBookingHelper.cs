@@ -26,11 +26,11 @@ public static class LastBookingHelper
     public static Rejection RejectionFor(Restaurant restaurant, DateTime bookingUtc)
     {
         DateTime local = TimeZoneHelper.ConvertUtcToLocal(bookingUtc, restaurant.Timezone);
-        DateTime? cutoff = ServiceWindowHelper.LastBookingCutoffFor(restaurant, local.Date, IsoDay.Of(local.Date));
+        DateTime? cutoff = ServiceWindowHelper.LastBookingCutoffFor(restaurant, local.Date);
         if (cutoff is null || local <= cutoff)
         {
             DateTime dayBefore = local.Date.AddDays(-1);
-            cutoff = ServiceWindowHelper.LastBookingCutoffFor(restaurant, dayBefore, IsoDay.Of(dayBefore));
+            cutoff = ServiceWindowHelper.LastBookingCutoffFor(restaurant, dayBefore);
         }
 
         string time = (cutoff ?? local).ToString("HH:mm", CultureInfo.InvariantCulture);

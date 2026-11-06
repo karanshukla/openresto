@@ -2118,4 +2118,92 @@ public class RestaurantManagementServiceTests
         Assert.Equal("20:15", result.LastBookingTime);
         Assert.Equal("20:15", (await db.Restaurants.FindAsync(result.Id))!.LastBookingTime);
     }
+
+
+    // ── Date exceptions (#521) and online booking limits (#522) ───────────────
+
+    [Fact]
+    public async Task UpdateAsync_StoresDateExceptionsAndLimits_AndReturnsThem()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_StoresDateExceptionsAndLimits_AndReturnsThem));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", OpenTime = "09:00", CloseTime = "22:00" });
+        db.SaveChanges();
+        string nextYear = $"{DateTime.UtcNow.Year + 1}-12-25";
+
+        RestaurantDto? dto = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest
+        {
+            Name = "T",
+            DateExceptions = [new DateExceptionDto { Date = nextYear, Type = "closed" }],
+            MaxBookingDaysAhead = 60,
+            MinBookingNoticeMinutes = 90,
+            MinOnlinePartySize = 2,
+            MaxOnlinePartySize = 8,
+        });
+
+        Assert.NotNull(dto);
+        Assert.Equal(nextYear, Assert.Single(dto.DateExceptions).Date);
+        Assert.Equal(60, dto.MaxBookingDaysAhead);
+        Assert.Equal(90, dto.MinBookingNoticeMinutes);
+        Assert.Equal(2, dto.MinOnlinePartySize);
+        Assert.Equal(8, dto.MaxOnlinePartySize);
+
+        RestaurantDto? reread = await CreateService(db).GetByIdAsync(1);
+        Assert.Equal("closed", Assert.Single(reread!.DateExceptions).Type);
+        Assert.Equal(8, reread.MaxOnlinePartySize);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_LeavesDateExceptionsAlone_WhenTheRequestOmitsThem()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_LeavesDateExceptionsAlone_WhenTheRequestOmitsThem));
+        string json = $$"""[{"date":"{{DateTime.UtcNow.Year + 1}}-12-25","type":"closed"}]""";
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", DateExceptionsJson = json });
+        db.SaveChanges();
+
+        RestaurantDto? dto = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "Renamed" });
+
+        Assert.Single(dto!.DateExceptions);
+        Assert.Equal(json, (await db.Restaurants.FindAsync(1))!.DateExceptionsJson);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ClearsDateExceptions_ForAnEmptyList()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_ClearsDateExceptions_ForAnEmptyList));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "T", DateExceptionsJson = """[{"date":"2099-12-25","type":"closed"}]""" });
+        db.SaveChanges();
+
+        RestaurantDto? dto = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "T", DateExceptions = [] });
+
+        Assert.Empty(dto!.DateExceptions);
+        Assert.Null((await db.Restaurants.FindAsync(1))!.DateExceptionsJson);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_RejectsAnOnlineMaximumBelowTheMinimum()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_RejectsAnOnlineMaximumBelowTheMinimum));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "T" });
+        db.SaveChanges();
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => CreateService(db).UpdateAsync(1,
+            new UpdateRestaurantRequest { Name = "T", MinOnlinePartySize = 6, MaxOnlinePartySize = 4 }));
+
+        Assert.Equal(ErrorCodes.RestaurantOnlinePartySizeInvalid, ex.Code);
+    }
+
+    [Fact]
+    public async Task GetScheduleConflictsAsync_NamesAClosedDate()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetScheduleConflictsAsync_NamesAClosedDate));
+        await SeedScheduleFixtureAsync(db, openTime: "11:00", bookingHourUtc: 12);
+        Restaurant restaurant = await db.Restaurants.SingleAsync();
+        Booking booking = await db.Bookings.SingleAsync();
+        restaurant.DateExceptionsJson = $$"""[{"date":"{{booking.Date:yyyy-MM-dd}}","type":"closed"}]""";
+        await db.SaveChangesAsync();
+
+        List<ScheduleConflictDto>? conflicts = await CreateService(db).GetScheduleConflictsAsync(1);
+
+        Assert.Equal("closedDate", Assert.Single(conflicts!).Reason);
+    }
 }

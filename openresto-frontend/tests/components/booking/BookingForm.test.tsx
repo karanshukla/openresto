@@ -158,16 +158,31 @@ jest.mock("@/components/common/DatePicker", () => ({
     onSelect,
     openDays,
     unavailableDays,
+    closedDates,
+    openDates,
+    unavailableDates,
+    maxDaysAhead,
   }: {
     onSelect: (date: string) => void;
     openDays?: number[];
     unavailableDays?: number[];
+    closedDates?: string[];
+    openDates?: string[];
+    unavailableDates?: string[];
+    maxDaysAhead?: number;
   }) => {
     const { Pressable, Text, View } = require("react-native");
     return (
       <View>
         <Text testID="date-picker-days">{(openDays ?? []).join(",")}</Text>
         <Text testID="date-picker-unavailable-days">{(unavailableDays ?? []).join(",")}</Text>
+        <Text testID="date-picker-closed-dates">{(closedDates ?? []).join(",")}</Text>
+        <Text testID="date-picker-open-dates">{(openDates ?? []).join(",")}</Text>
+        <Text testID="date-picker-walk-in-dates">{(unavailableDates ?? []).join(",")}</Text>
+        <Text testID="date-picker-window">{String(maxDaysAhead)}</Text>
+        <Pressable testID="date-picker-next-tue" onPress={() => onSelect("2026-06-30")}>
+          <Text>Pick next Tuesday</Text>
+        </Pressable>
         <Pressable testID="date-picker-sat" onPress={() => onSelect("2026-06-20")}>
           <Text>Pick Saturday</Text>
         </Pressable>
@@ -1251,5 +1266,184 @@ describe("BookingForm drawer layout", () => {
     await waitFor(() =>
       expect(mockFetchAvailability).toHaveBeenCalledWith(expect.anything(), "2026-06-24", 7)
     );
+  });
+});
+
+// ── Date exceptions (#521) and online booking limits (#522) ─────────────────
+// The mocked "now" is Tuesday 2026-06-23; 2026-06-30 is the Tuesday after, an open weekday,
+// and 2026-06-20 is a Saturday the weekday-only fixture never opens.
+
+describe("BookingForm date exceptions", () => {
+  it("hands the picker the dates that depart from the week", async () => {
+    render(
+      <BookingForm
+        restaurant={{
+          ...mockRestaurantWeekdays,
+          dateExceptions: [
+            { date: "2026-06-30", type: "closed" },
+            { date: "2026-06-20", type: "specialHours", open: "12:00", close: "16:00" },
+            { date: "2026-07-01", type: "walkInOnly" },
+          ],
+        }}
+        onSubmit={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+    expect(screen.getByTestId("date-picker-closed-dates").props.children).toBe("2026-06-30");
+    expect(screen.getByTestId("date-picker-open-dates").props.children).toBe("2026-06-20");
+    expect(screen.getByTestId("date-picker-walk-in-dates").props.children).toBe("2026-07-01");
+  });
+
+  it("treats a closed date on an open weekday as closed and fetches nothing for it", async () => {
+    render(
+      <BookingForm
+        restaurant={{
+          ...mockRestaurantWeekdays,
+          dateExceptions: [{ date: "2026-06-30", type: "closed" }],
+        }}
+        onSubmit={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledTimes(1));
+    mockFetchAvailability.mockClear();
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-next-tue"));
+    });
+
+    expect(
+      screen.getByText("The restaurant is closed on this day. Please select a different date.")
+    ).toBeTruthy();
+    expect(mockFetchAvailability).not.toHaveBeenCalled();
+  });
+
+  it("opens a special-hours date on a closed weekday and fetches its times", async () => {
+    render(
+      <BookingForm
+        restaurant={{
+          ...mockRestaurantWeekdays,
+          dateExceptions: [
+            { date: "2026-06-20", type: "specialHours", open: "12:00", close: "16:00" },
+          ],
+        }}
+        onSubmit={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-sat"));
+    });
+
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledWith(1, "2026-06-20", 2));
+    expect(screen.getByText("PopularTimesPicker")).toBeTruthy();
+    // The time picker runs the special hours, not the weekday's.
+    expect(screen.getByTestId("time-picker").props.children.join("")).toMatch(/\|12:00\|16:00$/);
+  });
+
+  it("shows the walk-in notice on a walk-in-only date and fetches nothing", async () => {
+    render(
+      <BookingForm
+        restaurant={{
+          ...mockRestaurantWeekdays,
+          dateExceptions: [{ date: "2026-06-30", type: "walkInOnly" }],
+        }}
+        onSubmit={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledTimes(1));
+    mockFetchAvailability.mockClear();
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("date-picker-next-tue"));
+    });
+
+    expect(screen.getByText("Walk-ins only on this day")).toBeTruthy();
+    expect(mockFetchAvailability).not.toHaveBeenCalled();
+  });
+});
+
+describe("BookingForm online booking limits", () => {
+  it("hands the picker the location's booking horizon, and a month without one", async () => {
+    const { unmount } = render(
+      <BookingForm
+        restaurant={{ ...mockRestaurantAllDays, maxBookingDaysAhead: 7 }}
+        onSubmit={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId("date-picker-window").props.children).toBe("7");
+    unmount();
+
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={jest.fn()} />);
+    expect(screen.getByTestId("date-picker-window").props.children).toBe("29");
+  });
+
+  it("points a party over the online maximum at the phone instead of showing no times", async () => {
+    render(
+      <BookingForm
+        restaurant={{ ...mockRestaurantAllDays, maxOnlinePartySize: 3 }}
+        onSubmit={jest.fn()}
+        initialSeats={3}
+      />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("Large party")).toBeNull();
+    mockFetchAvailability.mockClear();
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("guests-select"));
+    });
+
+    expect(screen.getAllByText("Large party").length).toBeGreaterThan(0);
+    expect(screen.getByText(/We take online bookings for up to 3 guests/)).toBeTruthy();
+    expect(mockFetchAvailability).not.toHaveBeenCalled();
+  });
+
+  it("names the online cap rather than the tables when both are exceeded", async () => {
+    // Tables seat 4; online takes 2. A party of 5 hears about the online cap of 2, not the
+    // tables, and the form opens on 2 because a default above the cap is moved inside it.
+    render(
+      <BookingForm
+        restaurant={{ ...mockRestaurantAllDays, maxOnlinePartySize: 2 }}
+        onSubmit={jest.fn()}
+        initialSeats={5}
+      />
+    );
+    expect(screen.getByText("GuestsSelect:2")).toBeTruthy();
+    for (let press = 0; press < 3; press++) {
+      await act(async () => {
+        fireEvent.press(screen.getByTestId("guests-select"));
+      });
+    }
+    expect(screen.getByText("GuestsSelect:5")).toBeTruthy();
+    expect(screen.getByText(/We take online bookings for up to 2 guests/)).toBeTruthy();
+    expect(screen.queryByText(/Our largest table seats/)).toBeNull();
+  });
+
+  it("opens on the smallest party the location takes online when the default is below it", async () => {
+    render(
+      <BookingForm
+        restaurant={{ ...mockRestaurantAllDays, minOnlinePartySize: 4 }}
+        onSubmit={jest.fn()}
+      />
+    );
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalledWith(1, "2026-06-23", 4));
+    expect(screen.getByText("GuestsSelect:4")).toBeTruthy();
+  });
+
+  it("tells a party under the online minimum to come in, and fetches nothing", async () => {
+    render(
+      <BookingForm
+        restaurant={{ ...mockRestaurantAllDays, minOnlinePartySize: 2 }}
+        onSubmit={jest.fn()}
+        seats={1}
+        onSeatsChange={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId("party-below-min-notice").props.children).toBe(
+      "Online bookings are for parties of 2 or more. For a smaller party, just come in or give us a call."
+    );
+    expect(screen.queryByText("PopularTimesPicker")).toBeNull();
+    expect(mockFetchAvailability).not.toHaveBeenCalled();
   });
 });

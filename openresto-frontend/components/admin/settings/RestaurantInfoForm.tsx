@@ -13,6 +13,7 @@ import { AccordionCardHeader } from "./AccordionCardHeader";
 import { SaveStatus } from "./SaveStatus";
 import {
   BookingRefFormat,
+  DateExceptionDto,
   DayHoursDto,
   RestaurantDto,
   TurnTimeDto,
@@ -30,10 +31,13 @@ import {
 import { isValidEmail, isValidUrl, WEB_SCHEMES } from "@/utils/validation";
 import { parseWalkInDays } from "@/utils/walkIn";
 import { hasDuplicateTurnTimes } from "@/utils/turnTimes";
+import { removeDateException, upsertDateException } from "@/utils/dateExceptions";
+import { getRestaurantDate } from "@/utils/restaurantTime";
 import { theme } from "@/theme/theme";
 import { isOvernight } from "./sectionHelpers";
 import { OpeningHoursSection, type DayHoursState } from "./OpeningHoursSection";
 import { WalkInPolicySection } from "./WalkInPolicySection";
+import { DateExceptionsSection } from "./DateExceptionsSection";
 import { LocationTagsSection } from "./LocationTagsSection";
 import { TurnTimesField } from "./TurnTimesField";
 import { styles as sharedStyles } from "./settings.styles";
@@ -156,6 +160,21 @@ const MAX_MENU_BYTES = 10 * 1024 * 1024;
 // which affordance to show: "Remove uploaded file" for served files, or the link input only.
 const isServedMenuFile = (url: string | null | undefined): boolean =>
   !!url && /^\/media\/menu-\d+\.pdf(\?|$)/.test(url);
+
+// The server's bounds for the online booking limits (BookingLimitsHelper / BookingLimits), so
+// a value it would refuse is named in the footer before the round-trip.
+const MAX_HORIZON_DAYS = 365;
+const MAX_NOTICE_MINUTES = 7 * 24 * 60;
+const MAX_PARTY_SIZE = 50;
+
+/** A whole number typed into an optional limit field, null for blank, NaN for anything else. */
+function optionalInt(text: string): number | null {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  return /^\d+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+}
+
+const limitText = (value: number | null | undefined) => (value == null ? "" : String(value));
 
 function formatDurationLabel(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -295,6 +314,20 @@ export function RestaurantInfoForm({
   const [bookingRefFormat, setBookingRefFormat] = useState<BookingRefFormat>(
     restaurant.bookingRefFormat ?? "AlphaNumeric"
   );
+  const [dateExceptions, setDateExceptions] = useState<DateExceptionDto[]>(
+    restaurant.dateExceptions ?? []
+  );
+  // The four online booking limits are held as typed, like the cover cap: blank is "off".
+  const [maxDaysAheadText, setMaxDaysAheadText] = useState(
+    limitText(restaurant.maxBookingDaysAhead)
+  );
+  const [minNoticeText, setMinNoticeText] = useState(limitText(restaurant.minBookingNoticeMinutes));
+  const [minPartyText, setMinPartyText] = useState(limitText(restaurant.minOnlinePartySize));
+  const [maxPartyText, setMaxPartyText] = useState(limitText(restaurant.maxOnlinePartySize));
+  const maxBookingDaysAhead = optionalInt(maxDaysAheadText);
+  const minBookingNoticeMinutes = optionalInt(minNoticeText);
+  const minOnlinePartySize = optionalInt(minPartyText);
+  const maxOnlinePartySize = optionalInt(maxPartyText);
   const [tags, setTags] = useState<string[]>(restaurant.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [menuUploading, setMenuUploading] = useState(false);
@@ -423,6 +456,11 @@ export function RestaurantInfoForm({
     maxTableOversizeSeats,
     maxCoversPerSlot,
     bookingRefFormat,
+    dateExceptions,
+    maxBookingDaysAhead,
+    minBookingNoticeMinutes,
+    minOnlinePartySize,
+    maxOnlinePartySize,
     tags: tags.join(","),
   };
 
@@ -446,6 +484,11 @@ export function RestaurantInfoForm({
     maxTableOversizeSeats: restaurant.maxTableOversizeSeats ?? null,
     maxCoversPerSlot: restaurant.maxCoversPerSlot ?? null,
     bookingRefFormat: restaurant.bookingRefFormat ?? "AlphaNumeric",
+    dateExceptions: restaurant.dateExceptions ?? [],
+    maxBookingDaysAhead: restaurant.maxBookingDaysAhead ?? null,
+    minBookingNoticeMinutes: restaurant.minBookingNoticeMinutes ?? null,
+    minOnlinePartySize: restaurant.minOnlinePartySize ?? null,
+    maxOnlinePartySize: restaurant.maxOnlinePartySize ?? null,
     tags: (restaurant.tags ?? []).join(","),
   };
 
@@ -495,6 +538,33 @@ export function RestaurantInfoForm({
     ) {
       return t("admin.settings.restaurantInfo.blockedInvalidMaxCovers");
     }
+    if (
+      maxBookingDaysAhead !== null &&
+      !(Number.isInteger(maxBookingDaysAhead) && maxBookingDaysAhead <= MAX_HORIZON_DAYS)
+    ) {
+      return t("admin.settings.restaurantInfo.blockedInvalidHorizon");
+    }
+    if (
+      minBookingNoticeMinutes !== null &&
+      !(
+        Number.isInteger(minBookingNoticeMinutes) &&
+        minBookingNoticeMinutes >= 1 &&
+        minBookingNoticeMinutes <= MAX_NOTICE_MINUTES
+      )
+    ) {
+      return t("admin.settings.restaurantInfo.blockedInvalidNotice");
+    }
+    const minParty = minOnlinePartySize ?? 1;
+    const maxParty = maxOnlinePartySize ?? MAX_PARTY_SIZE;
+    if (
+      !Number.isInteger(minParty) ||
+      !Number.isInteger(maxParty) ||
+      minParty < 1 ||
+      maxParty > MAX_PARTY_SIZE ||
+      minParty > maxParty
+    ) {
+      return t("admin.settings.restaurantInfo.blockedInvalidPartyRange");
+    }
     return null;
   })();
 
@@ -526,8 +596,15 @@ export function RestaurantInfoForm({
         maxTableOversizeSeats: result.maxTableOversizeSeats,
         maxCoversPerSlot: result.maxCoversPerSlot,
         bookingRefFormat: result.bookingRefFormat,
+        dateExceptions: result.dateExceptions,
+        maxBookingDaysAhead: result.maxBookingDaysAhead,
+        minBookingNoticeMinutes: result.minBookingNoticeMinutes,
+        minOnlinePartySize: result.minOnlinePartySize,
+        maxOnlinePartySize: result.maxOnlinePartySize,
         tags: result.tags,
       });
+      // The server drops dates already past, so what it kept is what the form should hold.
+      setDateExceptions(result.dateExceptions ?? []);
       return null;
     },
     // The payload is derived from this form's state rather than mirroring it (days and tags are
@@ -550,6 +627,11 @@ export function RestaurantInfoForm({
       setMaxTableOversizeSeats(previous.maxTableOversizeSeats);
       setMaxCoversText(previous.maxCoversPerSlot == null ? "" : String(previous.maxCoversPerSlot));
       setBookingRefFormat(previous.bookingRefFormat);
+      setDateExceptions(previous.dateExceptions);
+      setMaxDaysAheadText(limitText(previous.maxBookingDaysAhead));
+      setMinNoticeText(limitText(previous.minBookingNoticeMinutes));
+      setMinPartyText(limitText(previous.minOnlinePartySize));
+      setMaxPartyText(limitText(previous.maxOnlinePartySize));
       setTags(previous.tags ? previous.tags.split(",") : []);
       const restored: WeekHours = {};
       for (const entry of previous.openHours) {
@@ -899,6 +981,67 @@ export function RestaurantInfoForm({
                   {t("admin.settings.restaurantInfo.refFormatHint")}
                 </ThemedText>
               </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.horizonLabel")}
+                </ThemedText>
+                <Input
+                  testID="max-days-ahead-input"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.horizonLabel")}
+                  value={maxDaysAheadText}
+                  onChangeText={setMaxDaysAheadText}
+                  keyboardType="number-pad"
+                  placeholder={t("admin.settings.restaurantInfo.horizonPlaceholder")}
+                />
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.horizonHint")}
+                </ThemedText>
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.noticeLabel")}
+                </ThemedText>
+                <Input
+                  testID="min-notice-input"
+                  accessibilityLabel={t("admin.settings.restaurantInfo.noticeLabel")}
+                  value={minNoticeText}
+                  onChangeText={setMinNoticeText}
+                  keyboardType="number-pad"
+                  placeholder={t("admin.settings.restaurantInfo.noticePlaceholder")}
+                />
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.noticeHint")}
+                </ThemedText>
+              </View>
+              <View style={styles.gridField}>
+                <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.onlinePartyLabel")}
+                </ThemedText>
+                <View style={styles.limitPair}>
+                  <Input
+                    testID="min-party-input"
+                    accessibilityLabel={t("admin.settings.restaurantInfo.onlinePartyMinLabel")}
+                    value={minPartyText}
+                    onChangeText={setMinPartyText}
+                    keyboardType="number-pad"
+                    placeholder={t("admin.settings.restaurantInfo.onlinePartyMinPlaceholder")}
+                    style={styles.limitPairInput}
+                  />
+                  <ThemedText style={{ color: mutedColor }}>–</ThemedText>
+                  <Input
+                    testID="max-party-input"
+                    accessibilityLabel={t("admin.settings.restaurantInfo.onlinePartyMaxLabel")}
+                    value={maxPartyText}
+                    onChangeText={setMaxPartyText}
+                    keyboardType="number-pad"
+                    placeholder={t("admin.settings.restaurantInfo.onlinePartyMaxPlaceholder")}
+                    style={styles.limitPairInput}
+                  />
+                </View>
+                <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                  {t("admin.settings.restaurantInfo.onlinePartyHint")}
+                </ThemedText>
+              </View>
             </View>
             <TurnTimesField
               rules={turnTimes}
@@ -940,6 +1083,24 @@ export function RestaurantInfoForm({
         openDays={openDays}
         onSetWalkInOnly={setWalkInOnly}
         onToggleWalkInDay={toggleWalkInDay}
+        borderColor={borderColor}
+        mutedColor={mutedColor}
+        primaryColor={primaryColor}
+        cardBg={colors.card}
+        textColor={colors.text}
+        isDark={isDark}
+      />
+
+      <DateExceptionsSection
+        dateExceptions={dateExceptions}
+        today={getRestaurantDate(timezone)}
+        hoursForDay={(day) =>
+          customHours
+            ? { open: weekHours[day].open, close: weekHours[day].close }
+            : { open: openTime, close: closeTime }
+        }
+        onAdd={(entry) => setDateExceptions((prev) => upsertDateException(prev, entry))}
+        onRemove={(date) => setDateExceptions((prev) => removeDateException(prev, date))}
         borderColor={borderColor}
         mutedColor={mutedColor}
         primaryColor={primaryColor}

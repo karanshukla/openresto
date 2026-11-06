@@ -7,17 +7,23 @@ import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { fmtDate } from "@/utils/formatters";
+import { DEFAULT_DAYS_AHEAD } from "@/utils/datePickerWindow";
 import { styles } from "./DatePicker.styles";
+
+export { DEFAULT_DAYS_AHEAD };
 
 export function generateDateOptions(options?: {
   allowPast?: boolean;
+  /** Days past today the window runs to; a location's booking horizon, or a year for the admin's date list. */
+  maxDaysAhead?: number;
 }): { label: string; value: string }[] {
   const opts = [];
   const today = new Date();
   // Customers can only choose today and later. Admins may back-date within a
   // bounded one-year window so the list stays navigable (opt-in via allowPast).
   const startOffset = options?.allowPast ? -365 : 0;
-  for (let i = startOffset; i <= 29; i++) {
+  const endOffset = options?.maxDaysAhead ?? DEFAULT_DAYS_AHEAD;
+  for (let i = startOffset; i <= endOffset; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const label = fmtDate(d);
@@ -52,8 +58,11 @@ function toLocalDateValue(date: Date): string {
  * @see [DatePicker.test.tsx](../../tests/components/DatePicker.test.tsx) — pins that the
  * customer window opens today and that `allowPast` reaches back a year.
  */
-export function pickerRange(allowPast?: boolean): { minimumDate: Date; maximumDate: Date } {
-  const window = generateDateOptions({ allowPast });
+export function pickerRange(
+  allowPast?: boolean,
+  maxDaysAhead?: number
+): { minimumDate: Date; maximumDate: Date } {
+  const window = generateDateOptions({ allowPast, maxDaysAhead });
   return {
     minimumDate: parseLocalDate(window[0].value),
     maximumDate: parseLocalDate(window[window.length - 1].value),
@@ -82,6 +91,19 @@ export interface DatePickerProps {
   unavailableDays?: number[];
   unavailableReason?: string;
   /**
+   * Specific "YYYY-MM-DD" dates that are shut (a closed date exception), open despite a closed
+   * weekday (special hours) or open but unbookable (a walk-in-only date). Like the weekday
+   * props, read by the web list and accepted unread by the system calendar.
+   */
+  closedDates?: string[];
+  openDates?: string[];
+  unavailableDates?: string[];
+  /**
+   * Days past today the window runs to. The guest form passes the location's booking horizon
+   * so a date the server would refuse is never offered; omitted, the window is a month.
+   */
+  maxDaysAhead?: number;
+  /**
    * Opt-in: also offer past dates (today-365 .. today). Default false keeps the
    * customer flow restricted to today and later. Used by the admin New Booking modal.
    */
@@ -106,6 +128,7 @@ export default function DatePicker({
   selectedDate,
   onSelect,
   allowPast,
+  maxDaysAhead,
   icon,
   triggerLabel,
 }: DatePickerProps) {
@@ -116,7 +139,7 @@ export default function DatePicker({
   const placeholderColor = colors.muted;
   const backgroundColor = colors.input;
 
-  const { minimumDate, maximumDate } = pickerRange(allowPast);
+  const { minimumDate, maximumDate } = pickerRange(allowPast, maxDaysAhead);
   // Formatted from what the caller selected rather than looked up in the offered window, so a
   // date from outside it — a deep link, a filter spanning several locations — still names
   // itself on the trigger rather than reading as a control that has lost its value.

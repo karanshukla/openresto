@@ -121,3 +121,28 @@ describe("online tables", () => {
     expect(onlineGroups({})).toEqual([]);
   });
 });
+
+describe("isWalkInOnlyOnDate with date exceptions (#521)", () => {
+  // 2026-10-07 is a Wednesday; 2026-10-10 is a Saturday.
+  const r = {
+    walkInDays: "6,7",
+    dateExceptions: [
+      { date: "2026-10-07", type: "walkInOnly" as const },
+      { date: "2026-10-10", type: "closed" as const },
+    ],
+  };
+
+  it("is true on a walk-in-only date that is otherwise a booking weekday", () => {
+    expect(isWalkInOnlyOnDate(r, "2026-10-07")).toBe(true);
+    expect(isWalkInOnlyOnDate(r, "2026-10-08")).toBe(false);
+  });
+
+  it("is false on a closed date even on a walk-in weekday", () => {
+    expect(isWalkInOnlyOnDate(r, "2026-10-10")).toBe(false);
+    expect(isWalkInOnlyOnDate(r, "2026-10-17")).toBe(true);
+  });
+
+  it("stays true everywhere for a walk-in-only location", () => {
+    expect(isWalkInOnlyOnDate({ ...r, walkInOnly: true }, "2026-10-10")).toBe(true);
+  });
+});

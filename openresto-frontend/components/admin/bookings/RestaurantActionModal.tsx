@@ -11,11 +11,17 @@ import {
   unpauseRestaurantBookings,
   extendRestaurantBookings,
   BookingDetailDto,
+  PAUSE_REST_OF_TODAY,
 } from "@/api/admin";
+import { modeButton } from "@/components/admin/settings/sectionHelpers";
+import { styles as settingsStyles } from "@/components/admin/settings/settings.styles";
 import { styles } from "./RestaurantActionModal.styles";
 import { theme } from "@/theme/theme";
 import { Icon } from "@/components/common/Icon";
 import { fmtTime } from "@/utils/formatters";
+
+/** How long a pause runs: the next hour, or until today's service closes (#520). */
+export type PauseLength = "hour" | "restOfToday";
 
 interface RestaurantActionModalProps {
   visible: boolean;
@@ -31,7 +37,7 @@ export default function RestaurantActionModal({
   onSuccess,
 }: RestaurantActionModalProps) {
   const { t } = useTranslation();
-  const { colors, primaryColor } = useAppTheme();
+  const { colors, primaryColor, isDark } = useAppTheme();
   const [restaurants, setRestaurants] = useState<
     { id: number; name: string; bookingsPausedUntil?: string; activeBookingsCount?: number }[]
   >([]);
@@ -39,9 +45,18 @@ export default function RestaurantActionModal({
   const [submitting, setSubmitting] = useState<number | null>(null);
   const [extendedBookings, setExtendedBookings] = useState<BookingDetailDto[] | null>(null);
   const [willPauseUntil, setWillPauseUntil] = useState("");
+  const [pauseLength, setPauseLength] = useState<PauseLength>("hour");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const modeTheme = {
+    borderColor: colors.border,
+    mutedColor: colors.muted,
+    textColor: colors.text,
+    isDark: !!isDark,
+  };
 
   async function loadRestaurants() {
     setExtendedBookings(null);
+    setActionError(null);
     setWillPauseUntil(fmtTime(new Date(Date.now() + 60 * 60 * 1000)));
     setLoading(true);
     try {
@@ -89,11 +104,29 @@ export default function RestaurantActionModal({
             t("admin.bookings.restaurantAction.resumedSuccess", { name: restaurantName })
           );
         } else {
-          await pauseRestaurantBookings(restaurantId, 60);
+          // "Rest of today" is the server's call (it knows the service's close), so the time in
+          // the message is the one it answers with rather than the hour guessed up front.
+          const result = await pauseRestaurantBookings(
+            restaurantId,
+            pauseLength === "restOfToday" ? PAUSE_REST_OF_TODAY : 60
+          );
+          if (!result.ok) {
+            setActionError(
+              t(
+                result.code === "restaurant.no_service_left_today"
+                  ? "admin.bookings.restaurantAction.noServiceLeft"
+                  : "admin.bookings.restaurantAction.pauseFailed",
+                { name: restaurantName }
+              )
+            );
+            return;
+          }
           onSuccess?.(
             t("admin.bookings.restaurantAction.pausedSuccess", {
               name: restaurantName,
-              time: willPauseUntil,
+              time: result.bookingsPausedUntil
+                ? fmtTime(new Date(result.bookingsPausedUntil))
+                : willPauseUntil,
             })
           );
         }
@@ -148,9 +181,50 @@ export default function RestaurantActionModal({
                   count: extendedBookings.length,
                 })
               : actionType === "pause"
-                ? t("admin.bookings.restaurantAction.pauseSubtitle")
+                ? pauseLength === "restOfToday"
+                  ? t("admin.bookings.restaurantAction.pauseSubtitleRestOfToday")
+                  : t("admin.bookings.restaurantAction.pauseSubtitle")
                 : t("admin.bookings.restaurantAction.extendSubtitle")}
           </ThemedText>
+
+          {actionType === "pause" && !extendedBookings && (
+            <View style={styles.durationRow}>
+              <ThemedText style={[styles.durationLabel, { color: colors.muted }]}>
+                {t("admin.bookings.restaurantAction.durationLabel")}
+              </ThemedText>
+              <View
+                style={[
+                  settingsStyles.policyModeGroup,
+                  { backgroundColor: isDark ? "#1b1d1f" : "#eef0f2" },
+                ]}
+              >
+                {modeButton(
+                  t("admin.bookings.restaurantAction.durationHour"),
+                  pauseLength === "hour",
+                  () => setPauseLength("hour"),
+                  "pause-length-hour",
+                  modeTheme
+                )}
+                {modeButton(
+                  t("admin.bookings.restaurantAction.durationRestOfToday"),
+                  pauseLength === "restOfToday",
+                  () => setPauseLength("restOfToday"),
+                  "pause-length-rest-of-today",
+                  modeTheme
+                )}
+              </View>
+            </View>
+          )}
+
+          {actionError && (
+            <ThemedText
+              style={[styles.actionError, { color: theme.colors.error }]}
+              role="alert"
+              testID="restaurant-action-error"
+            >
+              {actionError}
+            </ThemedText>
+          )}
 
           {loading ? (
             <ActivityIndicator
@@ -242,9 +316,11 @@ export default function RestaurantActionModal({
                               time: fmtTime(new Date(r.bookingsPausedUntil!)),
                             })
                           : actionType === "pause"
-                            ? t("admin.bookings.restaurantAction.willPauseUntil", {
-                                time: willPauseUntil,
-                              })
+                            ? pauseLength === "restOfToday"
+                              ? t("admin.bookings.restaurantAction.willPauseRestOfToday")
+                              : t("admin.bookings.restaurantAction.willPauseUntil", {
+                                  time: willPauseUntil,
+                                })
                             : t("admin.bookings.restaurantAction.activeBookingsCount", {
                                 count: r.activeBookingsCount ?? 0,
                               })}

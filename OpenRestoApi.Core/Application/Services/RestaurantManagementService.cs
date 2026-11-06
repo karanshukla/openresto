@@ -104,6 +104,11 @@ public class RestaurantManagementService(
         }
 
         TurnTimesHelper.Apply(entity, dto.TurnTimes);
+        BookingLimitsHelper.Apply(entity, dto.MaxBookingDaysAhead, dto.MinBookingNoticeMinutes, dto.MinOnlinePartySize, dto.MaxOnlinePartySize);
+        if (dto.DateExceptions is { Count: > 0 })
+        {
+            DateExceptionsHelper.Apply(entity, dto.DateExceptions, DateTime.UtcNow);
+        }
 
         await _restaurantRepository.AddAsync(entity);
 
@@ -262,6 +267,14 @@ public class RestaurantManagementService(
             r.WalkInDays = WalkInHelper.NormalizeWalkInDays(req.WalkInDays);
         }
 
+        if (req.DateExceptions != null)
+        {
+            DateExceptionsHelper.Apply(r, req.DateExceptions, DateTime.UtcNow);
+        }
+
+        // Assigned unconditionally like the caps above: the form always sends all four.
+        BookingLimitsHelper.Apply(r, req.MaxBookingDaysAhead, req.MinBookingNoticeMinutes, req.MinOnlinePartySize, req.MaxOnlinePartySize);
+
         await _restaurantRepository.SaveChangesAsync();
 
         RecordRestaurantChanges(before, RestaurantFields.From(r));
@@ -294,6 +307,11 @@ public class RestaurantManagementService(
             MaxTableOversizeSeats = r.MaxTableOversizeSeats,
             MaxCoversPerSlot = r.MaxCoversPerSlot,
             BookingRefFormat = r.BookingRefFormat.ToString(),
+            DateExceptions = DateExceptionsHelper.ToDtos(r),
+            MaxBookingDaysAhead = r.MaxBookingDaysAhead,
+            MinBookingNoticeMinutes = r.MinBookingNoticeMinutes,
+            MinOnlinePartySize = r.MinOnlinePartySize,
+            MaxOnlinePartySize = r.MaxOnlinePartySize,
             Sections = []
         };
     }
@@ -320,13 +338,19 @@ public class RestaurantManagementService(
         int? MaxCoversPerSlot,
         BookingRefFormat BookingRefFormat,
         bool WalkInOnly,
-        string? WalkInDays)
+        string? WalkInDays,
+        string? DateExceptionsJson,
+        int? MaxBookingDaysAhead,
+        int? MinBookingNoticeMinutes,
+        int? MinOnlinePartySize,
+        int? MaxOnlinePartySize)
     {
         public static RestaurantFields From(Restaurant r) => new(
             r.Name, r.Address, r.Description, r.MenuUrl, r.PhoneNumber, r.EmailAddress, r.OpenTime,
             r.CloseTime, r.OpenHoursJson, r.LastBookingTime, r.OpenDays, r.Timezone, r.Tags,
             r.DefaultBookingDurationMinutes, r.TurnTimesJson, r.BookingSlotIntervalMinutes, r.MaxTableOversizeSeats,
-            r.MaxCoversPerSlot, r.BookingRefFormat, r.WalkInOnly, r.WalkInDays);
+            r.MaxCoversPerSlot, r.BookingRefFormat, r.WalkInOnly, r.WalkInDays, r.DateExceptionsJson,
+            r.MaxBookingDaysAhead, r.MinBookingNoticeMinutes, r.MinOnlinePartySize, r.MaxOnlinePartySize);
     }
 
     private void RecordRestaurantChanges(RestaurantFields before, RestaurantFields after)
@@ -355,6 +379,11 @@ public class RestaurantManagementService(
         _audit.RecordChange("bookingRefFormat", before.BookingRefFormat, after.BookingRefFormat);
         _audit.RecordChange("walkInOnly", before.WalkInOnly, after.WalkInOnly);
         _audit.RecordChange("walkInDays", before.WalkInDays, after.WalkInDays);
+        _audit.RecordChange("dateExceptions", before.DateExceptionsJson, after.DateExceptionsJson);
+        _audit.RecordChange("maxBookingDaysAhead", before.MaxBookingDaysAhead, after.MaxBookingDaysAhead);
+        _audit.RecordChange("minBookingNoticeMinutes", before.MinBookingNoticeMinutes, after.MinBookingNoticeMinutes);
+        _audit.RecordChange("minOnlinePartySize", before.MinOnlinePartySize, after.MinOnlinePartySize);
+        _audit.RecordChange("maxOnlinePartySize", before.MaxOnlinePartySize, after.MaxOnlinePartySize);
     }
 
     private void DescribeRestaurant(string action, Restaurant restaurant, string summary)
@@ -670,6 +699,8 @@ public class RestaurantManagementService(
     {
         ScheduleConflictReason.ClosedDay => "closedDay",
         ScheduleConflictReason.OutsideHours => "outsideHours",
+        ScheduleConflictReason.ClosedDate => "closedDate",
+        ScheduleConflictReason.OutsideSpecialHours => "outsideSpecialHours",
         // Unreachable: GetScheduleConflictsAsync filters None out before mapping.
         _ => "unknown",
     };
@@ -911,6 +942,11 @@ public class RestaurantManagementService(
         MaxTableOversizeSeats = r.MaxTableOversizeSeats,
         MaxCoversPerSlot = r.MaxCoversPerSlot,
         BookingRefFormat = r.BookingRefFormat.ToString(),
+        DateExceptions = DateExceptionsHelper.ToDtos(r),
+        MaxBookingDaysAhead = r.MaxBookingDaysAhead,
+        MinBookingNoticeMinutes = r.MinBookingNoticeMinutes,
+        MinOnlinePartySize = r.MinOnlinePartySize,
+        MaxOnlinePartySize = r.MaxOnlinePartySize,
         Sections = r.Sections
             .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
             .Select(s => new SectionDto

@@ -1,5 +1,6 @@
 import { getIsoDayFromDateString } from "@/utils/openingHours";
-import type { RestaurantDto, SectionDto, TableGroupDto } from "@/api/restaurants";
+import { getDateException } from "@/utils/dateExceptions";
+import type { DateExceptionDto, RestaurantDto, SectionDto, TableGroupDto } from "@/api/restaurants";
 
 /**
  * Shared helpers for the walk-in-only policy. A location is walk-in only
@@ -11,6 +12,7 @@ import type { RestaurantDto, SectionDto, TableGroupDto } from "@/api/restaurants
 export interface WalkInSource {
   walkInOnly?: boolean;
   walkInDays?: string | null;
+  dateExceptions?: DateExceptionDto[] | null;
 }
 
 const DAY_NAMES = [
@@ -41,8 +43,20 @@ export function isWalkInOnlyOnDay(restaurant: WalkInSource, isoDay: number): boo
   return parseWalkInDays(restaurant.walkInDays).includes(isoDay);
 }
 
-/** True when the location takes no online bookings on a "YYYY-MM-DD" date. */
+/**
+ * True when the location takes no online bookings on a "YYYY-MM-DD" date: the whole location
+ * is walk-in only, the date carries a walk-in-only exception, or (on a date with no exception)
+ * its weekday is a walk-in day. A closed date is closed, not walk-in only. Mirrors
+ * `WalkInPolicy.IsWalkInOnlyOn` on the server.
+ *
+ * @see [walkIn.test.ts](../tests/utils/walkIn.test.ts) — pins a walk-in-only date on a booking
+ * weekday and a closed date on a walk-in weekday.
+ */
 export function isWalkInOnlyOnDate(restaurant: WalkInSource, date: string): boolean {
+  if (restaurant.walkInOnly) return true;
+  const exception = getDateException(restaurant, date);
+  if (exception?.type === "walkInOnly") return true;
+  if (exception?.type === "closed") return false;
   return isWalkInOnlyOnDay(restaurant, getIsoDayFromDateString(date));
 }
 

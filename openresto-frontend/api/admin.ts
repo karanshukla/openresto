@@ -361,13 +361,38 @@ export async function adminDeleteRestaurant(id: number): Promise<boolean> {
   }
 }
 
-export async function pauseRestaurantBookings(id: number, minutes: number): Promise<boolean> {
+/** The pause request's one non-numeric duration: until today's service closes. */
+export const PAUSE_REST_OF_TODAY = "endOfService";
+
+export type PauseDuration = number | typeof PAUSE_REST_OF_TODAY;
+
+export interface PauseResult {
+  ok: boolean;
+  /** When the pause lifts (UTC ISO), from the server, since "rest of today" is its call. */
+  bookingsPausedUntil?: string;
+  /** The server's error code on a refusal, e.g. `restaurant.no_service_left_today`. */
+  code?: string;
+}
+
+/**
+ * Pauses online bookings for `duration` minutes, or for the rest of today's service with
+ * {@link PAUSE_REST_OF_TODAY}. The lift time comes back from the server either way, so a caller
+ * never has to guess what "rest of today" resolved to.
+ */
+export async function pauseRestaurantBookings(
+  id: number,
+  duration: PauseDuration
+): Promise<PauseResult> {
   try {
-    const res = await post(`/admin/restaurants/${id}/pause`, { minutes });
-    return res.ok;
+    const body = duration === PAUSE_REST_OF_TODAY ? { until: duration } : { minutes: duration };
+    const res = await post(`/admin/restaurants/${id}/pause`, body);
+    const data = await res.json().catch(() => ({}));
+    return res.ok
+      ? { ok: true, bookingsPausedUntil: data.bookingsPausedUntil }
+      : { ok: false, code: data.code };
   } catch (err) {
     console.error("pauseRestaurantBookings error:", err);
-    return false;
+    return { ok: false };
   }
 }
 

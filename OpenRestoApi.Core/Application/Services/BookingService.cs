@@ -43,7 +43,7 @@ public class BookingService(
         // An Unspecified date is the restaurant's local time; every check below runs on UTC.
         DateTime bookingDate = TimeZoneHelper.ConvertLocalToUtc(bookingDto.Date, restaurant.Timezone);
 
-        RejectIfClosedToOnlineBookings(restaurant, bookingDate);
+        RejectIfClosedToOnlineBookings(restaurant, bookingDate, bookingDto.Seats);
         RejectIfPartySizeOutOfRange(bookingDto.Seats);
         await RejectIfOverCoverCapAsync(restaurant, bookingDate, bookingDto.Seats);
 
@@ -127,9 +127,15 @@ public class BookingService(
     /// <seealso>BookingServiceTests.CreateBookingAsync_AllowsBooking_AfterThePauseWindow</seealso>
     /// <seealso>BookingServiceTests.CreateBookingAsync_AcceptsABookingAtTheLastBookingTime</seealso>
     /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingAfterTheLastBookingTime</seealso>
-    private static void RejectIfClosedToOnlineBookings(Restaurant restaurant, DateTime bookingDate)
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingPastTheHorizon</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_AcceptsABookingOnTheLastDayOfTheHorizon</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingInsideTheMinimumNotice</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsAPartyOverTheOnlineMaximum</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingOnAWalkInOnlyDate</seealso>
+    private static void RejectIfClosedToOnlineBookings(Restaurant restaurant, DateTime bookingDate, int seats)
     {
-        if (bookingDate < DateTime.UtcNow.AddMinutes(-Booking.CancellationGraceMinutes))
+        DateTime nowUtc = DateTime.UtcNow;
+        if (bookingDate < nowUtc.AddMinutes(-Booking.CancellationGraceMinutes))
         {
             throw new ConflictException("Cannot create a booking in the past.") { Code = ErrorCodes.BookingPastDate };
         }
@@ -138,6 +144,11 @@ public class BookingService(
         {
             PauseHelper.Rejection pause = PauseHelper.RejectionFor(restaurant);
             throw new ConflictException(pause.Message) { Code = pause.Code, Args = pause.Args };
+        }
+
+        if (BookingLimitsHelper.RejectionFor(restaurant, bookingDate, seats, nowUtc) is BookingLimitsHelper.Rejection limit)
+        {
+            throw new ConflictException(limit.Message) { Code = limit.Code, Args = limit.Args };
         }
 
         if (restaurant.IsWalkInOnlyAt(bookingDate))

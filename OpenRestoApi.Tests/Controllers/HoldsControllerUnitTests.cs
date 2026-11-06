@@ -150,7 +150,7 @@ public class HoldsControllerUnitTests
     {
         var restaurant = new Restaurant { Id = 1, DefaultBookingDurationMinutes = 60 };
         var date = DateTime.UtcNow.AddDays(1);
-        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(1, date))
+        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(1, date, It.IsAny<int>()))
             .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, date));
         _mockTableGroupRepository.Setup(r => r.GetByIdWithMembersAsync(7, 1)).ReturnsAsync(new TableGroup
         {

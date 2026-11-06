@@ -195,13 +195,23 @@ example per group:
   openresto availability check --location 1 --date 2026-09-01 --seats 4
   ```
 
-- **locations** — `list` (includes archived locations), `get`, `create`, `pause`, `unpause`,
-  `extend`, `conflicts`, `archive`, `restore`, `delete`.
+- **locations** — `list` (includes archived locations), `get`, `create`, `update` (the online
+  booking limits), `pause`, `unpause`, `extend`, `conflicts`, `dates list|add|remove`, `archive`,
+  `restore`, `delete`.
 
   ```bash
   openresto locations pause 1 --minutes 60
-  openresto locations extend 1 --minutes 30   # every active booking: "we're running late"
+  openresto locations pause 1 --rest-of-today    # until today's service ends
+  openresto locations extend 1 --minutes 30      # every active booking: "we're running late"
+  openresto locations update 1 --max-party 8     # also --max-days-ahead, --min-notice, --min-party
+  openresto locations dates add 1 --date 2026-12-25 --type closed
+  openresto locations dates add 1 --date 2026-12-31 --type special-hours --open 18:00 --close 01:00 --last-booking 23:00
   ```
+
+  `update` sets only the four online booking limits (`none` clears one), and `dates` manages the
+  dates that depart from the weekly schedule (`closed`, `special-hours`, `walk-in-only`; `add` on
+  a date already listed replaces it). Both read the location first and send the edited record
+  back, so every other setting stays as it was.
 
   `conflicts` lists bookings stranded by a narrowed schedule — taken under opening hours, open
   days or a walk-in policy the location no longer runs. Editing a schedule deliberately leaves

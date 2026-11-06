@@ -92,6 +92,37 @@ public class Restaurant
     public string? WalkInDays { get; set; }
 
     /// <summary>
+    /// Optional per-date overrides of the weekly schedule as a JSON array, e.g.
+    /// [{"date":"2026-12-25","type":"closed"},{"date":"2026-12-31","type":"specialHours","open":"18:00","close":"01:00","lastBooking":"23:00"}].
+    /// A date is "closed" (no service), "specialHours" (its own open/close and last booking,
+    /// replacing the weekly hours) or "walkInOnly" (open on the weekly hours, no online
+    /// bookings). Null means every date follows the weekly schedule. Resolve with
+    /// <see cref="ServiceWindowHelper.ScheduleFor"/>; validating a write is <c>DateExceptionsHelper</c>.
+    /// </summary>
+    public string? DateExceptionsJson { get; set; }
+
+    /// <summary>
+    /// How many days ahead a guest may book online: the latest bookable local date is today
+    /// plus this many days, so 0 is same-day only. Null is no limit. Staff bookings are exempt.
+    /// </summary>
+    public int? MaxBookingDaysAhead { get; set; }
+
+    /// <summary>
+    /// The least notice, in minutes, an online booking must give: a sitting starting sooner
+    /// than this from now is refused. Null is no minimum. Staff bookings are exempt.
+    /// </summary>
+    public int? MinBookingNoticeMinutes { get; set; }
+
+    /// <summary>Smallest party that may book online. Null is 1. Staff bookings are exempt.</summary>
+    public int? MinOnlinePartySize { get; set; }
+
+    /// <summary>
+    /// Largest party that may book online; a bigger party is asked to contact the location
+    /// instead of being shown no slots. Null is no limit beyond the tables themselves.
+    /// </summary>
+    public int? MaxOnlinePartySize { get; set; }
+
+    /// <summary>
     /// Length, in minutes, of a single table's occupancy window for a new booking.
     /// Used wherever a booking's end time is computed (creation, availability, holds).
     /// </summary>
@@ -190,4 +221,18 @@ public class Restaurant
     /// past the cutoff even though the book is closed.
     /// </summary>
     public bool IsAcceptingBookingsAt(DateTime utc) => ServiceWindowHelper.IsAcceptingBookingsAt(this, utc);
+
+    /// <summary>
+    /// True when a sitting at <paramref name="bookingUtc"/> is further ahead than
+    /// <see cref="MaxBookingDaysAhead"/> allows, measured in local calendar days from today.
+    /// </summary>
+    public bool IsBeyondBookingHorizon(DateTime bookingUtc, DateTime nowUtc)
+        => OnlineBookingLimits.IsBeyondHorizon(this, bookingUtc, nowUtc);
+
+    /// <summary>True when a sitting at <paramref name="bookingUtc"/> gives less than <see cref="MinBookingNoticeMinutes"/> of notice.</summary>
+    public bool IsInsideBookingNotice(DateTime bookingUtc, DateTime nowUtc)
+        => OnlineBookingLimits.IsInsideNotice(this, bookingUtc, nowUtc);
+
+    /// <summary>True when a party of <paramref name="seats"/> is inside the online party size limits.</summary>
+    public bool AcceptsOnlinePartySize(int seats) => OnlineBookingLimits.AcceptsPartySize(this, seats);
 }

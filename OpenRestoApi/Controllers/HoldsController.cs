@@ -65,7 +65,7 @@ public class HoldsController(
         }
 
         HoldPolicyResult policy = autoAssign
-            ? await _holdPolicyService.ValidateAnyTableAsync(request.RestaurantId, request.Date)
+            ? await _holdPolicyService.ValidateAnyTableAsync(request.RestaurantId, request.Date, request.Seats)
             : await _holdPolicyService.ValidateAsync(request.RestaurantId, request.TableId!.Value, request.Date, request.Seats);
 
         return policy.Status switch
@@ -87,7 +87,7 @@ public class HoldsController(
     /// </summary>
     private async Task<IActionResult> PlaceGroupHold(PlaceHoldRequest request)
     {
-        HoldPolicyResult policy = await _holdPolicyService.ValidateAnyTableAsync(request.RestaurantId, request.Date);
+        HoldPolicyResult policy = await _holdPolicyService.ValidateAnyTableAsync(request.RestaurantId, request.Date, request.Seats);
         if (policy.Status != HoldPolicyStatus.Eligible)
         {
             return policy.Status switch
