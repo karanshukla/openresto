@@ -71,4 +71,10 @@ describe("LargePartyNotice", () => {
     render(<LargePartyNotice maxCapacity={8} onContact={jest.fn()} />);
     expect(cardStyle().opacity).toBeUndefined();
   });
+
+  it("words an online party cap as the cap, not as the largest table", () => {
+    render(<LargePartyNotice maxCapacity={6} reason="onlineMax" onContact={jest.fn()} />);
+    expect(screen.getByText(/We take online bookings for up to 6 guests\./)).toBeTruthy();
+    expect(screen.queryByText(/Our largest table seats/)).toBeNull();
+  });
 });

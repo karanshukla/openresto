@@ -10,11 +10,14 @@ import { useBrand } from "@/context/BrandContext";
 import { ContactSource, hasContact, mailtoHref, resolveContact, telHref } from "@/utils/contact";
 import { styles } from "./LargePartyNoticeModal.styles";
 import { Icon, type IconName } from "@/components/common/Icon";
+import type { LargePartyReason } from "./LargePartyNotice";
 
 interface LargePartyNoticeModalProps {
   visible: boolean;
-  /** Largest single-table capacity at the location, for the message copy. */
+  /** Largest single-table capacity at the location, or its online party cap, for the message copy. */
   maxCapacity: number;
+  /** Which of the two the number is; the online cap is worded as "{{count}} or more". */
+  reason?: LargePartyReason;
   /** This location's own contact fields, which take precedence over the brand defaults. */
   restaurant?: ContactSource | null;
   onClose: () => void;
@@ -29,6 +32,7 @@ interface LargePartyNoticeModalProps {
 export default function LargePartyNoticeModal({
   visible,
   maxCapacity,
+  reason = "capacity",
   restaurant,
   onClose,
 }: LargePartyNoticeModalProps) {
@@ -60,7 +64,9 @@ export default function LargePartyNoticeModal({
       dismissLabel={t("common.actions.close")}
     >
       <ThemedText style={[styles.message, { color: colors.muted }]}>
-        {t("booking.largeParty.modalMessage", { count: maxCapacity })}
+        {reason === "onlineMax"
+          ? t("booking.largeParty.onlineMaxModalMessage", { count: maxCapacity + 1 })
+          : t("booking.largeParty.modalMessage", { count: maxCapacity })}
       </ThemedText>
 
       {hasTypedContact ? (

@@ -989,4 +989,32 @@ describe("LocationListItem", () => {
     await waitFor(() => expect(screen.getByText("Seating & tables")).toBeTruthy());
     expect(screen.queryByText("Tables we can combine")).toBeNull();
   });
+
+  describe("date exceptions (#521)", () => {
+    it("reads a closed date as closed on an otherwise open weekday", async () => {
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={
+            { ...mockRestaurant, dateExceptions: [{ date: TODAY, type: "closed" }] } as any
+          }
+        />
+      );
+      await waitFor(() => expect(screen.getByText(/^Closed today/)).toBeTruthy());
+      expect(fetchAvailability).not.toHaveBeenCalled();
+    });
+
+    it("reads a walk-in-only date as walk-in on a booking weekday", async () => {
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={
+            { ...mockRestaurant, dateExceptions: [{ date: TODAY, type: "walkInOnly" }] } as any
+          }
+        />
+      );
+      await waitFor(() => expect(screen.getByText(/No reservations/)).toBeTruthy());
+      expect(fetchAvailability).not.toHaveBeenCalled();
+    });
+  });
 });

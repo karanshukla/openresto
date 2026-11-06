@@ -192,4 +192,18 @@ describe("LargePartyNoticeModal", () => {
     expect(screen.getByLabelText("Large party")).toBeTruthy();
     expect(screen.getByRole("header", { name: "Large party" })).toBeTruthy();
   });
+
+  it("words an online party cap as the party size that needs a call", async () => {
+    render(
+      <LargePartyNoticeModal
+        visible
+        maxCapacity={6}
+        reason="onlineMax"
+        restaurant={{ phoneNumber: "+1 555 0100" }}
+        onClose={jest.fn()}
+      />
+    );
+    expect(screen.getByText(/For parties of 7 or more, please get in touch/)).toBeTruthy();
+    expect(screen.queryByText(/Our largest table seats/)).toBeNull();
+  });
 });

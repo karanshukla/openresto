@@ -40,6 +40,9 @@ export const styles = StyleSheet.create({
   // since SaveStatus holds its row open on purpose. A bare bar, stuck to the foot of the
   // viewport on web, keeps the outcome and its 10s undo reachable from whichever card was
   // edited rather than parked below the last one.
+  /** The online party size floor and ceiling, side by side with a dash between. */
+  limitPair: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xs },
+  limitPairInput: { flex: 1, minWidth: 0 },
   statusBar: {
     flexDirection: "row",
     justifyContent: "flex-end",

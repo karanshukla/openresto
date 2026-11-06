@@ -726,21 +726,57 @@ public class AdminService(
     // ── Restaurants ─────────────────────────────────────────────────────────
 
     public virtual async Task<bool> PauseRestaurantBookingsAsync(int restaurantId, int durationMinutes)
+        => await PauseRestaurantBookingsAsync(restaurantId, new PauseRestaurantRequest { Minutes = durationMinutes }) != null;
+
+    /// <summary>
+    /// Pauses online bookings from now: for <see cref="PauseRestaurantRequest.Minutes"/>, or
+    /// until today's service closes when <see cref="PauseRestaurantRequest.Until"/> is
+    /// <c>endOfService</c>. The end is the one <see cref="ServiceWindowHelper.EndOfServiceToday"/>
+    /// resolves, so between lunch and dinner it is dinner's close and in the small hours it is
+    /// the end of the service that opened yesterday. Null when the restaurant does not exist;
+    /// a <see cref="BusinessRuleException"/> when nothing of today's service is left to pause.
+    /// </summary>
+    /// <seealso>AdminServiceTests.PauseRestaurantBookingsAsync_EndOfService_PausesUntilTodaysClose</seealso>
+    /// <seealso>AdminServiceTests.PauseRestaurantBookingsAsync_EndOfService_RefusesWhenTodayIsClosed</seealso>
+    /// <seealso>AdminServiceTests.PauseRestaurantBookingsAsync_RefusesARequestNamingNeitherMinutesNorUntil</seealso>
+    public virtual async Task<DateTime?> PauseRestaurantBookingsAsync(int restaurantId, PauseRestaurantRequest req)
     {
+        bool endOfService = string.Equals(req.Until, PauseRestaurantRequest.EndOfService, StringComparison.OrdinalIgnoreCase);
+        if (endOfService == req.Minutes.HasValue || (req.Until != null && !endOfService) || req.Minutes is < 1)
+        {
+            throw new ValidationException("Give either minutes (1 or more) or until: endOfService.")
+            { Code = ErrorCodes.RestaurantPauseRequestInvalid };
+        }
+
         Restaurant? restaurant = await _restaurantRepository.FindByIdAsync(restaurantId);
         if (restaurant == null)
         {
-            return false;
+            return null;
+        }
+
+        DateTime nowUtc = DateTime.UtcNow;
+        DateTime pausedUntil;
+        string summary;
+        if (endOfService)
+        {
+            pausedUntil = ServiceWindowHelper.EndOfServiceToday(restaurant, nowUtc)
+                ?? throw new BusinessRuleException("There is no service left today to pause.")
+                { Code = ErrorCodes.RestaurantNoServiceLeftToday };
+            summary = $"Paused bookings at {restaurant.Name} for the rest of today";
+        }
+        else
+        {
+            pausedUntil = nowUtc.AddMinutes(req.Minutes!.Value);
+            summary = $"Paused bookings at {restaurant.Name} for {req.Minutes.Value} minutes";
         }
 
         DateTime? previousPausedUntil = restaurant.BookingsPausedUntil;
-        restaurant.BookingsPausedUntil = DateTime.UtcNow.AddMinutes(durationMinutes);
+        restaurant.BookingsPausedUntil = pausedUntil;
         await _restaurantRepository.SaveChangesAsync();
 
         _audit.RecordChange("bookingsPausedUntil", previousPausedUntil, restaurant.BookingsPausedUntil);
-        DescribeRestaurant(AuditActions.RestaurantPause, restaurant,
-            $"Paused bookings at {restaurant.Name} for {durationMinutes} minutes");
-        return true;
+        DescribeRestaurant(AuditActions.RestaurantPause, restaurant, summary);
+        return pausedUntil;
     }
 
     public virtual async Task<bool> UnpauseRestaurantBookingsAsync(int restaurantId)

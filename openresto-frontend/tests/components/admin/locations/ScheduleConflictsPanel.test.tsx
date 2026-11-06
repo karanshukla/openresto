@@ -136,4 +136,17 @@ describe("ScheduleConflictsPanel", () => {
     await waitFor(() => expect(screen.getByText(/crispy-basil-truffle ·/)).toBeTruthy());
     expect(screen.getByText(/Now a closed day · 1 guest/)).toBeTruthy();
   });
+
+  it("labels the two reasons a date exception produces", async () => {
+    (fetchScheduleConflicts as jest.Mock).mockResolvedValue([
+      { ...conflict, bookingId: 8, reason: "closedDate" },
+      { ...conflict, bookingId: 9, bookingRef: "golden-mint-sage", reason: "outsideSpecialHours" },
+    ]);
+
+    render(<ScheduleConflictsPanel {...props} />);
+
+    await waitFor(() => expect(screen.getByTestId("schedule-conflicts-panel")).toBeTruthy());
+    expect(screen.getByText(/Closed on this date/)).toBeTruthy();
+    expect(screen.getByText(/Outside this date's special hours/)).toBeTruthy();
+  });
 });

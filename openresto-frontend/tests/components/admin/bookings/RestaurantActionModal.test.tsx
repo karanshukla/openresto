@@ -297,4 +297,85 @@ describe("RestaurantActionModal", () => {
 
     expect(getByText("PAUSED")).toBeTruthy();
   });
+
+  // ── Rest of today (#520) ────────────────────────────────────────────────
+
+  it("pauses for the rest of today with the server's own lift time in the message", async () => {
+    const onSuccess = jest.fn();
+    const onClose = jest.fn();
+    (adminApi.pauseRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: true,
+      bookingsPausedUntil: "2026-11-06T23:00:00Z",
+    });
+
+    const { getByText, getByTestId, queryByTestId } = render(
+      <RestaurantActionModal
+        visible={true}
+        actionType="pause"
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    );
+    await waitFor(() => expect(queryByTestId("loading-indicator")).toBeNull());
+
+    fireEvent.press(getByTestId("pause-length-rest-of-today"));
+    expect(
+      getByText(
+        "Pausing turns away new bookings until today's service closes. Tomorrow stays bookable."
+      )
+    ).toBeTruthy();
+    // Switching back and forth lands on the rest of today.
+    fireEvent.press(getByTestId("pause-length-hour"));
+    expect(getByText(/Will pause bookings up to/)).toBeTruthy();
+    fireEvent.press(getByTestId("pause-length-rest-of-today"));
+    fireEvent.press(getByText("Test Restaurant 1"));
+
+    await waitFor(() => {
+      expect(adminApi.pauseRestaurantBookings).toHaveBeenCalledWith(1, "endOfService");
+      expect(onSuccess).toHaveBeenCalledWith(
+        expect.stringMatching(/^Bookings for Test Restaurant 1 up to .+ are paused\./)
+      );
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  it("says when nothing of today is left to pause and stays open", async () => {
+    const onClose = jest.fn();
+    (adminApi.pauseRestaurantBookings as jest.Mock).mockResolvedValue({
+      ok: false,
+      code: "restaurant.no_service_left_today",
+    });
+
+    const { getByText, getByTestId, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={onClose} />
+    );
+    await waitFor(() => expect(queryByTestId("loading-indicator")).toBeNull());
+
+    fireEvent.press(getByTestId("pause-length-rest-of-today"));
+    fireEvent.press(getByText("Test Restaurant 1"));
+
+    await waitFor(() =>
+      expect(getByTestId("restaurant-action-error").props.children).toBe(
+        "Test Restaurant 1 has no service left today to pause."
+      )
+    );
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("reports any other refusal without naming a cause it does not know", async () => {
+    (adminApi.pauseRestaurantBookings as jest.Mock).mockResolvedValue({ ok: false });
+
+    const { getByText, getByTestId, queryByTestId } = render(
+      <RestaurantActionModal visible={true} actionType="pause" onClose={() => {}} />
+    );
+    await waitFor(() => expect(queryByTestId("loading-indicator")).toBeNull());
+
+    fireEvent.press(getByText("Test Restaurant 1"));
+
+    await waitFor(() =>
+      expect(getByTestId("restaurant-action-error").props.children).toBe(
+        "Couldn't pause bookings for Test Restaurant 1. Please try again."
+      )
+    );
+  });
 });

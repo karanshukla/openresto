@@ -542,4 +542,48 @@ describe("RestaurantCard", () => {
       expect(screen.queryByTestId("walk-in-badge")).toBeNull();
     });
   });
+
+  describe("date exceptions (#521)", () => {
+    it("shows closed and fetches nothing on a closed date, even on an open weekday", async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-01-05T12:00:00Z")); // Monday
+      try {
+        render(
+          <RestaurantCard
+            restaurant={{
+              ...mockRestaurant,
+              dateExceptions: [{ date: "2026-01-05", type: "closed" }],
+            }}
+          />
+        );
+        await waitFor(() => expect(screen.getByText("Closed")).toBeTruthy());
+        expect(fetchAvailability).not.toHaveBeenCalled();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("opens on special hours on a weekday the week keeps closed", async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-01-05T12:00:00Z")); // Monday, 12:00 UTC
+      try {
+        (fetchAvailability as jest.Mock).mockResolvedValue({ slots: [] });
+        render(
+          <RestaurantCard
+            restaurant={{
+              ...mockRestaurant,
+              openDays: "6,7",
+              dateExceptions: [
+                { date: "2026-01-05", type: "specialHours", open: "11:00", close: "15:00" },
+              ],
+            }}
+          />
+        );
+        await waitFor(() => expect(fetchAvailability).toHaveBeenCalledWith(1, "2026-01-05", 2));
+        expect(screen.queryByText("Closed")).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
 });

@@ -1431,4 +1431,138 @@ describe("RestaurantInfoForm", () => {
       expect(screen.queryByTestId("timezone-rebase-warning")).toBeNull();
     });
   });
+
+  // ── Online booking limits (#522) ────────────────────────────────────────
+
+  it("sends the four online booking limits as numbers, blank meaning off", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      maxBookingDaysAhead: 14,
+      minBookingNoticeMinutes: 90,
+      minOnlinePartySize: 2,
+      maxOnlinePartySize: 8,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("max-days-ahead-input"), "14");
+    fireEvent.changeText(screen.getByTestId("min-notice-input"), "90");
+    fireEvent.changeText(screen.getByTestId("min-party-input"), "2");
+    fireEvent.changeText(screen.getByTestId("max-party-input"), "8");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        maxBookingDaysAhead: 14,
+        minBookingNoticeMinutes: 90,
+        minOnlinePartySize: 2,
+        maxOnlinePartySize: 8,
+      })
+    );
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ maxOnlinePartySize: 8 }));
+  });
+
+  it("clears a limit when its field is emptied", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, maxBookingDaysAhead: 14, maxOnlinePartySize: 8 }}
+        onSaved={onSaved}
+      />
+    );
+    expect(screen.getByDisplayValue("14")).toBeTruthy();
+    fireEvent.changeText(screen.getByTestId("max-days-ahead-input"), "");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ maxBookingDaysAhead: null, maxOnlinePartySize: 8 })
+    );
+  });
+
+  it("accepts a horizon of zero days (today only)", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("max-days-ahead-input"), "0");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ maxBookingDaysAhead: 0 })
+    );
+  });
+
+  it.each(["366", "2.5", "abc"])("holds back a horizon of %s and says why", async (typed) => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("max-days-ahead-input"), typed);
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+    expect(screen.getByText(/Days ahead must be a whole number from 0 to 365/)).toBeTruthy();
+  });
+
+  it.each(["0", "10081"])("holds back a minimum notice of %s and says why", async (typed) => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("min-notice-input"), typed);
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+    expect(screen.getByText(/Minimum notice must be a whole number/)).toBeTruthy();
+  });
+
+  it("holds back an online maximum below the minimum and says why", async () => {
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("min-party-input"), "6");
+    fireEvent.changeText(screen.getByTestId("max-party-input"), "4");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).not.toHaveBeenCalled();
+    expect(screen.getByText(/Online party size must run from at least 1/)).toBeTruthy();
+  });
+
+  it("saves an online maximum equal to the minimum", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    fireEvent.changeText(screen.getByTestId("min-party-input"), "4");
+    fireEvent.changeText(screen.getByTestId("max-party-input"), "4");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ minOnlinePartySize: 4, maxOnlinePartySize: 4 })
+    );
+  });
+
+  // ── Date exceptions (#521) ──────────────────────────────────────────────
+
+  it("sends the date list with the rest of the location and keeps what the server returns", async () => {
+    const kept = [{ date: "2099-12-25", type: "closed" as const }];
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      dateExceptions: kept,
+    });
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, dateExceptions: [{ date: "2099-12-25", type: "closed" }] }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.press(screen.getByTestId("remove-date-exception-2099-12-25"));
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ dateExceptions: [] })
+    );
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ dateExceptions: kept }));
+    // The server's answer is what the list now holds, so the row is back.
+    expect(screen.getByTestId("date-exception-2099-12-25")).toBeTruthy();
+  });
+
+  it("puts the date list back on undo", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue(mockRestaurant);
+    render(
+      <RestaurantInfoForm
+        restaurant={{ ...mockRestaurant, dateExceptions: [{ date: "2099-12-25", type: "closed" }] }}
+        onSaved={onSaved}
+      />
+    );
+    fireEvent.press(screen.getByTestId("remove-date-exception-2099-12-25"));
+    await flushAutosave();
+    expect(screen.queryByTestId("date-exception-2099-12-25")).toBeNull();
+
+    fireEvent.press(screen.getByText("Undo"));
+    await waitFor(() => expect(screen.getByTestId("date-exception-2099-12-25")).toBeTruthy());
+  });
 });

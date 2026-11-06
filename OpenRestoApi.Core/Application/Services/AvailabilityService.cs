@@ -28,15 +28,15 @@ public sealed class AvailabilityService(
         // timezone. Converting it from UTC would shift midnight into the previous day for any
         // UTC-negative timezone.
         DateTime localDate = bookingDate.Date;
-        int isoDay = IsoDay.Of(localDate);
+        DateTime nowUtc = DateTime.UtcNow;
 
-        if (WalkInPolicy.IsWalkInOnlyOn(restaurant, isoDay) || !ServiceWindowHelper.IsOpenOn(restaurant, isoDay))
+        if (!OffersOnlineBookingsOn(restaurant, localDate, seats, nowUtc))
         {
             return NoSlots(restaurantId, bookingDate);
         }
 
-        (DateTime localStart, DateTime localEnd) = ServiceWindowHelper.LocalWindowFor(restaurant, localDate, isoDay);
-        DateTime lastStart = LastBookableStart(restaurant, localDate, isoDay, localEnd);
+        (DateTime localStart, DateTime localEnd) = ServiceWindowHelper.LocalWindowFor(restaurant, localDate);
+        DateTime lastStart = LastBookableStart(restaurant, localDate, localEnd);
         var reservations = new UnitReservations(restaurant, activeBookings);
         List<Table> eligibleTables = EligibleTables(restaurant, seats);
         List<TableGroup> eligibleGroups = EligibleGroups(restaurant, seats);
@@ -48,9 +48,11 @@ public sealed class AvailabilityService(
             DateTime slotUtc = TimeZoneInfo.ConvertTimeToUtc(current, tz);
 
             // A pause closes the slots inside its window only; later sittings — including
-            // later today — stay bookable. A slot this party would push over the cover cap is
-            // closed the same way.
-            if (restaurant.IsPausedFor(slotUtc) || !HasPacingRoom(restaurant, activeBookings, slotUtc, seats))
+            // later today — stay bookable. A slot inside the minimum notice, or one this party
+            // would push over the cover cap, is closed the same way.
+            if (restaurant.IsPausedFor(slotUtc)
+                || restaurant.IsInsideBookingNotice(slotUtc, nowUtc)
+                || !HasPacingRoom(restaurant, activeBookings, slotUtc, seats))
             {
                 slots.Add(ClosedSlot(current));
                 continue;
@@ -106,8 +108,24 @@ public sealed class AvailabilityService(
     /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_OffersTheSlotAtTheLastBookingTime</seealso>
     /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_OffersNoSlotAfterTheLastBookingTime</seealso>
     /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_OffersSlotsUpToClose_WhenNoLastBookingTimeIsSet</seealso>
-    private static DateTime LastBookableStart(Restaurant restaurant, DateTime localDate, int isoDay, DateTime localEnd)
-        => ServiceWindowHelper.LastBookingCutoffFor(restaurant, localDate, isoDay) ?? localEnd;
+    private static DateTime LastBookableStart(Restaurant restaurant, DateTime localDate, DateTime localEnd)
+        => ServiceWindowHelper.LastBookingCutoffFor(restaurant, localDate) ?? localEnd;
+
+    /// <summary>
+    /// Whether the grid has anything to offer <paramref name="seats"/> guests on
+    /// <paramref name="localDate"/> at all: the date has to be open and taking online bookings,
+    /// inside the booking horizon, and the party inside the online party size limits. Each of
+    /// these empties the whole day, so the answer is an empty slot list rather than a closed one.
+    /// </summary>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_ReturnsNoSlots_OnAClosedDate</seealso>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_ReturnsNoSlots_OnAWalkInOnlyDate</seealso>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_ReturnsNoSlots_PastTheBookingHorizon</seealso>
+    /// <seealso>AvailabilityServiceTests.GetAvailabilityAsync_ReturnsNoSlots_ForAPartyOverTheOnlineMaximum</seealso>
+    private static bool OffersOnlineBookingsOn(Restaurant restaurant, DateTime localDate, int seats, DateTime nowUtc)
+        => ServiceWindowHelper.IsOpenOn(restaurant, localDate)
+            && !WalkInPolicy.IsWalkInOnlyOn(restaurant, localDate)
+            && !OnlineBookingLimits.IsBeyondHorizonOn(restaurant, localDate, nowUtc)
+            && restaurant.AcceptsOnlinePartySize(seats);
 
     private static string FormatSlotTime(DateTime local)
         => local.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);

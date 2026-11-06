@@ -76,7 +76,9 @@
       "tableLabel": "Mesa",
       "timeLabel": "Hora",
       "timezoneHint": "Todos los horarios están en {{timezone}} (allí son actualmente las {{time}})",
-      "walkInsOnlyReason": "Solo sin reserva"
+      "walkInsOnlyReason": "Solo sin reserva",
+      "partySizeMore": "{{count}} o más comensales",
+      "partyBelowMinNotice": "Las reservas en línea son para grupos de {{min}} o más personas. Para un grupo más pequeño, ven directamente o llámanos."
     },
     "guestDetails": {
       "bookedUnder": "Reservado a nombre de {{name}}",
@@ -106,7 +108,9 @@
       "gotItLabel": "Entendido",
       "modalMessage": "Nuestra mesa más grande tiene capacidad para {{count}}, así que una reserva para un grupo más grande debe organizarse directamente. Ponte en contacto con nosotros y encontraremos una solución.",
       "noContactsMessage": "Todavía no hay datos de contacto disponibles. Ponte en contacto con nosotros directamente.",
-      "title": "Grupo grande"
+      "title": "Grupo grande",
+      "onlineMaxBody": "Aceptamos reservas en línea para hasta {{count}} comensales. Contáctanos para organizar una reserva para un grupo mayor.",
+      "onlineMaxModalMessage": "Para grupos de {{count}} o más personas, contáctanos y con gusto lo organizaremos."
     },
     "moveNotice": {
       "body": "Hemos cambiado tu reserva en {{venue}}.\n\nAntes: {{previous}}\nAhora: {{next}}\n\nTodo lo demás de la reserva sigue igual.{{referenceLine}}\n\nSi el nuevo horario no te viene bien, responde a este correo y lo solucionaremos.",
@@ -390,7 +394,11 @@
       "table_not_in_section": "No se ha encontrado la mesa en la sala indicada.",
       "walk_in_only": "Este local solo admite visitas sin reserva y no acepta reservas en línea.",
       "walk_in_only_today": "Este local solo admite visitas sin reserva el día seleccionado. Elige otro día o acércate directamente.",
-      "pacing_full": "Solo pueden llegar {{remaining}} comensales más a las {{time}}. Elige otra hora."
+      "pacing_full": "Solo pueden llegar {{remaining}} comensales más a las {{time}}. Elige otra hora.",
+      "beyond_horizon": "Las reservas en línea pueden hacerse hasta con {{days}} días de antelación.",
+      "too_soon": "Las reservas en línea necesitan al menos {{minutes}} minutos de antelación.",
+      "party_below_online_min": "Las reservas en línea son para grupos de {{min}} o más personas.",
+      "party_above_online_max": "Las reservas en línea son para grupos de hasta {{max}} personas. Contáctanos para un grupo mayor."
     },
     "brand": {
       "accent_color_invalid": "Código hexadecimal de color de acento no válido.",
@@ -458,7 +466,16 @@
       "walk_in_days_invalid": "WalkInDays debe ser una lista de números de día ISO del 1 (lunes) al 7 (domingo), separados por comas.",
       "max_covers_invalid": "El máximo de comensales por franja debe ser 1 o más, o quedar vacío para no tener límite.",
       "past_last_booking": "La última reserva de ese día es a las {{time}}. Elija una hora anterior.",
-      "last_booking_outside_hours": "La hora de última reserva debe estar dentro del horario de apertura de ese día ({{open}}–{{close}})."
+      "last_booking_outside_hours": "La hora de última reserva debe estar dentro del horario de apertura de ese día ({{open}}–{{close}}).",
+      "no_service_left_today": "Hoy ya no queda servicio que pausar.",
+      "pause_request_invalid": "Indica un número de minutos o until: endOfService.",
+      "date_exception_date_invalid": "Las excepciones de fecha deben indicar una fecha como AAAA-MM-DD.",
+      "date_exception_duplicate_date": "Las excepciones de fecha incluyen {{date}} más de una vez.",
+      "date_exception_type_invalid": "Una excepción de fecha debe ser cerrado, horario especial o solo sin reserva.",
+      "date_exception_hours_required": "El horario especial del {{date}} necesita una hora de apertura y de cierre.",
+      "booking_horizon_invalid": "Los días de antelación deben estar entre 0 y {{max}}, o en blanco para sin límite.",
+      "booking_notice_invalid": "La antelación mínima debe estar entre 1 y {{max}} minutos, o en blanco para ninguna.",
+      "online_party_size_invalid": "Los límites de tamaño del grupo en línea deben ir de al menos {{min}} a como máximo {{max}}, el más pequeño primero."
     },
     "social_link": {
       "label_required": "La etiqueta del enlace social no puede estar vacía.",
@@ -651,7 +668,10 @@
       "tuesday": "Martes",
       "walkIn": "Sin reserva",
       "wednesday": "Miércoles",
-      "lastBooking": "Última reserva {{time}}"
+      "lastBooking": "Última reserva {{time}}",
+      "upcomingDatesTitle": "Próximas fechas",
+      "dateClosed": "Cerrado",
+      "dateWalkIn": "Solo sin reserva"
     },
     "seatingMap": {
       "combinableHeading": "Mesas que podemos combinar",
@@ -1010,7 +1030,14 @@
         "noActiveToExtend": "No se encontraron reservas activas para ampliar de {{name}}.",
         "resumedSuccess": "Se han reanudado las reservas de {{name}}.",
         "pausedSuccess": "Las reservas de {{name}} hasta las {{time}} están pausadas. Los horarios posteriores siguen abiertos.",
-        "doneAction": "Listo"
+        "doneAction": "Listo",
+        "durationLabel": "Pausar durante",
+        "durationHour": "1 hora",
+        "durationRestOfToday": "El resto del día",
+        "pauseSubtitleRestOfToday": "La pausa rechaza las nuevas reservas hasta que cierre el servicio de hoy. Mañana sigue disponible.",
+        "willPauseRestOfToday": "Pausará las reservas hasta que cierre el servicio de hoy",
+        "noServiceLeft": "A {{name}} no le queda servicio que pausar hoy.",
+        "pauseFailed": "No se pudieron pausar las reservas de {{name}}. Inténtalo de nuevo."
       },
       "lookup": {
         "placeholder": "Nombre, correo o referencia…",
@@ -1123,7 +1150,11 @@
         "resumeLabel": "Reanudar reservas de {{name}}",
         "pauseLabel": "Pausar la próxima hora de reservas en {{name}}",
         "resumeUntil": "Reanudar nuevas reservas ahora (pausadas hasta las {{time}})",
-        "pauseFor60": "Pausar nuevas reservas durante los próximos 60 min"
+        "pauseFor60": "Pausar nuevas reservas durante los próximos 60 min",
+        "pauseRestOfToday": "Pausar nuevas reservas durante el resto del día",
+        "pauseRestOfTodayLabel": "Pausar las reservas en {{name}} durante el resto del día",
+        "noServiceLeft": "Hoy ya no queda servicio que pausar.",
+        "pauseFailed": "No se pudieron pausar las reservas. Inténtalo de nuevo."
       },
       "extendButton": {
         "a11yLabel": "Ampliar todas las reservas activas de {{name}} una hora",
@@ -1200,7 +1231,9 @@
         "allClear": "Todas las reservas próximas encajan en este horario.",
         "reason": {
           "closedDay": "Ahora es un día de cierre",
-          "outsideHours": "Ahora está fuera del horario de apertura"
+          "outsideHours": "Ahora está fuera del horario de apertura",
+          "closedDate": "Cerrado en esta fecha",
+          "outsideSpecialHours": "Fuera del horario especial de esta fecha"
         },
         "guestCount_one": "{{count}} comensal",
         "guestCount_other": "{{count}} comensales",
@@ -1979,7 +2012,22 @@
         "maxCoversPlaceholder": "Sin límite",
         "maxCoversHint": "Limita los comensales cuyas reservas en línea empiezan en cada franja de {{minutes}} minutos. Las reservas del personal y la lista de espera no tienen límite.",
         "blockedInvalidMaxCovers": "El máximo de comensales por franja debe ser un número entero de 1 o más, o quedar vacío.",
-        "blockedLastBookingOutsideHours": "La hora de última reserva debe estar dentro del horario de apertura de ese día."
+        "blockedLastBookingOutsideHours": "La hora de última reserva debe estar dentro del horario de apertura de ese día.",
+        "horizonLabel": "Reservar hasta (días de antelación)",
+        "horizonPlaceholder": "Sin límite",
+        "horizonHint": "Los clientes pueden reservar como máximo con esta antelación; 0 significa solo hoy. En blanco: sin límite. El personal siempre puede reservar más adelante.",
+        "noticeLabel": "Antelación mínima (minutos)",
+        "noticePlaceholder": "Ninguna",
+        "noticeHint": "Un turno que empiece antes de este plazo no se ofrece en línea.",
+        "onlinePartyLabel": "Tamaño del grupo en línea",
+        "onlinePartyMinLabel": "Grupo más pequeño",
+        "onlinePartyMaxLabel": "Grupo más grande",
+        "onlinePartyMinPlaceholder": "1",
+        "onlinePartyMaxPlaceholder": "Sin límite",
+        "onlinePartyHint": "A los grupos fuera de este rango se les pide que contacten en lugar de no ver horarios. El personal puede reservar cualquier tamaño.",
+        "blockedInvalidHorizon": "Los días de antelación deben ser un número entero de 0 a 365.",
+        "blockedInvalidNotice": "La antelación mínima debe ser un número entero de minutos de 1 a 10080.",
+        "blockedInvalidPartyRange": "El tamaño del grupo en línea debe ir de al menos 1 a como máximo 50, el más pequeño primero."
       },
       "accountRoute": {
         "title": "Cuenta",
@@ -2131,6 +2179,34 @@
             "loaderBlocked": "El proxy envía en /embed.js un Cross-Origin-Resource-Policy que impide que otros sitios lo carguen."
           }
         }
+      },
+      "dateExceptions": {
+        "title": "Fechas",
+        "subtitleEmpty": "Todas las fechas siguen el horario semanal",
+        "subtitle_one": "{{count}} fecha próxima difiere del horario semanal",
+        "subtitle_other": "{{count}} fechas próximas difieren del horario semanal",
+        "hint": "Planifica una fecha concreta en lugar del horario semanal: cierra por un festivo o un evento privado, aplica un horario especial o acepta solo clientes sin reserva. Nada se repite, así que añade la fecha cada año. El personal puede seguir registrando reservas en cualquiera de ellas.",
+        "addLabel": "Añadir fecha",
+        "dateLabel": "Fecha",
+        "typeLabel": "Ese día",
+        "typeClosed": "Cerrado",
+        "typeSpecialHours": "Horario especial",
+        "typeWalkInOnly": "Solo sin reserva",
+        "opensLabel": "Abre",
+        "closesLabel": "Cierra",
+        "lastBookingLabel": "Última reserva",
+        "removeLabel": "Quitar",
+        "removeDateLabel": "Quitar el {{date}}",
+        "rowClosed": "Cerrado",
+        "rowSpecialHours": "{{open}} – {{close}}",
+        "rowWalkInOnly": "Solo sin reserva",
+        "rowLastBooking": "última reserva {{time}}",
+        "closedDescription": "Sin servicio ese día. Las reservas existentes se señalan en los conflictos de horario.",
+        "specialHoursDescription": "Sustituye el horario semanal en esa fecha, con su propia hora de última reserva. Las reservas fuera del nuevo horario se señalan.",
+        "walkInOnlyDescription": "Abierto en el horario habitual, pero sin reservas en línea. Las reservas existentes se mantienen.",
+        "replaceHint": "Esa fecha ya está en la lista; añadirla de nuevo sustituye la entrada anterior.",
+        "cancelLabel": "Cancelar añadir",
+        "addAction": "Añadir"
       }
     },
     "sidebar": {

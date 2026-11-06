@@ -66,6 +66,22 @@ export const styles = StyleSheet.create({
     padding: 40,
     alignItems: "center",
   },
+  /** The 1 hour / rest of today pick, above the location rows it applies to. */
+  durationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  durationLabel: {
+    fontSize: 13,
+  },
+  actionError: {
+    fontSize: 13,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
   footer: {
     padding: 20,
     borderTopWidth: 1,

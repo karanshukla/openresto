@@ -10,8 +10,9 @@ import {
   getIsoDayFromDateString,
   getNextOpening,
   isoDayShortName,
+  isOpenOnDate,
 } from "@/utils/openingHours";
-import { isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
+import { isWalkInOnlyOnDate, isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
 import { hexToRgb } from "@/utils/colors";
 import { getOpenDaysList } from "@/utils/restaurantTime";
 import { AnimatedAccordion } from "@/components/common/AnimatedAccordion";
@@ -78,9 +79,11 @@ export default function LocationListItem({
   const isToday = date === today;
   const dayHours = getHoursForDate(restaurant, date);
   const openDaysList = getOpenDaysList(restaurant);
-  const closedOnDate = !openDaysList.includes(selectedIsoDay);
+  // The date's own say wins over its weekday: a closed date exception shuts an open weekday,
+  // special hours open a closed one, and a walk-in-only date is open but unbookable.
+  const closedOnDate = !isOpenOnDate(restaurant, date, openDaysList);
   const walkInLocation = !!restaurant.walkInOnly;
-  const walkInOnDate = !walkInLocation && isWalkInOnlyOnDay(restaurant, selectedIsoDay);
+  const walkInOnDate = !walkInLocation && isWalkInOnlyOnDate(restaurant, date);
   const walkInBadgeText = walkInBadgeLabel(restaurant);
   /** Whether the selected date can be booked — governs the slot strip. */
   const bookable = !closedOnDate && !walkInLocation && !walkInOnDate;

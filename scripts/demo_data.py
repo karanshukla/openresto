@@ -97,8 +97,10 @@ BRAND = {
 # both booking-reference formats, all three contact fallback states, every slot
 # interval (15/30/60), walk-in-only both globally and per-day, a live booking
 # pause, an archived location, the table-oversize cap, turn times by party
-# size, a walk-in-only table, a cover cap, and combinable table groups both
-# named and unnamed.
+# size, a walk-in-only table, a cover cap, combinable table groups both named
+# and unnamed, date exceptions of all three types (closed, special hours and
+# walk-in only), and every online booking limit (horizon, minimum notice, party
+# size floor and ceiling).
 
 LOCATIONS = [
     {
@@ -137,6 +139,17 @@ LOCATIONS = [
         # lower than the largest party (the 7-seat patio run) or it could never
         # book online. The dashboard's pacing bars read from this location.
         "max_covers": 8,
+        # Date exceptions (DateExceptionsJson), resolved relative to the seed
+        # date so they stay upcoming: a private event closes the room, a short
+        # Sunday-style service runs on hours of its own with its own last
+        # booking time, and one date is walk-ins only. The closed date also
+        # carries a deliberately stranded booking (see emit_bookings) so the
+        # conflict panel shows a "closed date" reason.
+        "date_exceptions": [
+            (12, "closed"),
+            (19, "specialHours", "12:00", "16:00", "15:00"),
+            (26, "walkInOnly"),
+        ],
         # CombinedSeats sits in (largest member, sum of members]: pushing tables
         # together loses a cover at the shared corner. The patio pair matters for
         # the demo — at 7 seats it beats the biggest single table (T3's 6), so a
@@ -170,6 +183,11 @@ LOCATIONS = [
         "duration": 60,
         "slot_interval": 30,
         "ref_format": 1,  # Numeric
+        # Booking horizon (MaxBookingDaysAhead) and party size floor
+        # (MinOnlinePartySize): the date picker stops three weeks out and a
+        # solo diner is asked to come in rather than book.
+        "max_days_ahead": 21,
+        "min_online_party": 2,
         "tags": "charlie work,mantis toboggan",
         "description": "The Alley Behind the Alley. Late kitchen Friday and Saturday.",
         "menu_url": None,
@@ -219,6 +237,11 @@ LOCATIONS = [
         "open_time": "06:00",
         "close_time": "21:00",
         "walk_in_days": "6,7",
+        # Minimum notice (MinBookingNoticeMinutes) and the online party ceiling
+        # (MaxOnlinePartySize): the counter wants an hour's warning, and a party
+        # of five or more sees the "contact us" prompt instead of no slots.
+        "min_notice_minutes": 60,
+        "max_online_party": 4,
         "duration": 45,
         "slot_interval": 15,
         "ref_format": 1,
@@ -456,6 +479,20 @@ def build_dataset(now_utc):
                 separators=(",", ":"),
             )
 
+        # Date exceptions are declared as days from the seed date so a reset never
+        # leaves them in the past; the resolved dates are kept for the booking
+        # generator, which has to honour them the way the server does.
+        date_exceptions = {}
+        for entry in spec.get("date_exceptions", []):
+            local_date = now_utc.astimezone(ZoneInfo(spec["timezone"])).date() + timedelta(days=entry[0])
+            date_exceptions[local_date] = entry[1:]
+        date_exceptions_json = None
+        if date_exceptions:
+            date_exceptions_json = json.dumps(
+                [date_exception_entry(d, e) for d, e in sorted(date_exceptions.items())],
+                separators=(",", ":"),
+            )
+
         restaurants.append(
             {
                 "id": rid,
@@ -486,9 +523,15 @@ def build_dataset(now_utc):
                     "MaxTableOversizeSeats": spec.get("max_oversize"),
                     "MaxCoversPerSlot": spec.get("max_covers"),
                     "BookingRefFormat": spec["ref_format"],
+                    "DateExceptionsJson": date_exceptions_json,
+                    "MaxBookingDaysAhead": spec.get("max_days_ahead"),
+                    "MinBookingNoticeMinutes": spec.get("min_notice_minutes"),
+                    "MinOnlinePartySize": spec.get("min_online_party"),
+                    "MaxOnlinePartySize": spec.get("max_online_party"),
                 },
             }
         )
+        restaurants[-1]["date_exceptions"] = date_exceptions
 
         by_name = {}
         for order, sec in enumerate(spec["sections"]):
@@ -797,6 +840,15 @@ def day_hours_entry(hours):
     return entry
 
 
+def date_exception_entry(local_date, exception):
+    """One DateExceptionsJson entry: a date plus "closed", "walkInOnly" or
+    "specialHours" with (open, close[, last_booking]) after the type."""
+    entry = {"date": local_date.isoformat(), "type": exception[0]}
+    if exception[0] == "specialHours":
+        entry.update(day_hours_entry(exception[1:]))
+    return entry
+
+
 def last_booking_for_day(spec, iso_day):
     """The day's last booking time the way OpeningHours.GetLastBookingForDay resolves it:
     the day's own override when it carries one, else the restaurant-wide value, else None."""
@@ -816,23 +868,29 @@ def longest_duration(spec):
     return max([spec["duration"]] + [minutes for _, minutes in spec.get("turn_times") or []])
 
 
-def day_slot_grid(spec, iso_day):
+def day_slot_grid(spec, iso_day, special_hours=None):
     """Local minutes-from-midnight for every bookable start on this ISO day.
 
     Mirrors AvailabilityService: a close time at or before the open time rolls
     into the next day (23:00→01:30 wraps; 00:00→00:00 is a full 24 hours), a
     start is only offered if the whole booking fits before close, and nothing
     starts after the day's last booking time (an after-midnight one belongs to
-    the day the service opened, so it rolls forward the same way).
+    the day the service opened, so it rolls forward the same way). A special-hours
+    date hands in (open, close[, last_booking]) and replaces the weekly values,
+    its own last booking time included, the way ServiceWindowHelper.ScheduleFor does.
     """
-    open_txt, close_txt = hours_for_day(spec, iso_day)
+    if special_hours:
+        open_txt, close_txt = special_hours[0], special_hours[1]
+        last_booking = special_hours[2] if len(special_hours) > 2 else None
+    else:
+        open_txt, close_txt = hours_for_day(spec, iso_day)
+        last_booking = last_booking_for_day(spec, iso_day)
     start = parse_hhmm(open_txt)
     end = parse_hhmm(close_txt)
     if end <= start:
         end += 24 * 60
 
     last_start = end - longest_duration(spec)
-    last_booking = last_booking_for_day(spec, iso_day)
     if last_booking:
         cutoff = parse_hhmm(last_booking)
         if cutoff < start:
@@ -979,15 +1037,26 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
         for offset in range(-days_back, days_forward + 1):
             local_day = today + timedelta(days=offset)
             iso_day = local_day.isoweekday()
-            if iso_day not in open_days:
+            # A date exception overrides the weekday: a closed date takes nothing, a
+            # special-hours date opens on its own hours even on a closed weekday, and a
+            # walk-in-only date is seeded like a walk-in day.
+            exception = r["date_exceptions"].get(local_day)
+            if exception and exception[0] == "closed":
+                continue
+            special_hours = exception[1:] if exception and exception[0] == "specialHours" else None
+            if iso_day not in open_days and not special_hours:
                 continue
 
             # Walk-in days take no online bookings, but AdminService.CreateBookingAsync
             # is intentionally exempt so staff can log walk-ins — seed a couple so the
             # admin grid shows what that looks like.
-            walk_in = spec.get("walk_in_only") or iso_day in walk_in_days
+            walk_in = (
+                spec.get("walk_in_only")
+                or iso_day in walk_in_days
+                or (exception is not None and exception[0] == "walkInOnly")
+            )
 
-            grid = day_slot_grid(spec, iso_day)
+            grid = day_slot_grid(spec, iso_day, special_hours)
             if not grid:
                 continue
 
@@ -1120,6 +1189,11 @@ def emit_bookings(ds, now_utc, days_back, days_forward, occupancy, rng):
         stranded.append((closed_day, 19 * 60, "Booked before Sundays were dropped"))
     if open_day and strand_units and strand_open_minutes >= 90:
         stranded.append((open_day, strand_open_minutes - 90, "Booked before the kitchen opened later"))
+    # A third lands on the date the private event closes, so the panel also shows the
+    # "closed on this date" reason a date exception produces.
+    closed_date = next((d for d, e in sorted(strand_target["date_exceptions"].items()) if e[0] == "closed"), None)
+    if closed_date and strand_units and closed_date > today:
+        stranded.append((closed_date, 19 * 60, "Booked before the private event took the room"))
 
     for i, (local_day, minutes, note) in enumerate(stranded):
         _, unit_id, capacity, section_id, keys = strand_units[i % len(strand_units)]

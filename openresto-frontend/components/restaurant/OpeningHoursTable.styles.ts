@@ -54,6 +54,20 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: "italic",
   },
+  /** The dates that depart from the week, as a second table under the first. */
+  datesTable: {
+    marginTop: theme.spacing.sm,
+  },
+  datesHeader: {
+    borderBottomWidth: 1,
+    paddingVertical: 8,
+  },
+  datesTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
   walkInBadge: {
     flexDirection: "row",
     alignItems: "center",

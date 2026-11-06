@@ -11,6 +11,7 @@ import { clampToRange, resolveCalendarKey, shiftCalendarMonths } from "@/utils/c
 import { GRIDCELL_ROLE, webProps, type WebKeyEvent } from "@/utils/webProps";
 import { fmtDateString, fmtLongDate } from "@/utils/formatters";
 import { getActiveLocale } from "@/utils/locale";
+import { DEFAULT_DAYS_AHEAD } from "@/utils/datePickerWindow";
 import { styles } from "./DatePicker.web.styles";
 
 /** 2024-01-01 is a Monday, so index 0 lines up with the calendar's Mon-first week. */
@@ -74,6 +75,10 @@ export default function DatePicker({
   openDays,
   unavailableDays,
   unavailableReason,
+  closedDates,
+  openDates,
+  unavailableDates,
+  maxDaysAhead,
   allowPast,
   icon,
   triggerLabel,
@@ -82,6 +87,19 @@ export default function DatePicker({
   onSelect: (date: string) => void;
   /** ISO day numbers that are open (1=Mon..7=Sun). If omitted, all days allowed. */
   openDays?: number[];
+  /**
+   * Specific "YYYY-MM-DD" dates, each overriding its weekday: a closed date is shut like a
+   * closed weekday, an open date (special hours) is pickable on a closed weekday, and an
+   * unavailable date (walk-in only) is open but unpickable, announced with `unavailableReason`.
+   *
+   * @see [DatePickerWeb.test.tsx](../../tests/components/common/DatePickerWeb.test.tsx) — pins
+   * that a listed date wins over its weekday in each direction.
+   */
+  closedDates?: string[];
+  openDates?: string[];
+  unavailableDates?: string[];
+  /** Days past today the window runs to; a month unless the location's horizon says otherwise. */
+  maxDaysAhead?: number;
   /**
    * ISO days the venue is open on but takes no bookings for (walk-in only). Their cells are
    * unpickable like a closed day's, but they are NOT closed: folding them into `openDays`
@@ -117,17 +135,24 @@ export default function DatePicker({
   })();
   const maxDate = (() => {
     const d = new Date(today);
-    d.setDate(d.getDate() + 29);
+    d.setDate(d.getDate() + (maxDaysAhead ?? DEFAULT_DAYS_AHEAD));
     return d;
   })();
   const minDateStr = toDateStr(minDate);
   const maxDateStr = toDateStr(maxDate);
 
-  const isClosedDay = !!(
-    selectedDate &&
-    openDays &&
-    !openDays.includes(isoDayOf(new Date(selectedDate + "T12:00:00")))
-  );
+  /** A date's own say overrides its weekday; a weekday with no `openDays` list is always open. */
+  const isClosedDate = (dateStr: string): boolean => {
+    if (closedDates?.includes(dateStr)) return true;
+    if (openDates?.includes(dateStr)) return false;
+    return !!openDays && !openDays.includes(isoDayOf(new Date(dateStr + "T12:00:00")));
+  };
+  const isUnavailableDate = (dateStr: string): boolean =>
+    !!unavailableDates?.includes(dateStr) ||
+    (!closedDates?.includes(dateStr) &&
+      !!unavailableDays?.includes(isoDayOf(new Date(dateStr + "T12:00:00"))));
+
+  const isClosedDay = !!selectedDate && isClosedDate(selectedDate);
 
   const [open, setOpen] = useState(false);
   // The highlighted day is the calendar's one piece of position state: the visible month is
@@ -146,8 +171,7 @@ export default function DatePicker({
 
   const isUnpickable = (dateStr: string) => {
     if (dateStr < minDateStr || dateStr > maxDateStr) return true;
-    const isoDay = isoDayOf(new Date(dateStr + "T12:00:00"));
-    return (!!openDays && !openDays.includes(isoDay)) || !!unavailableDays?.includes(isoDay);
+    return isClosedDate(dateStr) || isUnavailableDate(dateStr);
   };
 
   const commit = (dateStr: string) => {
@@ -355,8 +379,8 @@ export default function DatePicker({
                       return <View key={col} style={styles.cell} role={GRIDCELL_ROLE} />;
                     const cellDate = new Date(viewYear, viewMonth, dayNum);
                     const cellStr = toDateStr(cellDate);
-                    const closedWeekday = !!openDays && !openDays.includes(isoDayOf(cellDate));
-                    const unbookableWeekday = !!unavailableDays?.includes(isoDayOf(cellDate));
+                    const closedWeekday = isClosedDate(cellStr);
+                    const unbookableWeekday = !closedWeekday && isUnavailableDate(cellStr);
                     const disabled = isUnpickable(cellStr);
                     const isSelected = cellStr === selectedDate;
                     const isFocused = cellStr === focused;

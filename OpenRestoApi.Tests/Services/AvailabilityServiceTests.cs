@@ -1246,4 +1246,93 @@ public class AvailabilityServiceTests
 
         Assert.Equal(["22:00", "22:30", "23:00", "23:30", "00:00", "00:30"], result.Slots.Select(s => s.Time));
     }
+
+
+    // ── Date exceptions (#521) and online booking limits (#522) ───────────────
+
+    private static AvailabilityService SeedAllDayService(AppDbContext db, Action<Restaurant> configure)
+    {
+        var restaurant = new Restaurant { Id = 1, Name = "Test", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC" };
+        configure(restaurant);
+        db.Restaurants.Add(restaurant);
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+        return new AvailabilityService(new BookingRepository(db), new RestaurantRepository(db), new Mock<IHoldService>().Object);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoSlots_OnAClosedDate()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_OnAClosedDate));
+        AvailabilityService svc = SeedAllDayService(db, r => r.DateExceptionsJson = """[{"date":"2026-12-25","type":"closed"}]""");
+
+        Assert.Empty((await svc.GetAvailabilityAsync(1, new DateTime(2026, 12, 25), 2)).Slots);
+        Assert.NotEmpty((await svc.GetAvailabilityAsync(1, new DateTime(2026, 12, 26), 2)).Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoSlots_OnAWalkInOnlyDate()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_OnAWalkInOnlyDate));
+        AvailabilityService svc = SeedAllDayService(db, r => r.DateExceptionsJson = """[{"date":"2026-12-24","type":"walkInOnly"}]""");
+
+        Assert.Empty((await svc.GetAvailabilityAsync(1, new DateTime(2026, 12, 24), 2)).Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_UsesTheSpecialHoursOnTheirDate()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_UsesTheSpecialHoursOnTheirDate));
+        // Closed on Sundays by the week; 2026-12-27 is a Sunday opened for a short service.
+        AvailabilityService svc = SeedAllDayService(db, r =>
+        {
+            r.OpenDays = "1,2,3,4,5,6";
+            r.DateExceptionsJson = """[{"date":"2026-12-27","type":"specialHours","open":"12:00","close":"14:00","lastBooking":"13:00"}]""";
+        });
+
+        AvailabilityResponseDto result = await svc.GetAvailabilityAsync(1, new DateTime(2026, 12, 27), 2);
+
+        Assert.Equal(["12:00", "12:30", "13:00"], result.Slots.Select(s => s.Time));
+        Assert.Empty((await svc.GetAvailabilityAsync(1, new DateTime(2026, 12, 20), 2)).Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoSlots_PastTheBookingHorizon()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_PastTheBookingHorizon));
+        AvailabilityService svc = SeedAllDayService(db, r => r.MaxBookingDaysAhead = 7);
+
+        Assert.NotEmpty((await svc.GetAvailabilityAsync(1, DateTime.UtcNow.Date.AddDays(7), 2)).Slots);
+        Assert.Empty((await svc.GetAvailabilityAsync(1, DateTime.UtcNow.Date.AddDays(8), 2)).Slots);
+    }
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ClosesTheSlotsInsideTheMinimumNotice()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ClosesTheSlotsInsideTheMinimumNotice));
+        AvailabilityService svc = SeedAllDayService(db, r => r.MinBookingNoticeMinutes = 120);
+        DateTime now = DateTime.UtcNow;
+        DateTime tooSoon = FloorToHalfHour(now.AddMinutes(60));
+        DateTime inTime = FloorToHalfHour(now.AddMinutes(180));
+
+        TimeSlotDto closed = (await svc.GetAvailabilityAsync(1, tooSoon.Date, 2)).Slots.Single(s => s.Time == tooSoon.ToString("HH:mm"));
+        TimeSlotDto open = (await svc.GetAvailabilityAsync(1, inTime.Date, 2)).Slots.Single(s => s.Time == inTime.ToString("HH:mm"));
+
+        Assert.False(closed.IsAvailable);
+        Assert.True(open.IsAvailable);
+    }
+
+    private static DateTime FloorToHalfHour(DateTime utc)
+        => new(utc.Year, utc.Month, utc.Day, utc.Hour, utc.Minute < 30 ? 0 : 30, 0, DateTimeKind.Utc);
+
+    [Fact]
+    public async Task GetAvailabilityAsync_ReturnsNoSlots_ForAPartyOverTheOnlineMaximum()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(GetAvailabilityAsync_ReturnsNoSlots_ForAPartyOverTheOnlineMaximum));
+        AvailabilityService svc = SeedAllDayService(db, r => r.MaxOnlinePartySize = 3);
+
+        Assert.NotEmpty((await svc.GetAvailabilityAsync(1, new DateTime(2026, 12, 20), 3)).Slots);
+        Assert.Empty((await svc.GetAvailabilityAsync(1, new DateTime(2026, 12, 20), 4)).Slots);
+    }
 }

@@ -344,7 +344,7 @@ public class HoldPolicyServiceTests
         using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsNotFound_WhenRestaurantMissing));
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAnyTableAsync(999, DateTime.UtcNow.AddDays(1));
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(999, DateTime.UtcNow.AddDays(1), seats: 2);
 
         Assert.Equal(HoldPolicyStatus.NotFound, result.Status);
     }
@@ -356,7 +356,7 @@ public class HoldPolicyServiceTests
         SeedRestaurant(db);
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddHours(-1));
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddHours(-1), seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("past", result.FailureMessage);
@@ -374,7 +374,7 @@ public class HoldPolicyServiceTests
         db.SaveChanges();
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddHours(2));
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddHours(2), seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("paused", result.FailureMessage);
@@ -392,7 +392,7 @@ public class HoldPolicyServiceTests
         db.SaveChanges();
         HoldPolicyService svc = NewService(db);
 
-        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(2));
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(2), seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
     }
@@ -419,7 +419,7 @@ public class HoldPolicyServiceTests
             .ReturnsAsync(true); // would block if called
         var svc = new HoldPolicyService(new RestaurantRepository(db), mockBookingRepo.Object);
 
-        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, date);
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, date, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
         Assert.NotNull(result.Restaurant);
@@ -441,7 +441,7 @@ public class HoldPolicyServiceTests
 
         // 10:00 UTC is before opening — should be rejected.
         var closedTime = DateTime.UtcNow.Date.AddDays(1).AddHours(10);
-        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, closedTime);
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, closedTime, seats: 2);
 
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Contains("closed", result.FailureMessage);
@@ -484,5 +484,99 @@ public class HoldPolicyServiceTests
         Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
         Assert.Equal(ErrorCodes.RestaurantPastLastBooking, result.Code);
         Assert.Equal("The last booking for that day is at 20:15. Please choose an earlier time.", result.FailureMessage);
+    }
+
+
+    // ── Date exceptions (#521) and online booking limits (#522) ───────────────
+
+    private static HoldPolicyService SeedAllDay(AppDbContext db, Action<Restaurant> configure)
+    {
+        var restaurant = new Restaurant { Id = 1, Name = "T", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC" };
+        configure(restaurant);
+        db.Restaurants.Add(restaurant);
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.SaveChanges();
+        return NewService(db);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsRejected_PastTheBookingHorizon()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsRejected_PastTheBookingHorizon));
+        HoldPolicyService svc = SeedAllDay(db, r => r.MaxBookingDaysAhead = 7);
+
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.Date.AddDays(8).AddHours(12), seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
+        Assert.Equal(ErrorCodes.BookingBeyondHorizon, result.Code);
+        Assert.Equal(7, result.Args!["days"]);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsEligible_OnTheLastDayOfTheBookingHorizon()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsEligible_OnTheLastDayOfTheBookingHorizon));
+        HoldPolicyService svc = SeedAllDay(db, r => r.MaxBookingDaysAhead = 7);
+
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.Date.AddDays(7).AddHours(12), seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsRejected_InsideTheMinimumNotice()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsRejected_InsideTheMinimumNotice));
+        HoldPolicyService svc = SeedAllDay(db, r => r.MinBookingNoticeMinutes = 120);
+
+        HoldPolicyResult tooSoon = await svc.ValidateAsync(1, 1, DateTime.UtcNow.AddMinutes(30), seats: 2);
+        HoldPolicyResult inTime = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddMinutes(180), seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, tooSoon.Status);
+        Assert.Equal(ErrorCodes.BookingTooSoon, tooSoon.Code);
+        Assert.Equal(HoldPolicyStatus.Eligible, inTime.Status);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsRejected_ForAPartyOverTheOnlineMaximum()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsRejected_ForAPartyOverTheOnlineMaximum));
+        HoldPolicyService svc = SeedAllDay(db, r => r.MaxOnlinePartySize = 3);
+
+        HoldPolicyResult over = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(1), seats: 4);
+        HoldPolicyResult atMax = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(1), seats: 3);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, over.Status);
+        Assert.Equal(ErrorCodes.BookingPartyAboveOnlineMax, over.Code);
+        Assert.Equal(HoldPolicyStatus.Eligible, atMax.Status);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsRejected_OnAClosedDate()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsRejected_OnAClosedDate));
+        DateTime sitting = DateTime.UtcNow.Date.AddDays(2).AddHours(12);
+        HoldPolicyService svc = SeedAllDay(db, r => r.DateExceptionsJson = $$"""[{"date":"{{sitting:yyyy-MM-dd}}","type":"closed"}]""");
+
+        HoldPolicyResult closed = await svc.ValidateAsync(1, 1, sitting, seats: 2);
+        HoldPolicyResult dayAfter = await svc.ValidateAsync(1, 1, sitting.AddDays(1), seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, closed.Status);
+        Assert.Equal(ErrorCodes.RestaurantClosedAtTime, closed.Code);
+        Assert.Equal(HoldPolicyStatus.Eligible, dayAfter.Status);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReturnsRejected_OnAWalkInOnlyDate()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsRejected_OnAWalkInOnlyDate));
+        DateTime sitting = DateTime.UtcNow.Date.AddDays(2).AddHours(12);
+        HoldPolicyService svc = SeedAllDay(db, r => r.DateExceptionsJson = $$"""[{"date":"{{sitting:yyyy-MM-dd}}","type":"walkInOnly"}]""");
+
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, sitting, seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
+        Assert.Equal(ErrorCodes.BookingWalkInOnlyToday, result.Code);
     }
 }

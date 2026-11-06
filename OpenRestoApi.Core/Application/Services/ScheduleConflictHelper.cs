@@ -26,6 +26,12 @@ public enum ScheduleConflictReason
 
     /// <summary>The day is open, but the booking starts outside that day's service window.</summary>
     OutsideHours,
+
+    /// <summary>A date exception has since closed the booking's date.</summary>
+    ClosedDate,
+
+    /// <summary>A date exception gave the booking's date special hours, and the booking starts outside them.</summary>
+    OutsideSpecialHours,
 }
 
 /// <summary>
@@ -52,16 +58,26 @@ public static class ScheduleConflictHelper
             .Where(x => x.Reason != ScheduleConflictReason.None)
             .ToList();
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <seealso>ScheduleConflictHelperTests.Evaluate_FlagsSittingOnAClosedDate</seealso>
+    /// <seealso>ScheduleConflictHelperTests.Evaluate_FlagsSittingOutsideSpecialHours</seealso>
+    /// <seealso>ScheduleConflictHelperTests.Evaluate_KeepsSittingInsideSpecialHours</seealso>
     public static ScheduleConflictReason Evaluate(Restaurant restaurant, DateTime bookingUtc)
     {
-        if (!ServiceWindowHelper.IsServingAt(restaurant, bookingUtc))
+        if (ServiceWindowHelper.IsServingAt(restaurant, bookingUtc))
         {
-            DateTime local = TimeZoneHelper.ConvertUtcToLocal(bookingUtc, restaurant.Timezone);
-            return ServiceWindowHelper.IsOpenOn(restaurant, IsoDay.Of(local))
-                ? ScheduleConflictReason.OutsideHours
-                : ScheduleConflictReason.ClosedDay;
+            return ScheduleConflictReason.None;
         }
 
-        return ScheduleConflictReason.None;
+        DateTime local = TimeZoneHelper.ConvertUtcToLocal(bookingUtc, restaurant.Timezone);
+        DaySchedule schedule = ServiceWindowHelper.ScheduleFor(restaurant, local.Date);
+        return schedule.Exception switch
+        {
+            DateExceptionType.Closed => ScheduleConflictReason.ClosedDate,
+            DateExceptionType.SpecialHours => ScheduleConflictReason.OutsideSpecialHours,
+            _ => schedule.IsOpen ? ScheduleConflictReason.OutsideHours : ScheduleConflictReason.ClosedDay,
+        };
     }
 }

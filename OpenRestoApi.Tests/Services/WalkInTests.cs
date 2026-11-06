@@ -99,8 +99,36 @@ public class WalkInTests
     public void IsWalkInOnlyOn_MatchesDay()
     {
         var r = new Restaurant { Name = "T", WalkInDays = "6,7" };
-        Assert.True(WalkInPolicy.IsWalkInOnlyOn(r, 6));
-        Assert.False(WalkInPolicy.IsWalkInOnlyOn(r, 3));
+        Assert.True(WalkInPolicy.IsWalkInOnlyOnWeekday(r, 6));
+        Assert.False(WalkInPolicy.IsWalkInOnlyOnWeekday(r, 3));
+    }
+
+    [Fact]
+    public void IsWalkInOnlyOn_TrueOnAWalkInOnlyDate()
+    {
+        // 2026-10-07 is a Wednesday, a day that otherwise takes bookings.
+        var r = new Restaurant { Name = "T", DateExceptionsJson = """[{"date":"2026-10-07","type":"walkInOnly"}]""" };
+
+        Assert.True(WalkInPolicy.IsWalkInOnlyOn(r, new DateTime(2026, 10, 7)));
+        Assert.True(WalkInPolicy.IsWalkInOnlyAt(r, new DateTime(2026, 10, 7, 19, 0, 0, DateTimeKind.Utc)));
+    }
+
+    [Fact]
+    public void IsWalkInOnlyOn_FalseOnTheDayAfterAWalkInOnlyDate()
+    {
+        var r = new Restaurant { Name = "T", DateExceptionsJson = """[{"date":"2026-10-07","type":"walkInOnly"}]""" };
+
+        Assert.False(WalkInPolicy.IsWalkInOnlyOn(r, new DateTime(2026, 10, 8)));
+    }
+
+    [Fact]
+    public void IsWalkInOnlyOn_FalseOnAClosedDate_EvenOnAWalkInWeekday()
+    {
+        // A closed date is closed, not walk-in only: the waitlist must not open on it.
+        var r = new Restaurant { Name = "T", WalkInDays = "3", DateExceptionsJson = """[{"date":"2026-10-07","type":"closed"}]""" };
+
+        Assert.False(WalkInPolicy.IsWalkInOnlyOn(r, new DateTime(2026, 10, 7)));
+        Assert.True(WalkInPolicy.IsWalkInOnlyOn(r, new DateTime(2026, 10, 14)));
     }
 
     // ── RestaurantManagementService ───────────────────────────────────────────

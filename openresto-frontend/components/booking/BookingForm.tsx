@@ -17,9 +17,19 @@ import {
   bookingTimePickerBounds,
   getHoursForDate,
   getLastBookingForDate,
+  isOpenOnDate,
 } from "@/utils/openingHours";
 import { getRestaurantDate } from "@/utils/restaurantTime";
 import { isWalkInOnlyOnDay, isWalkInOnlyOnDate, walkInDaysLabel } from "@/utils/walkIn";
+import { dateExceptionDates } from "@/utils/dateExceptions";
+import {
+  clampPartySize,
+  isPartyAboveOnlineMax,
+  isPartyBelowOnlineMin,
+  minOnlinePartySize,
+  partySizeOptions,
+  pickerDaysAhead,
+} from "@/utils/bookingLimits";
 import WalkInNotice from "./WalkInNotice";
 import LargePartyNotice from "./LargePartyNotice";
 import LargePartyNoticeModal from "./LargePartyNoticeModal";
@@ -105,7 +115,9 @@ export default function BookingForm({
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
-  const [seatsState, setSeats] = useState(initialSeats ?? 2);
+  // A default the location would refuse online is moved inside its range, so the form never
+  // opens on a party size the server would turn away.
+  const [seatsState, setSeats] = useState(() => clampPartySize(restaurant, initialSeats ?? 2));
   const seats = controlledSeats ?? seatsState;
   const changeSeats = (value: number) => (onSeatsChange ? onSeatsChange(value) : setSeats(value));
   const [submitting, setSubmitting] = useState(false);
@@ -120,16 +132,24 @@ export default function BookingForm({
   const [time, setTime] = useState<string>(() => initialTime ?? suggestTime(restaurant, timezone));
 
   const openDaysList = restaurant.openDays?.split(",").map(Number) ?? [1, 2, 3, 4, 5, 6, 7];
-  const selectedJsDay = date ? new Date(date + "T12:00:00").getDay() : -1;
-  const selectedIsoDay = selectedJsDay === 0 ? 7 : selectedJsDay;
-  const isClosedDay = date ? !openDaysList.includes(selectedIsoDay) : false;
+  // Judged as a date, not a weekday: a closed date exception shuts an open weekday and a
+  // special-hours date opens a closed one, the same way the server reads them.
+  const isClosedDay = date ? !isOpenOnDate(restaurant, date) : false;
   const isWalkInDay = date ? isWalkInOnlyOnDate(restaurant, date) : false;
+  const closedDates = dateExceptionDates(restaurant, "closed");
+  const specialHoursDates = dateExceptionDates(restaurant, "specialHours");
+  const walkInDates = dateExceptionDates(restaurant, "walkInOnly");
   // Walk-in days stay in the date picker, greyed out and labelled: the location is open on
   // them, so "you can't book, but you can walk in" is the useful thing to say. Dropping them
   // outright also left the picker with nothing to show for a walk-in-only location, and left
   // the trigger unable to name the day the diner was already on.
   const walkInIsoDays = openDaysList.filter((day) => isWalkInOnlyOnDay(restaurant, day));
   const bookingBlocked = isClosedDay || isWalkInDay;
+  // The online party size limits (#522): over the cap the guest is pointed at the phone, like
+  // a party no table seats; under the floor they are told to come in.
+  const partyAboveOnlineMax = isPartyAboveOnlineMax(restaurant, seats);
+  const partyBelowOnlineMin = isPartyBelowOnlineMin(restaurant, seats);
+  const partyOutsideOnlineRange = partyAboveOnlineMax || partyBelowOnlineMin;
 
   const [restaurantCurrentTime, setRestaurantCurrentTime] = useState(() =>
     formatCurrentTimeInTimezone(timezone)
@@ -191,7 +211,7 @@ export default function BookingForm({
     autoAssign: isAutoAssign,
     seats,
     tableGroupId,
-    enabled: !bookingBlocked,
+    enabled: !bookingBlocked && !partyOutsideOnlineRange,
   });
 
   /**
@@ -206,19 +226,31 @@ export default function BookingForm({
       ? (heldTable.name ?? t("booking.seating.tableFallbackName", { id: heldTable.id }))
       : null;
 
-  // When the party size exceeds the largest table, surface the contact-restaurant
-  // notice so the user knows why booking is blocked. Re-opens on each over-capacity
-  // change (e.g. bumping from one too-big value to another).
+  // When the party size exceeds the largest table or the online cap, surface the
+  // contact-restaurant notice so the user knows why booking is blocked. Re-opens on each
+  // over-capacity change (e.g. bumping from one too-big value to another).
+  const partyNeedsContact = partyTooLarge || partyAboveOnlineMax;
   useEffect(() => {
-    if (partyTooLarge) setLargePartyNoticeOpen(true);
+    if (partyNeedsContact) setLargePartyNoticeOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partyTooLarge, maxTableCapacity]);
+  }, [partyNeedsContact, maxTableCapacity]);
 
-  const seatOptions = [...Array(10).keys()].map((i) => ({
-    label: isDrawer
-      ? t("booking.form.partySize", { count: i + 1 })
-      : t("booking.form.seatsCount", { count: i + 1 }),
-    value: i + 1,
+  /**
+   * The online maximum is the tighter of the two when both apply: a location whose tables seat
+   * twelve but takes eight online says eight, and a location with no online cap says its tables.
+   */
+  const largePartyReason = partyAboveOnlineMax ? "onlineMax" : "capacity";
+  const largePartyMax = partyAboveOnlineMax ? restaurant.maxOnlinePartySize! : maxTableCapacity;
+
+  // The list runs the location's online range, with one entry past the cap so a bigger party
+  // can say so and be pointed at the phone rather than finding its number missing.
+  const seatOptions = partySizeOptions(restaurant).map((size) => ({
+    label: isPartyAboveOnlineMax(restaurant, size)
+      ? t("booking.form.partySizeMore", { count: size })
+      : isDrawer
+        ? t("booking.form.partySize", { count: size })
+        : t("booking.form.seatsCount", { count: size }),
+    value: size,
   }));
 
   const selectedDate = date || getNowInTimezone(timezone).dateStr;
@@ -229,6 +261,7 @@ export default function BookingForm({
 
   const isValid =
     !partyTooLarge &&
+    !partyOutsideOnlineRange &&
     (isAutoAssign || !!tableId || !!tableGroupId) &&
     !!date &&
     !!time &&
@@ -365,6 +398,10 @@ export default function BookingForm({
       date={date}
       openDays={openDaysList}
       walkInDays={walkInIsoDays}
+      closedDates={closedDates}
+      openDates={specialHoursDates}
+      walkInDates={walkInDates}
+      maxDaysAhead={pickerDaysAhead(restaurant)}
       onChange={changeDate}
     />
   );
@@ -441,15 +478,17 @@ export default function BookingForm({
   const largePartyModal = (
     <LargePartyNoticeModal
       visible={largePartyNoticeOpen}
-      maxCapacity={maxTableCapacity}
+      maxCapacity={largePartyMax}
+      reason={largePartyReason}
       restaurant={restaurant}
       onClose={() => setLargePartyNoticeOpen(false)}
     />
   );
 
-  const largePartyBanner = partyTooLarge && (
+  const largePartyBanner = partyNeedsContact && (
     <LargePartyNotice
-      maxCapacity={maxTableCapacity}
+      maxCapacity={largePartyMax}
+      reason={largePartyReason}
       onContact={() => setLargePartyNoticeOpen(true)}
     />
   );
@@ -457,6 +496,13 @@ export default function BookingForm({
   const timesContent = isClosedDay ? (
     <ThemedText style={[styles.closedDayNotice, { color: colors.error }]}>
       {t("booking.form.closedDayNotice")}
+    </ThemedText>
+  ) : partyBelowOnlineMin ? (
+    <ThemedText
+      style={[styles.closedDayNotice, { color: colors.muted }]}
+      testID="party-below-min-notice"
+    >
+      {t("booking.form.partyBelowMinNotice", { min: minOnlinePartySize(restaurant) })}
     </ThemedText>
   ) : isWalkInDay ? (
     <WalkInNotice

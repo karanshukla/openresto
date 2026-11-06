@@ -31,6 +31,10 @@ function reasonLabel(reason: ScheduleConflictReason, t: TFunction): string {
       return t("admin.locations.scheduleConflicts.reason.closedDay");
     case "outsideHours":
       return t("admin.locations.scheduleConflicts.reason.outsideHours");
+    case "closedDate":
+      return t("admin.locations.scheduleConflicts.reason.closedDate");
+    case "outsideSpecialHours":
+      return t("admin.locations.scheduleConflicts.reason.outsideSpecialHours");
   }
 }
 

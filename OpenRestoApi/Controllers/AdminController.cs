@@ -134,8 +134,10 @@ public class AdminController(AdminService adminService) : ControllerBase
     [RequiresScope(ApiKeyScopes.Locations, ApiKeyScopes.Write)]
     public async Task<IActionResult> PauseBookings(int id, [FromBody] PauseRestaurantRequest req)
     {
-        bool success = await _adminService.PauseRestaurantBookingsAsync(id, req.Minutes);
-        return success ? Ok(new MessageResponse { Message = "Bookings paused successfully." }) : NotFound();
+        DateTime? pausedUntil = await _adminService.PauseRestaurantBookingsAsync(id, req);
+        return pausedUntil is DateTime until
+            ? Ok(new PauseResponse { Message = "Bookings paused successfully.", BookingsPausedUntil = until })
+            : NotFound();
     }
 
     [HttpPost("restaurants/{id}/unpause")]

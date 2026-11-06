@@ -130,8 +130,8 @@ public class ServiceWindowHelperTests
     {
         Restaurant r = NewRestaurant(openDays: "");
 
-        Assert.True(ServiceWindowHelper.IsOpenOn(r, 1));
-        Assert.True(ServiceWindowHelper.IsOpenOn(r, 7));
+        Assert.True(ServiceWindowHelper.IsOpenOnWeekday(r, 1));
+        Assert.True(ServiceWindowHelper.IsOpenOnWeekday(r, 7));
     }
 
     [Fact]
@@ -139,8 +139,8 @@ public class ServiceWindowHelperTests
     {
         Restaurant r = NewRestaurant(openDays: Saturday);
 
-        Assert.True(ServiceWindowHelper.IsOpenOn(r, 6));
-        Assert.False(ServiceWindowHelper.IsOpenOn(r, 7));
+        Assert.True(ServiceWindowHelper.IsOpenOnWeekday(r, 6));
+        Assert.False(ServiceWindowHelper.IsOpenOnWeekday(r, 7));
     }
 
     // ── LocalWindowFor ────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ public class ServiceWindowHelperTests
         Restaurant r = NewRestaurant(openTime: "11:00", closeTime: "23:00");
         var localDate = new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Unspecified);
 
-        (DateTime start, DateTime end) = ServiceWindowHelper.LocalWindowFor(r, localDate, 6);
+        (DateTime start, DateTime end) = ServiceWindowHelper.LocalWindowFor(r, localDate);
 
         Assert.Equal(new DateTime(2026, 1, 10, 11, 0, 0), start);
         Assert.Equal(new DateTime(2026, 1, 10, 23, 0, 0), end);
@@ -163,7 +163,7 @@ public class ServiceWindowHelperTests
         Restaurant r = NewRestaurant(openTime: "18:00", closeTime: "02:00");
         var localDate = new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Unspecified);
 
-        (DateTime start, DateTime end) = ServiceWindowHelper.LocalWindowFor(r, localDate, 6);
+        (DateTime start, DateTime end) = ServiceWindowHelper.LocalWindowFor(r, localDate);
 
         Assert.Equal(new DateTime(2026, 1, 10, 18, 0, 0), start);
         Assert.Equal(new DateTime(2026, 1, 11, 2, 0, 0), end);
@@ -175,7 +175,7 @@ public class ServiceWindowHelperTests
         Restaurant r = NewRestaurant(openTime: "00:00", closeTime: "00:00");
         var localDate = new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Unspecified);
 
-        (DateTime start, DateTime end) = ServiceWindowHelper.LocalWindowFor(r, localDate, 6);
+        (DateTime start, DateTime end) = ServiceWindowHelper.LocalWindowFor(r, localDate);
 
         Assert.Equal(TimeSpan.FromDays(1), end - start);
     }
@@ -245,7 +245,7 @@ public class ServiceWindowHelperTests
         r.LastBookingTime = "00:30";
         var saturday = new DateTime(2026, 1, 10);
 
-        Assert.Equal(new DateTime(2026, 1, 11, 0, 30, 0), ServiceWindowHelper.LastBookingCutoffFor(r, saturday, 6));
+        Assert.Equal(new DateTime(2026, 1, 11, 0, 30, 0), ServiceWindowHelper.LastBookingCutoffFor(r, saturday));
     }
 
     [Fact]
@@ -256,7 +256,7 @@ public class ServiceWindowHelperTests
         Restaurant r = NewRestaurant(openTime: "09:00", closeTime: "22:00");
         r.LastBookingTime = "23:00";
 
-        Assert.Null(ServiceWindowHelper.LastBookingCutoffFor(r, new DateTime(2026, 1, 10), 6));
+        Assert.Null(ServiceWindowHelper.LastBookingCutoffFor(r, new DateTime(2026, 1, 10)));
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class ServiceWindowHelperTests
     {
         Restaurant r = NewRestaurant();
 
-        Assert.Null(ServiceWindowHelper.LastBookingCutoffFor(r, new DateTime(2026, 1, 10), 6));
+        Assert.Null(ServiceWindowHelper.LastBookingCutoffFor(r, new DateTime(2026, 1, 10)));
     }
 
     [Theory]
@@ -279,5 +279,144 @@ public class ServiceWindowHelperTests
     {
         Assert.Equal(expected, ServiceWindowHelper.CoversTimeOfDay(
             TimeSpan.Parse(open), TimeSpan.Parse(close), TimeSpan.Parse(time)));
+    }
+
+
+    // ── Date exceptions ───────────────────────────────────────────────────────
+
+    private const string ClosedSaturday = """[{"date":"2026-01-10","type":"closed"}]""";
+    private const string SpecialSunday = """[{"date":"2026-01-11","type":"specialHours","open":"12:00","close":"16:00","lastBooking":"15:00"}]""";
+    private const string WalkInSaturday = """[{"date":"2026-01-10","type":"walkInOnly"}]""";
+
+    [Fact]
+    public void ScheduleFor_ClosesAnOpenWeekdayOnAClosedDate()
+    {
+        Restaurant r = NewRestaurant(openDays: Saturday);
+        r.DateExceptionsJson = ClosedSaturday;
+
+        DaySchedule schedule = ServiceWindowHelper.ScheduleFor(r, new DateTime(2026, 1, 10));
+
+        Assert.False(schedule.IsOpen);
+        Assert.Equal(DateExceptionType.Closed, schedule.Exception);
+        Assert.True(ServiceWindowHelper.IsOpenOn(r, new DateTime(2026, 1, 17)));
+    }
+
+    [Fact]
+    public void ScheduleFor_OpensAClosedWeekdayWithSpecialHours()
+    {
+        // Sunday is not an open day, but the special-hours date opens it on its own hours.
+        Restaurant r = NewRestaurant(openDays: Saturday);
+        r.DateExceptionsJson = SpecialSunday;
+
+        DaySchedule schedule = ServiceWindowHelper.ScheduleFor(r, new DateTime(2026, 1, 11));
+
+        Assert.True(schedule.IsOpen);
+        Assert.Equal(new TimeSpan(12, 0, 0), schedule.Open);
+        Assert.Equal(new TimeSpan(16, 0, 0), schedule.Close);
+        Assert.Equal("15:00", schedule.LastBooking);
+        Assert.False(ServiceWindowHelper.IsOpenOn(r, new DateTime(2026, 1, 18)));
+    }
+
+    [Fact]
+    public void ScheduleFor_KeepsTheWeeklyHoursOnAWalkInOnlyDate()
+    {
+        Restaurant r = NewRestaurant(openTime: "11:00", closeTime: "23:00", openDays: Saturday);
+        r.DateExceptionsJson = WalkInSaturday;
+
+        DaySchedule schedule = ServiceWindowHelper.ScheduleFor(r, new DateTime(2026, 1, 10));
+
+        Assert.True(schedule.IsOpen);
+        Assert.Equal(new TimeSpan(11, 0, 0), schedule.Open);
+        Assert.Equal(DateExceptionType.WalkInOnly, schedule.Exception);
+    }
+
+    [Fact]
+    public void ScheduleFor_DropsTheWeeklyLastBookingOnASpecialHoursDate()
+    {
+        // The weekly 21:00 cutoff was set for 09:00–22:00; it has no meaning inside 12:00–16:00.
+        Restaurant r = NewRestaurant();
+        r.LastBookingTime = "21:00";
+        r.DateExceptionsJson = """[{"date":"2026-01-11","type":"specialHours","open":"12:00","close":"16:00"}]""";
+
+        Assert.Null(ServiceWindowHelper.ScheduleFor(r, new DateTime(2026, 1, 11)).LastBooking);
+        Assert.Equal("21:00", ServiceWindowHelper.ScheduleFor(r, new DateTime(2026, 1, 12)).LastBooking);
+    }
+
+    [Fact]
+    public void IsServingAt_RejectsTheOvernightTailOfAClosedDate()
+    {
+        Restaurant r = NewRestaurant(openTime: "18:00", closeTime: "02:00", openDays: Saturday);
+        r.DateExceptionsJson = ClosedSaturday;
+
+        Assert.False(ServiceWindowHelper.IsServingAt(r, SaturdayAt(19)));
+        Assert.False(ServiceWindowHelper.IsServingAt(r, SundayAt(0, 30)));
+    }
+
+    [Fact]
+    public void IsAcceptingBookingsAt_UsesTheSpecialHoursCutoff()
+    {
+        Restaurant r = NewRestaurant(openDays: Saturday);
+        r.DateExceptionsJson = SpecialSunday;
+
+        Assert.True(ServiceWindowHelper.IsAcceptingBookingsAt(r, SundayAt(15)));
+        Assert.False(ServiceWindowHelper.IsAcceptingBookingsAt(r, SundayAt(15, 30)));
+    }
+
+    // ── End of service today ──────────────────────────────────────────────────
+
+    [Fact]
+    public void EndOfServiceToday_IsTodaysClose_BetweenOpeningAndClose()
+    {
+        Restaurant r = NewRestaurant(openTime: "11:00", closeTime: "23:00");
+
+        Assert.Equal(SaturdayAt(23), ServiceWindowHelper.EndOfServiceToday(r, SaturdayAt(14)));
+    }
+
+    [Fact]
+    public void EndOfServiceToday_IsTodaysClose_BeforeTodaysService()
+    {
+        Restaurant r = NewRestaurant(openTime: "11:00", closeTime: "23:00");
+
+        Assert.Equal(SaturdayAt(23), ServiceWindowHelper.EndOfServiceToday(r, SaturdayAt(8)));
+    }
+
+    [Fact]
+    public void EndOfServiceToday_IsNull_AfterTodaysService()
+    {
+        Restaurant r = NewRestaurant(openTime: "11:00", closeTime: "23:00");
+
+        Assert.Null(ServiceWindowHelper.EndOfServiceToday(r, SaturdayAt(23)));
+        Assert.Null(ServiceWindowHelper.EndOfServiceToday(r, SaturdayAt(23, 30)));
+    }
+
+    [Fact]
+    public void EndOfServiceToday_IsNull_OnAClosedDate()
+    {
+        Restaurant r = NewRestaurant(openTime: "11:00", closeTime: "23:00");
+        r.DateExceptionsJson = ClosedSaturday;
+
+        Assert.Null(ServiceWindowHelper.EndOfServiceToday(r, SaturdayAt(14)));
+    }
+
+    [Fact]
+    public void EndOfServiceToday_FollowsYesterdaysServicePastMidnight()
+    {
+        // Saturday runs 18:00–02:00. At 00:30 on Sunday that service is still the current one,
+        // so the pause reaches its 02:00 close even though Sunday itself never opens.
+        Restaurant r = NewRestaurant(openTime: "18:00", closeTime: "02:00", openDays: Saturday);
+
+        Assert.Equal(SundayAt(2), ServiceWindowHelper.EndOfServiceToday(r, SundayAt(0, 30)));
+        Assert.Null(ServiceWindowHelper.EndOfServiceToday(r, SundayAt(3)));
+    }
+
+    [Fact]
+    public void EndOfServiceToday_ResolvesTodayInTheRestaurantsOwnClock()
+    {
+        // 23:00 UTC on Saturday is 08:00 Sunday in Tokyo: Sunday's service is the one ahead.
+        Restaurant r = NewRestaurant(openTime: "11:00", closeTime: "23:00", timezone: "Asia/Tokyo");
+
+        DateTime? end = ServiceWindowHelper.EndOfServiceToday(r, SaturdayAt(23));
+
+        Assert.Equal(new DateTime(2026, 1, 11, 14, 0, 0, DateTimeKind.Utc), end);
     }
 }

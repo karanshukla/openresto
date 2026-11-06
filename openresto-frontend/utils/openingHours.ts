@@ -1,4 +1,6 @@
-import { DayHoursDto } from "@/api/restaurants";
+import { DateExceptionDto, DayHoursDto } from "@/api/restaurants";
+import { getDateException } from "@/utils/dateExceptions";
+import { parseDayOfWeek } from "@/utils/restaurantTime";
 
 /**
  * Shared helpers for per-day opening hours. The API returns `openHours` as a
@@ -13,6 +15,7 @@ export interface HoursSource {
   openHours?: DayHoursDto[] | null;
   openDays?: string | null;
   lastBookingTime?: string | null;
+  dateExceptions?: DateExceptionDto[] | null;
 }
 
 const DEFAULT_OPEN = "09:00";
@@ -42,7 +45,17 @@ export function getLastBookingForDay(restaurant: HoursSource, isoDay: number): s
   return entry?.lastBooking || restaurant.lastBookingTime || null;
 }
 
+/**
+ * The last booking time on a calendar date: a special-hours date carries only its own (null
+ * meaning up to its close, since the weekly value was set for different hours); every other
+ * date follows its weekday. Mirrors `ServiceWindowHelper.ScheduleFor` on the server.
+ *
+ * @see [openingHours.test.ts](../tests/utils/openingHours.test.ts) — pins that a special-hours
+ * date without a cutoff drops the weekly one.
+ */
 export function getLastBookingForDate(restaurant: HoursSource, date: string): string | null {
+  const exception = getDateException(restaurant, date);
+  if (exception?.type === "specialHours") return exception.lastBooking || null;
   return getLastBookingForDay(restaurant, getIsoDayFromDateString(date));
 }
 
@@ -121,11 +134,54 @@ export function getIsoDayFromDateString(date: string): number {
   return jsDay === 0 ? 7 : jsDay;
 }
 
+/**
+ * The hours on a calendar date: a special-hours date's own, otherwise its weekday's.
+ *
+ * @see [openingHours.test.ts](../tests/utils/openingHours.test.ts) — pins that special hours
+ * replace the weekday's and that the next day falls back to the week.
+ */
 export function getHoursForDate(
   restaurant: HoursSource,
   date: string
 ): { open: string; close: string } {
+  const exception = getDateException(restaurant, date);
+  if (exception?.type === "specialHours" && exception.open && exception.close) {
+    return { open: exception.open, close: exception.close };
+  }
   return getHoursForDay(restaurant, getIsoDayFromDateString(date));
+}
+
+/**
+ * Whether the location runs a service on a calendar date: a closed date is shut whatever the
+ * week says, a special-hours date is open whatever the week says, and any other date follows
+ * the weekly open days. The guest surface asks this instead of `openDays.includes(isoDay)`
+ * wherever a specific date is in hand, so a bank holiday reads as closed before the server has
+ * to say so.
+ *
+ * `openDays` is taken from the caller when it has already resolved the week, because the two
+ * parsers in this codebase disagree on the empty string (see {@link getNextOpening}); left out,
+ * the week is read the way the server reads it: day names and numbers alike, and an empty list
+ * meaning every day.
+ *
+ * @see [openingHours.test.ts](../tests/utils/openingHours.test.ts) — pins a closed date on an
+ * open weekday and special hours on a closed weekday.
+ */
+export function isOpenOnDate(restaurant: HoursSource, date: string, openDays?: number[]): boolean {
+  const exception = getDateException(restaurant, date);
+  if (exception?.type === "closed") return false;
+  if (exception?.type === "specialHours") return true;
+  const isoDay = getIsoDayFromDateString(date);
+  if (openDays) return openDays.includes(isoDay);
+  const week = weeklyOpenDays(restaurant.openDays);
+  return week.length === 0 || week.includes(isoDay);
+}
+
+/** The weekly open days as the server reads them: names or numbers, anything else dropped. */
+function weeklyOpenDays(openDays?: string | null): number[] {
+  return (openDays ?? "")
+    .split(",")
+    .map((d) => parseDayOfWeek(d.trim()))
+    .filter((d) => d > 0);
 }
 
 export function parseOpenDays(openDays?: string | null): number[] {

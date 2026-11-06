@@ -285,3 +285,52 @@ describe("getNextOpening", () => {
     expect(getNextOpening(hours, 1, [3])).toEqual({ isoDay: 3, open: "09:00" });
   });
 });
+
+describe("date exceptions (#521)", () => {
+  const { isOpenOnDate } = require("@/utils/openingHours");
+  // 2026-12-25 is a Friday; 2026-12-27 is a Sunday.
+  const r = {
+    openTime: "09:00",
+    closeTime: "22:00",
+    openDays: "1,2,3,4,5",
+    lastBookingTime: "21:00",
+    dateExceptions: [
+      { date: "2026-12-25", type: "closed" as const },
+      { date: "2026-12-27", type: "specialHours" as const, open: "12:00", close: "16:00" },
+      {
+        date: "2026-12-31",
+        type: "specialHours" as const,
+        open: "18:00",
+        close: "01:00",
+        lastBooking: "23:00",
+      },
+      { date: "2026-12-24", type: "walkInOnly" as const },
+    ],
+  };
+
+  it("closes a closed date on an open weekday and leaves the next day open", () => {
+    expect(isOpenOnDate(r, "2026-12-25")).toBe(false);
+    expect(isOpenOnDate(r, "2026-12-28")).toBe(true);
+  });
+
+  it("opens a special-hours date on a closed weekday", () => {
+    expect(isOpenOnDate(r, "2026-12-27")).toBe(true);
+    expect(isOpenOnDate(r, "2026-12-20")).toBe(false);
+  });
+
+  it("keeps a walk-in-only date open on the weekly hours", () => {
+    expect(isOpenOnDate(r, "2026-12-24")).toBe(true);
+    expect(getHoursForDate(r, "2026-12-24")).toEqual({ open: "09:00", close: "22:00" });
+  });
+
+  it("replaces the weekday's hours with the special hours, and falls back the day after", () => {
+    expect(getHoursForDate(r, "2026-12-27")).toEqual({ open: "12:00", close: "16:00" });
+    expect(getHoursForDate(r, "2026-12-28")).toEqual({ open: "09:00", close: "22:00" });
+  });
+
+  it("gives a special-hours date only its own last booking time", () => {
+    expect(getLastBookingForDate(r, "2026-12-31")).toBe("23:00");
+    expect(getLastBookingForDate(r, "2026-12-27")).toBeNull();
+    expect(getLastBookingForDate(r, "2026-12-28")).toBe("21:00");
+  });
+});

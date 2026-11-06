@@ -57,11 +57,11 @@ public static class CoverPacing
     public static DateTime SlotStartUtc(Restaurant restaurant, DateTime bookingUtc)
     {
         DateTime local = TimeZoneHelper.ConvertUtcToLocal(bookingUtc, restaurant.Timezone);
-        DateTime open = ServiceWindowHelper.LocalWindowFor(restaurant, local.Date, IsoDay.Of(local.Date)).Start;
+        DateTime open = ServiceWindowHelper.LocalWindowFor(restaurant, local.Date).Start;
         if (local < open)
         {
             DateTime dayBefore = local.Date.AddDays(-1);
-            open = ServiceWindowHelper.LocalWindowFor(restaurant, dayBefore, IsoDay.Of(dayBefore)).Start;
+            open = ServiceWindowHelper.LocalWindowFor(restaurant, dayBefore).Start;
         }
 
         int interval = AvailabilityService.SlotInterval(restaurant);

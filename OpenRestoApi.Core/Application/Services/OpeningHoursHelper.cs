@@ -132,7 +132,7 @@ public static class OpeningHoursHelper
     /// <seealso>OpeningHoursHelperTests.ApplyOpenHours_RejectsALastBookingAtTheClosingTime</seealso>
     /// <seealso>OpeningHoursHelperTests.ApplyOpenHours_AcceptsAnAfterMidnightLastBooking_InsideAnOvernightWindow</seealso>
     /// <seealso>OpeningHoursHelperTests.ApplyOpenHours_RejectsALastBookingInTheGapOfAnOvernightWindow</seealso>
-    private static string? NormalizeLastBooking(string open, string close, string? lastBooking)
+    public static string? NormalizeLastBooking(string open, string close, string? lastBooking)
     {
         if (string.IsNullOrWhiteSpace(lastBooking))
         {
@@ -158,6 +158,6 @@ public static class OpeningHoursHelper
         return FormatTime(hour, minute);
     }
 
-    private static string FormatTime(int hour, int minute) =>
+    public static string FormatTime(int hour, int minute) =>
         $"{hour:D2}:{minute:D2}";
 }

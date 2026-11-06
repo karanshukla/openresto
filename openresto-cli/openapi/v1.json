@@ -4564,6 +4564,39 @@
           }
         }
       },
+      "DateExceptionDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Local calendar date, yyyy-MM-dd."
+          },
+          "type": {
+            "type": "string",
+            "description": "\u0022closed\u0022, \u0022specialHours\u0022 or \u0022walkInOnly\u0022."
+          },
+          "open": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "close": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastBooking": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Latest start (HH:mm) for a special-hours date, inside its own window. Null runs up to string? DateExceptionDto.Close."
+          }
+        },
+        "description": "One date that departs from the weekly schedule. string? DateExceptionDto.Open, string? DateExceptionDto.Close and\nstring? DateExceptionDto.LastBooking are read for \u0060specialHours\u0060 only and must be set for it."
+      },
       "DayHoursDto": {
         "type": "object",
         "properties": {
@@ -4793,12 +4826,21 @@
           "minutes": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
+              "null",
               "integer",
               "string"
             ],
             "format": "int32"
+          },
+          "until": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Only \u0060endOfService\u0060 is recognised: pause until today\u0027s service closes."
           }
-        }
+        },
+        "description": "Pause online bookings for a window starting now: either int? PauseRestaurantRequest.Minutes long, or, with\nstring? PauseRestaurantRequest.Until set to \u0060endOfService\u0060, until the current or next service today ends.\nExactly one of the two is given."
       },
       "PlaceHoldRequest": {
         "type": "object",
@@ -5069,6 +5111,53 @@
           "bookingRefFormat": {
             "type": "string",
             "description": "Format of references minted for new bookings: \u0022AlphaNumeric\u0022 or \u0022Numeric\u0022."
+          },
+          "dateExceptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateExceptionDto"
+            },
+            "description": "Dates that depart from the weekly schedule, earliest first. Empty when none."
+          },
+          "maxBookingDaysAhead": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "How many days ahead guests may book online, or null for no limit.",
+            "format": "int32"
+          },
+          "minBookingNoticeMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Least notice, in minutes, an online booking must give, or null for none.",
+            "format": "int32"
+          },
+          "minOnlinePartySize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Smallest party that may book online, or null for 1.",
+            "format": "int32"
+          },
+          "maxOnlinePartySize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Largest party that may book online, or null for no limit.",
+            "format": "int32"
           },
           "sections": {
             "type": "array",
@@ -5460,6 +5549,56 @@
               "string"
             ],
             "description": "Comma-separated ISO days (1=Monday \u2026 7=Sunday) that are walk-in only. Empty string clears."
+          },
+          "dateExceptions": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DateExceptionDto"
+            },
+            "description": "Per-date overrides of the weekly schedule. Null leaves the stored list untouched; an empty\nlist clears it. Each date may appear once; dates already past are dropped on save."
+          },
+          "maxBookingDaysAhead": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "How many days ahead guests may book online (0 is today only). Null clears the limit. Always\nassigned from the settings form, like int? UpdateRestaurantRequest.MaxCoversPerSlot; validated as 0\u2013365.",
+            "format": "int32"
+          },
+          "minBookingNoticeMinutes": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Least notice, in minutes, an online booking must give. Null clears it. Always assigned\nfrom the settings form; validated as 1 minute to 7 days.",
+            "format": "int32"
+          },
+          "minOnlinePartySize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Smallest party that may book online. Null clears it (1). Always assigned from the settings form.",
+            "format": "int32"
+          },
+          "maxOnlinePartySize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Largest party that may book online; bigger parties are asked to get in touch. Null clears\nit. Always assigned from the settings form; validated as at least the minimum and at most\nint BookingLimits.MaxSeats.",
+            "format": "int32"
           }
         }
       },

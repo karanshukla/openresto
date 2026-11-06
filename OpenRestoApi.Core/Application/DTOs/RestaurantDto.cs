@@ -94,11 +94,76 @@ public class UpdateRestaurantRequest
 
     /// <summary>Comma-separated ISO days (1=Monday … 7=Sunday) that are walk-in only. Empty string clears.</summary>
     public string? WalkInDays { get; set; }
+
+    /// <summary>
+    /// Per-date overrides of the weekly schedule. Null leaves the stored list untouched; an empty
+    /// list clears it. Each date may appear once; dates already past are dropped on save.
+    /// </summary>
+    public List<DateExceptionDto>? DateExceptions { get; set; }
+
+    /// <summary>
+    /// How many days ahead guests may book online (0 is today only). Null clears the limit. Always
+    /// assigned from the settings form, like <see cref="MaxCoversPerSlot"/>; validated as 0–365.
+    /// </summary>
+    public int? MaxBookingDaysAhead { get; set; }
+
+    /// <summary>
+    /// Least notice, in minutes, an online booking must give. Null clears it. Always assigned
+    /// from the settings form; validated as 1 minute to 7 days.
+    /// </summary>
+    public int? MinBookingNoticeMinutes { get; set; }
+
+    /// <summary>Smallest party that may book online. Null clears it (1). Always assigned from the settings form.</summary>
+    public int? MinOnlinePartySize { get; set; }
+
+    /// <summary>
+    /// Largest party that may book online; bigger parties are asked to get in touch. Null clears
+    /// it. Always assigned from the settings form; validated as at least the minimum and at most
+    /// <see cref="BookingLimits.MaxSeats"/>.
+    /// </summary>
+    public int? MaxOnlinePartySize { get; set; }
 }
 
+/// <summary>
+/// Pause online bookings for a window starting now: either <see cref="Minutes"/> long, or, with
+/// <see cref="Until"/> set to <c>endOfService</c>, until the current or next service today ends.
+/// Exactly one of the two is given.
+/// </summary>
 public class PauseRestaurantRequest
 {
-    public int Minutes { get; set; }
+    public int? Minutes { get; set; }
+
+    /// <summary>Only <c>endOfService</c> is recognised: pause until today's service closes.</summary>
+    public string? Until { get; set; }
+
+    public const string EndOfService = "endOfService";
+}
+
+public class PauseResponse
+{
+    public string Message { get; set; } = null!;
+
+    /// <summary>When the pause lifts, UTC, so the client can show it without re-fetching the location.</summary>
+    public DateTime BookingsPausedUntil { get; set; }
+}
+
+/// <summary>
+/// One date that departs from the weekly schedule. <see cref="Open"/>, <see cref="Close"/> and
+/// <see cref="LastBooking"/> are read for <c>specialHours</c> only and must be set for it.
+/// </summary>
+public class DateExceptionDto
+{
+    /// <summary>Local calendar date, yyyy-MM-dd.</summary>
+    public string Date { get; set; } = null!;
+
+    /// <summary>"closed", "specialHours" or "walkInOnly".</summary>
+    public string Type { get; set; } = null!;
+
+    public string? Open { get; set; }
+    public string? Close { get; set; }
+
+    /// <summary>Latest start (HH:mm) for a special-hours date, inside its own window. Null runs up to <see cref="Close"/>.</summary>
+    public string? LastBooking { get; set; }
 }
 
 public class ExtendRestaurantRequest
@@ -166,7 +231,7 @@ public class ScheduleConflictDto
     public DateTime Date { get; set; }
     public int Seats { get; set; }
 
-    /// <summary>"closedDay" | "outsideHours" | "walkInOnly" — see <c>ScheduleConflictReason</c>.</summary>
+    /// <summary>"closedDay" | "outsideHours" | "closedDate" | "outsideSpecialHours" — see <c>ScheduleConflictReason</c>.</summary>
     public string Reason { get; set; } = string.Empty;
 }
 
@@ -314,6 +379,21 @@ public class RestaurantDto
 
     /// <summary>Format of references minted for new bookings: "AlphaNumeric" or "Numeric".</summary>
     public string BookingRefFormat { get; set; } = Domain.BookingRefFormat.AlphaNumeric.ToString();
+
+    /// <summary>Dates that depart from the weekly schedule, earliest first. Empty when none.</summary>
+    public List<DateExceptionDto> DateExceptions { get; set; } = new();
+
+    /// <summary>How many days ahead guests may book online, or null for no limit.</summary>
+    public int? MaxBookingDaysAhead { get; set; }
+
+    /// <summary>Least notice, in minutes, an online booking must give, or null for none.</summary>
+    public int? MinBookingNoticeMinutes { get; set; }
+
+    /// <summary>Smallest party that may book online, or null for 1.</summary>
+    public int? MinOnlinePartySize { get; set; }
+
+    /// <summary>Largest party that may book online, or null for no limit.</summary>
+    public int? MaxOnlinePartySize { get; set; }
 
     public List<SectionDto> Sections { get; set; } = new();
 
