@@ -139,6 +139,17 @@ function getOversizeOptions(t: TFunction): SelectOption[] {
   ];
 }
 
+/** `GuestsChooseTable` as a dropdown: the Select only carries strings and numbers. */
+const GUESTS_CHOOSE_TABLE = "table";
+const GUESTS_CHOOSE_SECTION = "section";
+
+function getGuestsChooseOptions(t: TFunction): SelectOption[] {
+  return [
+    { value: GUESTS_CHOOSE_TABLE, label: t("admin.settings.restaurantInfo.guestsChooseTable") },
+    { value: GUESTS_CHOOSE_SECTION, label: t("admin.settings.restaurantInfo.guestsChooseSection") },
+  ];
+}
+
 // Booking reference formats — values must match the backend BookingRefFormat member names,
 // which is what the API accepts and returns.
 function getBookingRefFormatOptions(t: TFunction): { value: BookingRefFormat; label: string }[] {
@@ -312,6 +323,9 @@ export function RestaurantInfoForm({
   const [maxTableOversizeSeats, setMaxTableOversizeSeats] = useState<number | null>(
     restaurant.maxTableOversizeSeats ?? null
   );
+  const [guestsChooseTable, setGuestsChooseTable] = useState(
+    restaurant.guestsChooseTable !== false
+  );
   const [bookingRefFormat, setBookingRefFormat] = useState<BookingRefFormat>(
     restaurant.bookingRefFormat ?? "AlphaNumeric"
   );
@@ -456,6 +470,7 @@ export function RestaurantInfoForm({
     bookingSlotIntervalMinutes,
     maxTableOversizeSeats,
     maxCoversPerSlot,
+    guestsChooseTable,
     bookingRefFormat,
     dateExceptions,
     maxBookingDaysAhead,
@@ -484,6 +499,7 @@ export function RestaurantInfoForm({
     bookingSlotIntervalMinutes: restaurant.bookingSlotIntervalMinutes ?? 30,
     maxTableOversizeSeats: restaurant.maxTableOversizeSeats ?? null,
     maxCoversPerSlot: restaurant.maxCoversPerSlot ?? null,
+    guestsChooseTable: restaurant.guestsChooseTable !== false,
     bookingRefFormat: restaurant.bookingRefFormat ?? "AlphaNumeric",
     dateExceptions: restaurant.dateExceptions ?? [],
     maxBookingDaysAhead: restaurant.maxBookingDaysAhead ?? null,
@@ -596,6 +612,7 @@ export function RestaurantInfoForm({
         bookingSlotIntervalMinutes: result.bookingSlotIntervalMinutes,
         maxTableOversizeSeats: result.maxTableOversizeSeats,
         maxCoversPerSlot: result.maxCoversPerSlot,
+        guestsChooseTable: result.guestsChooseTable,
         bookingRefFormat: result.bookingRefFormat,
         dateExceptions: result.dateExceptions,
         maxBookingDaysAhead: result.maxBookingDaysAhead,
@@ -627,6 +644,7 @@ export function RestaurantInfoForm({
       setBookingSlotIntervalMinutes(previous.bookingSlotIntervalMinutes);
       setMaxTableOversizeSeats(previous.maxTableOversizeSeats);
       setMaxCoversText(previous.maxCoversPerSlot == null ? "" : String(previous.maxCoversPerSlot));
+      setGuestsChooseTable(previous.guestsChooseTable);
       setBookingRefFormat(previous.bookingRefFormat);
       setDateExceptions(previous.dateExceptions);
       setMaxDaysAheadText(limitText(previous.maxBookingDaysAhead));
@@ -1065,6 +1083,20 @@ export function RestaurantInfoForm({
                   />
                   <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
                     {t("admin.settings.restaurantInfo.oversizeHint")}
+                  </ThemedText>
+                </View>
+                <View style={styles.gridField}>
+                  <ThemedText style={[sharedStyles.fieldLabel, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.guestsChooseLabel")}
+                  </ThemedText>
+                  <Select
+                    accessibilityLabel={t("admin.settings.restaurantInfo.guestsChooseLabel")}
+                    options={getGuestsChooseOptions(t)}
+                    selectedValue={guestsChooseTable ? GUESTS_CHOOSE_TABLE : GUESTS_CHOOSE_SECTION}
+                    onSelect={(value) => setGuestsChooseTable(value === GUESTS_CHOOSE_TABLE)}
+                  />
+                  <ThemedText style={[styles.fieldHint, { color: mutedColor }]}>
+                    {t("admin.settings.restaurantInfo.guestsChooseHint")}
                   </ThemedText>
                 </View>
                 <View style={styles.gridField}>

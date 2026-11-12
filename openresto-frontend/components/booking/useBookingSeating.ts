@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { RestaurantDto, TableDto } from "@/api/restaurants";
+import type { RestaurantDto } from "@/api/restaurants";
 import type { TimeSlotDto } from "@/api/availability";
-import { groupDropdownLabel, groupedTableIds } from "@/utils/tableGroups";
+import { groupDropdownLabel } from "@/utils/tableGroups";
 import { seatsAtLeast } from "@/utils/seating";
 import { onlineGroups, onlineSections } from "@/utils/walkIn";
 
 export const ANY_SECTION_ID = 0;
 
+/** "Any table" in the table dropdown: the server picks a table in the chosen section. */
+export const ANY_TABLE_VALUE = 0;
+
 /**
  * Groups and tables share one dropdown, so group ids ride in as negatives — table ids are
- * always positive and section 0 is "Any", leaving the negative range free.
+ * always positive and 0 is "Any table", leaving the negative range free.
  */
 export const groupSelectValue = (groupId: number) => -groupId;
 export const isGroupSelectValue = (value: number) => value < 0;
@@ -26,9 +29,9 @@ export interface UseBookingSeatingArgs {
 /**
  * Section / table / combinable-group selection for the booking form.
  *
- * "Any section" (id 0) is the default: the form hides the table dropdown and the server picks.
- * Otherwise the hook keeps a concrete table selected, re-picking whenever availability, party
- * size or section changes so the form never sits on a table the API would reject.
+ * Until the guest picks a table or a group the server assigns one: across the restaurant under
+ * "Any section" (the default), otherwise within the chosen section. The table dropdown is only
+ * offered once a section is chosen, and never at a location whose guests may not choose tables.
  *
  * Selection is all it owns. A live hold on the previous pick is invalidated by the new pick
  * flowing into `useTableHold`, which releases or replaces it — never by this hook reaching back.
@@ -43,7 +46,6 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
   const sections = onlineSections(restaurant);
   const allTables = sections.flatMap((s) => s.tables);
   const allGroups = onlineGroups(restaurant);
-  const groupedTableIdSet = groupedTableIds(allGroups);
 
   // Parties above the best single table *or* the best combinable group can't be seated even with
   // tables pushed together, and have to contact the restaurant directly.
@@ -57,13 +59,18 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
     { label: t("booking.seating.anySectionLabel"), value: ANY_SECTION_ID },
     ...sections.map((s) => ({ label: s.name, value: s.id })),
   ];
-  const isAutoAssign = sectionId === ANY_SECTION_ID;
+  const isAnySection = sectionId === ANY_SECTION_ID;
+  const canChooseTable = restaurant.guestsChooseTable !== false && !isAnySection;
+  const isAutoAssign = tableId === undefined && tableGroupId === undefined;
+  /** The section the server assigns within; undefined when it may pick from any section. */
+  const autoAssignSectionId = isAutoAssign && !isAnySection ? sectionId : undefined;
+
   const tablesInSection = sections.find((s) => s.id === sectionId)?.tables ?? allTables;
   // A group belongs to the picked section only when *every* member sits in it: booking a group
   // books all its tables, so one member elsewhere would split the party across sections. TableDto
   // carries no sectionId, hence resolving membership through the section's own table ids.
   const sectionTableIds = new Set(tablesInSection.map((t) => t.id));
-  const groupsInSection = isAutoAssign
+  const groupsInSection = isAnySection
     ? allGroups
     : allGroups.filter(
         (g) => g.members.length > 0 && g.members.every((m) => sectionTableIds.has(m.id))
@@ -72,55 +79,24 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
   const availableTableIds = currentSlot?.availableTableIds ?? [];
   const availableGroupIds = currentSlot?.availableGroupIds ?? [];
 
-  function bestTableFor(seatCount: number, availableIds?: number[], candidateTables?: TableDto[]) {
-    const pool = candidateTables ?? allTables;
-    let eligible = seatsAtLeast(pool, seatCount, restaurant.maxTableOversizeSeats, (t) => t.seats);
-    if (availableIds && availableIds.length > 0) {
-      eligible = eligible.filter((t) => availableIds.includes(t.id));
-    }
-    // Smallest fitting table, and a combinable table loses to an ungrouped one of the same size —
-    // the deprioritization the server applies when auto-assigning, so the suggested default leaves
-    // mergeable tables free for the parties that need them pushed together.
-    eligible.sort((a, b) => {
-      if (a.seats !== b.seats) return a.seats - b.seats;
-      return Number(groupedTableIdSet.has(a.id)) - Number(groupedTableIdSet.has(b.id));
-    });
-    return eligible[0]?.id ?? pool[0]?.id;
-  }
-
+  // A pick the slot no longer offers falls back to "Any table", not to a table the guest never chose.
   useEffect(() => {
-    if (isAutoAssign) {
-      if (tableId !== undefined) setTableId(undefined);
-      if (tableGroupId !== undefined) setTableGroupId(undefined);
-      return;
-    }
-    const candidates = sections.find((s) => s.id === sectionId)?.tables ?? allTables;
-    if (availableTableIds.length > 0) {
-      if (!tableId || !availableTableIds.includes(tableId)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTableId(bestTableFor(seats, availableTableIds, candidates));
-      }
-    } else {
-      setTableId(bestTableFor(seats, undefined, candidates));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableTableIds, seats, isAutoAssign]);
-
-  useEffect(() => {
-    if (isAutoAssign) {
+    if (!currentSlot) return;
+    if (tableId !== undefined && !availableTableIds.includes(tableId)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTableId(undefined);
-      setTableGroupId(undefined);
-      return;
     }
-    const candidates = sections.find((s) => s.id === sectionId)?.tables ?? allTables;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTableId(
-      bestTableFor(seats, availableTableIds.length > 0 ? availableTableIds : undefined, candidates)
-    );
-    setTableGroupId(undefined);
+    if (tableGroupId !== undefined && !availableGroupIds.includes(tableGroupId)) {
+      setTableGroupId(undefined);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sectionId]);
+  }, [currentSlot, tableId, tableGroupId]);
+
+  const selectSection = (value: number) => {
+    setSectionId(value);
+    setTableId(undefined);
+    setTableGroupId(undefined);
+  };
 
   const eligibleTables = seatsAtLeast(
     tablesInSection,
@@ -140,7 +116,9 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
     .filter((g) => (currentSlot ? availableGroupIds.includes(g.id) : true))
     .sort((a, b) => a.combinedSeats - b.combinedSeats);
 
+  const hasEligibleUnits = eligibleTables.length > 0 || eligibleGroups.length > 0;
   const tableOptions = [
+    { label: t("booking.seating.anyTableLabel"), value: ANY_TABLE_VALUE },
     ...eligibleTables.map((table) => ({
       label: `${table.name ?? t("booking.seating.tableFallbackName", { id: table.id })} ${t("booking.seating.seatsSuffix", { count: table.seats })}`,
       value: table.id,
@@ -150,7 +128,10 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
 
   /** Applies a pick from the combined table/group dropdown, keeping the two mutually exclusive. */
   const selectSeatingUnit = (value: number) => {
-    if (isGroupSelectValue(value)) {
+    if (value === ANY_TABLE_VALUE) {
+      setTableGroupId(undefined);
+      setTableId(undefined);
+    } else if (isGroupSelectValue(value)) {
       setTableGroupId(groupIdFromSelectValue(value));
       setTableId(undefined);
     } else {
@@ -163,13 +144,17 @@ export function useBookingSeating({ restaurant, seats, currentSlot }: UseBooking
     allTables,
     allGroups,
     sectionId,
-    setSectionId,
+    selectSection,
     tableId,
     tableGroupId,
     selectSeatingUnit,
+    isAnySection,
     isAutoAssign,
+    autoAssignSectionId,
+    canChooseTable,
     sectionOptions,
     tableOptions,
+    hasEligibleUnits,
     maxTableCapacity,
     partyTooLarge,
   };

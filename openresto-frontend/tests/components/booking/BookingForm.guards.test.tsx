@@ -128,7 +128,7 @@ describe("BookingForm", () => {
 
   it("shows warning when the selected table can't seat the party", async () => {
     // This section has only a 2-seat table while the location's largest (in
-    // Main) seats 4, so booking 3 guests here lands the auto-select on an
+    // Main) seats 4, so raising the party to 3 after picking it leaves the guest on an
     // undersized table — the per-table confirm path, distinct from the global
     // large-party guard (3 <= 4 max capacity).
     const onSubmit = jest.fn();
@@ -141,9 +141,11 @@ describe("BookingForm", () => {
     };
     renderWithProviders(<BookingForm restaurant={restaurant} onSubmit={onSubmit} />);
 
-    // Open the section list and pick the Patio (2-seat-only) section.
+    // Open the section list, pick the Patio (2-seat-only) section, then its one table.
     fireEvent.press(screen.getByText("Any section"));
     fireEvent.press(screen.getByText("Patio"));
+    fireEvent.press(screen.getByText("Any table"));
+    fireEvent.press(screen.getByText("P1 (2 seats)"));
 
     // 3 guests > Patio's 2-seat table, but <= the location's 4-seat max.
     setSeats(3);
@@ -170,6 +172,8 @@ describe("BookingForm", () => {
 
     fireEvent.press(screen.getByText("Any section"));
     fireEvent.press(screen.getByText("Patio"));
+    fireEvent.press(screen.getByText("Any table"));
+    fireEvent.press(screen.getByText("P1 (2 seats)"));
 
     setSeats(3);
 
@@ -287,9 +291,9 @@ describe("BookingForm", () => {
     // Switch out of "Any section" so the explicit table dropdown is visible.
     selectMainSection();
 
-    // T1 (2 seats) is auto-selected by default; open the table Select to
-    // reveal the full option list, including the unnamed table's fallback label.
-    fireEvent.press(screen.getByText("T1 (2 seats)"));
+    // "Any table" is selected by default; open the table Select to reveal the full option
+    // list, including the unnamed table's fallback label.
+    fireEvent.press(screen.getByText("Any table"));
 
     expect(screen.getByText("Table 102 (6 seats)")).toBeTruthy();
   });
@@ -335,11 +339,13 @@ describe("BookingForm", () => {
 
     // Switch out of "Any section" so the explicit table dropdown is visible.
     selectMainSection();
+    fireEvent.press(screen.getByText("Any table"));
 
     await waitFor(() => {
       // Only T2 (id 101) should be shown; T1 (id 100) should be filtered out
       expect(screen.getByText("T2 (4 seats)")).toBeTruthy();
     });
+    expect(screen.queryByText("T1 (2 seats)")).toBeNull();
   });
 
   // ── Combinable table groups (#274) ────────────────────────────────────────
@@ -383,10 +389,9 @@ describe("BookingForm", () => {
     );
     selectMainSection();
 
-    // No single table fits a party of 5, so the trigger shows the placeholder. Open the dropdown
-    // to reveal the group option.
-    await waitFor(() => expect(screen.getByText("Select a table")).toBeTruthy());
-    fireEvent.press(screen.getByText("Select a table"));
+    // No single table fits a party of 5; open the dropdown to reveal the group option.
+    await waitFor(() => expect(screen.getByText("Any table")).toBeTruthy());
+    fireEvent.press(screen.getByText("Any table"));
 
     // A named group uses its name in the label.
     await waitFor(() => {
@@ -433,10 +438,9 @@ describe("BookingForm", () => {
     );
     selectMainSection();
 
-    // No single table fits a party of 5, so the trigger shows the placeholder. Open the dropdown
-    // to reveal the group option.
-    await waitFor(() => expect(screen.getByText("Select a table")).toBeTruthy());
-    fireEvent.press(screen.getByText("Select a table"));
+    // No single table fits a party of 5; open the dropdown to reveal the group option.
+    await waitFor(() => expect(screen.getByText("Any table")).toBeTruthy());
+    fireEvent.press(screen.getByText("Any table"));
 
     // An unnamed group falls back to "Tables T1 + T2 (6 seats combined)".
     await waitFor(() => {

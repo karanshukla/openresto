@@ -142,6 +142,8 @@ export interface RestaurantDto {
   maxTableOversizeSeats?: number | null;
   /** Most guests whose online bookings may start in one slot, or null for no cap. */
   maxCoversPerSlot?: number | null;
+  /** False when guests choose only a section and the server picks the table. */
+  guestsChooseTable?: boolean;
   /** Format of references minted for new bookings; existing bookings keep theirs. */
   bookingRefFormat?: BookingRefFormat;
   /** Dates that depart from the weekly schedule, earliest first. Empty or absent when none. */
@@ -255,6 +257,7 @@ export async function updateRestaurant(
     bookingSlotIntervalMinutes?: number;
     maxTableOversizeSeats?: number | null;
     maxCoversPerSlot?: number | null;
+    guestsChooseTable?: boolean;
     bookingRefFormat?: BookingRefFormat;
     walkInOnly?: boolean;
     walkInDays?: string;

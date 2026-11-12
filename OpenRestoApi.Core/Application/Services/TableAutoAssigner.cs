@@ -4,10 +4,11 @@ using OpenRestoApi.Core.Domain;
 namespace OpenRestoApi.Core.Application.Services;
 
 /// <summary>
-/// Computes the ordered candidate list for "Any section" auto-assignment, shared by the holds
-/// controller and <see cref="BookingService"/>. This class only builds the pre-sorted pool; the
-/// atomic pick happens inside <see cref="IHoldService.PlaceAutoHold"/>'s lock, so a candidate
-/// here is a proposal, not a reservation.
+/// Computes the ordered candidate list for auto-assignment ("Any section", or any table in one
+/// section), shared by the holds controller and <see cref="BookingService"/>. This class only
+/// builds the pre-sorted pool; the atomic pick happens inside
+/// <see cref="IHoldService.PlaceAutoHold"/>'s lock, so a candidate here is a proposal, not a
+/// reservation.
 /// </summary>
 public sealed class TableAutoAssigner(
     IBookingRepository bookingRepository,
@@ -22,17 +23,22 @@ public sealed class TableAutoAssigner(
     /// <paramref name="bookingDateUtc"/>, ordered smallest-fitting-first and then by
     /// <see cref="DeprioritizationTier"/>. Empty when nothing fits. Walk-in-only tables, and groups
     /// holding one, are left out unless <paramref name="includeWalkInOnly"/> is set, which only the
-    /// waitlist does: every other caller is placing an online booking.
+    /// waitlist does: every other caller is placing an online booking. With
+    /// <paramref name="sectionId"/> set, only that section's tables and the groups whose every
+    /// member sits in it are offered.
     /// </summary>
     /// <seealso>TableAutoAssignerTests.BuildCandidates_PrefersStandaloneTable_WhenPartyFitsBoth</seealso>
     /// <seealso>TableAutoAssignerTests.BuildCandidates_OffersGroupOnly_WhenNoStandaloneTableFits</seealso>
     /// <seealso>TableAutoAssignerTests.BuildCandidates_SkipsWalkInOnlyTablesAndGroups_Online</seealso>
     /// <seealso>TableAutoAssignerTests.BuildCandidates_OffersWalkInOnlyTablesAndGroups_ToTheWaitlist</seealso>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_OffersOnlyTheRequestedSectionsTables</seealso>
+    /// <seealso>TableAutoAssignerTests.BuildCandidates_SkipsAGroupWithAMemberOutsideTheRequestedSection</seealso>
     public async Task<IReadOnlyList<TableCandidate>> BuildCandidatesAsync(
         Restaurant restaurant,
         int seats,
         DateTime bookingDateUtc,
-        bool includeWalkInOnly = false)
+        bool includeWalkInOnly = false,
+        int? sectionId = null)
     {
         if (restaurant.Sections is null || restaurant.Sections.Count == 0 || seats <= 0)
         {
@@ -41,8 +47,8 @@ public sealed class TableAutoAssigner(
 
         int durationMinutes = BookingDuration.For(restaurant, seats);
         var free = new List<TableCandidate>();
-        free.AddRange(await FreeTablesAsync(restaurant, seats, bookingDateUtc, durationMinutes, includeWalkInOnly));
-        free.AddRange(await FreeGroupsAsync(restaurant, seats, bookingDateUtc, durationMinutes, includeWalkInOnly));
+        free.AddRange(await FreeTablesAsync(restaurant, seats, bookingDateUtc, durationMinutes, includeWalkInOnly, sectionId));
+        free.AddRange(await FreeGroupsAsync(restaurant, seats, bookingDateUtc, durationMinutes, includeWalkInOnly, sectionId));
 
         HashSet<int> groupedTableIds = GroupedTableIds(restaurant);
 
@@ -64,6 +70,12 @@ public sealed class TableAutoAssigner(
     private static int DeprioritizationTier(TableCandidate candidate, HashSet<int> groupedTableIds)
         => candidate.IsGroup ? 2 : groupedTableIds.Contains(candidate.TableId) ? 1 : 0;
 
+    private static HashSet<int> SectionTableIds(Restaurant restaurant, int sectionId)
+        => restaurant.Sections!
+            .Where(s => s.Id == sectionId)
+            .SelectMany(s => s.Tables ?? Enumerable.Empty<Table>())
+            .Select(t => t.Id).ToHashSet();
+
     private static HashSet<int> GroupedTableIds(Restaurant restaurant)
         => (restaurant.Groups ?? Enumerable.Empty<TableGroup>())
             .SelectMany(g => g.Members).Select(m => m.TableId).ToHashSet();
@@ -73,22 +85,22 @@ public sealed class TableAutoAssigner(
     /// restaurant's tables and this runs once per auto-assign request, before the lock.
     /// </summary>
     private async Task<List<TableCandidate>> FreeTablesAsync(
-        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes, bool includeWalkInOnly)
+        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes, bool includeWalkInOnly, int? sectionId)
     {
         var free = new List<TableCandidate>();
 
         IEnumerable<(Table Table, int SectionId)> eligible = restaurant.Sections!
-            .Where(s => s.Tables != null)
+            .Where(s => s.Tables != null && (sectionId is null || s.Id == sectionId))
             .SelectMany(s => s.Tables!.Where(t => t != null).Select(t => (Table: t!, SectionId: s.Id)))
             .Where(x => (includeWalkInOnly || !x.Table.WalkInOnly) && restaurant.CanSeat(x.Table.Seats, seats));
 
-        foreach ((Table table, int sectionId) in eligible)
+        foreach ((Table table, int tableSectionId) in eligible)
         {
             bool booked = await _bookingRepository.IsUnitBookedOnDateAsync(
                 table.Id, tableGroupId: null, bookingDateUtc, durationMinutes);
             if (!booked && !_holdService.IsTableHeld(table.Id, bookingDateUtc, durationMinutes: durationMinutes))
             {
-                free.Add(new TableCandidate(table.Id, sectionId, table.Seats));
+                free.Add(new TableCandidate(table.Id, tableSectionId, table.Seats));
             }
         }
 
@@ -96,13 +108,15 @@ public sealed class TableAutoAssigner(
     }
 
     private async Task<List<TableCandidate>> FreeGroupsAsync(
-        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes, bool includeWalkInOnly)
+        Restaurant restaurant, int seats, DateTime bookingDateUtc, int durationMinutes, bool includeWalkInOnly, int? sectionId)
     {
         var free = new List<TableCandidate>();
         if (restaurant.Groups is not { Count: > 0 })
         {
             return free;
         }
+
+        HashSet<int>? sectionTableIds = sectionId is null ? null : SectionTableIds(restaurant, sectionId.Value);
 
         foreach (TableGroup group in restaurant.Groups)
         {
@@ -111,6 +125,7 @@ public sealed class TableAutoAssigner(
 
             var memberIds = group.Members.Select(m => m.TableId).ToList();
             if (memberIds.Count == 0) continue;
+            if (sectionTableIds != null && !memberIds.All(sectionTableIds.Contains)) continue;
 
             // One query covers all three ways a group can be taken: the group itself booked, a
             // member booked individually, or a member reserved by a sibling group's booking.

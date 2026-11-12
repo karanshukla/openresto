@@ -5,14 +5,14 @@ public class PlaceHoldRequest
     public int RestaurantId { get; set; }
 
     /// <summary>
-    /// Specific table to hold. When null (and <see cref="SectionId"/> is also null), the
-    /// server auto-assigns the best available table across all sections ("Any section" flow).
+    /// Specific table to hold. When null the server auto-assigns the best available table in
+    /// <see cref="SectionId"/>, or across all sections when that is null too ("Any section").
     /// </summary>
     public int? TableId { get; set; }
 
     /// <summary>
-    /// Specific section of <see cref="TableId"/>. When null (and <see cref="TableId"/> is
-    /// also null), the server auto-assigns. Must be provided whenever <see cref="TableId"/> is.
+    /// Section of <see cref="TableId"/>, or the section to auto-assign within when
+    /// <see cref="TableId"/> is null. Must be provided whenever <see cref="TableId"/> is.
     /// </summary>
     public int? SectionId { get; set; }
 

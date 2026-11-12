@@ -1726,26 +1726,74 @@ public partial class BookingServiceTests
         Assert.Contains("No tables are available", ex.Message);
     }
 
-    [Theory]
-    [InlineData(null, 1)]   // TableId null, SectionId set
-    [InlineData(1, null)]   // TableId set, SectionId null
-    public async Task CreateBookingAsync_AutoAssign_Throws_WhenExactlyOneIdNull(int? tableId, int? sectionId)
+    [Fact]
+    public async Task CreateBookingAsync_Throws_WhenATableIsGivenWithoutItsSection()
     {
-        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_Throws_WhenExactlyOneIdNull) + $"_{tableId}_{sectionId}");
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_Throws_WhenATableIsGivenWithoutItsSection));
         SeedMultiTableRestaurant(db);
         BookingService svc = CreateService(db);
 
         ValidationException ex = await Assert.ThrowsAsync<ValidationException>(() => svc.CreateBookingAsync(new BookingDto
         {
             RestaurantId = 1,
-            TableId = tableId,
-            SectionId = sectionId,
+            TableId = 1,
             CustomerEmail = "guest@example.com",
             Seats = 2,
             Date = DateTime.UtcNow.AddDays(12)
         }));
 
-        Assert.Contains("Specify both TableId and SectionId", ex.Message);
+        Assert.Equal(ErrorCodes.BookingAmbiguousTableSelection, ex.Code);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_StaysInTheRequestedSection()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_StaysInTheRequestedSection));
+        SeedMultiTableRestaurant(db);
+        BookingService svc = CreateService(db);
+
+        // T1 in Main is the smallest 2-seater overall; asking for Patio must land on P1 instead.
+        BookingDto result = await svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 2,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = DateTime.UtcNow.AddDays(12)
+        });
+
+        Assert.Equal(2, result.SectionId);
+        Assert.Equal(4, result.TableId);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AutoAssign_Throws_WhenTheRequestedSectionIsFull()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AutoAssign_Throws_WhenTheRequestedSectionIsFull));
+        SeedMultiTableRestaurant(db);
+        DateTime date = DateTime.UtcNow.AddDays(12);
+        foreach (int tid in new[] { 4, 5 })
+        {
+            db.Bookings.Add(new Booking
+            {
+                RestaurantId = 1, TableId = tid, SectionId = 2, Date = date,
+                BookingRef = $"PRE{tid}", EndTime = date.AddMinutes(60)
+            });
+        }
+        db.SaveChanges();
+        BookingService svc = CreateService(db);
+
+        // Main still has free tables, but the guest asked for Patio.
+        ConflictException ex = await Assert.ThrowsAsync<ConflictException>(() => svc.CreateBookingAsync(new BookingDto
+        {
+            RestaurantId = 1,
+            SectionId = 2,
+            CustomerEmail = "guest@example.com",
+            Seats = 2,
+            Date = date
+        }));
+
+        Assert.Equal(ErrorCodes.BookingNoTablesAvailable, ex.Code);
     }
 
     [Fact]

@@ -36,7 +36,7 @@ import LargePartyNoticeModal from "./LargePartyNoticeModal";
 import { MOBILE_BREAKPOINT } from "@/constants/breakpoints";
 import { suggestDate, suggestTime } from "./bookingSuggestions";
 import { useBookingAvailability } from "./useBookingAvailability";
-import { groupSelectValue, useBookingSeating } from "./useBookingSeating";
+import { ANY_TABLE_VALUE, groupSelectValue, useBookingSeating } from "./useBookingSeating";
 import {
   DateField,
   EmailField,
@@ -177,13 +177,17 @@ export default function BookingForm({
     allTables,
     allGroups,
     sectionId,
-    setSectionId,
+    selectSection,
     tableId,
     tableGroupId,
     selectSeatingUnit,
+    isAnySection,
     isAutoAssign,
+    autoAssignSectionId,
+    canChooseTable,
     sectionOptions,
     tableOptions,
+    hasEligibleUnits,
     maxTableCapacity,
     partyTooLarge,
   } = useBookingSeating({ restaurant, seats, currentSlot });
@@ -209,6 +213,7 @@ export default function BookingForm({
     time,
     email: customerEmail,
     autoAssign: isAutoAssign,
+    autoAssignSectionId,
     seats,
     tableGroupId,
     enabled: !bookingBlocked && !partyOutsideOnlineRange,
@@ -271,13 +276,15 @@ export default function BookingForm({
     !bookingBlocked;
 
   /**
-   * Which seating unit the booking reserves. Null table and section ids route the create call
-   * into auto-assign, where the server adopts whatever the hold already reserved; a group id
-   * routes it into the group branch. The three are mutually exclusive by construction.
+   * Which seating unit the booking reserves. A null table id routes the create call into
+   * auto-assign, where the server adopts whatever the hold already reserved; a group id routes it
+   * into the group branch. The three are mutually exclusive by construction.
    */
   const seatingPayload = () => {
     if (tableGroupId) return { tableId: null, sectionId: null, tableGroupId };
-    if (isAutoAssign) return { tableId: null, sectionId: null, tableGroupId: null };
+    if (isAutoAssign) {
+      return { tableId: null, sectionId: autoAssignSectionId ?? null, tableGroupId: null };
+    }
     return { tableId: tableId ?? null, sectionId, tableGroupId: null };
   };
 
@@ -422,17 +429,19 @@ export default function BookingForm({
       options={sectionOptions}
       onChange={(val) => {
         clearSettledHold();
-        setSectionId(val);
+        selectSection(val);
       }}
     />
   );
 
   const tableField = (
     <TableField
-      isAutoAssign={isAutoAssign}
+      canChooseTable={canChooseTable}
+      isAnySection={isAnySection}
+      hasEligibleUnits={hasEligibleUnits}
       resolvedTableId={resolvedTableId}
       options={tableOptions}
-      selectedValue={tableGroupId ? groupSelectValue(tableGroupId) : tableId}
+      selectedValue={tableGroupId ? groupSelectValue(tableGroupId) : (tableId ?? ANY_TABLE_VALUE)}
       seats={seats}
       mutedColor={colors.muted}
       onChange={(val) => {

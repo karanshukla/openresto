@@ -113,6 +113,71 @@ public class TableAutoAssignerTests
         }
     }
 
+    /// <summary>
+    /// Main holds T1 and T2; Patio holds T3, T4 and T5. Group 1 (T3 + T4) sits wholly in Patio,
+    /// group 2 (T2 + T5) straddles both sections. Every table seats 4.
+    /// </summary>
+    private static (Restaurant, AppDbContext) SeedTwoSections(string name)
+    {
+        AppDbContext db = TestDbFactory.Create(name);
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1, Name = "Two Rooms", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC"
+        });
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Sections.Add(new Section { Id = 2, Name = "Patio", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 1 });
+        db.Tables.Add(new Table { Id = 3, Name = "T3", Seats = 4, SectionId = 2 });
+        db.Tables.Add(new Table { Id = 4, Name = "T4", Seats = 4, SectionId = 2 });
+        db.Tables.Add(new Table { Id = 5, Name = "T5", Seats = 4, SectionId = 2 });
+        db.TableGroups.Add(new TableGroup
+        {
+            Id = 1, RestaurantId = 1, CombinedSeats = 8,
+            Members = [new() { TableGroupId = 1, TableId = 3 }, new() { TableGroupId = 1, TableId = 4 }]
+        });
+        db.TableGroups.Add(new TableGroup
+        {
+            Id = 2, RestaurantId = 1, CombinedSeats = 8,
+            Members = [new() { TableGroupId = 2, TableId = 2 }, new() { TableGroupId = 2, TableId = 5 }]
+        });
+        db.SaveChanges();
+
+        Restaurant loaded = db.Restaurants
+            .Include(r => r.Sections).ThenInclude(s => s.Tables)
+            .Include(r => r.Groups).ThenInclude(g => g.Members).ThenInclude(m => m.Table)
+            .First();
+        return (loaded, db);
+    }
+
+    [Fact]
+    public async Task BuildCandidates_OffersOnlyTheRequestedSectionsTables()
+    {
+        var (restaurant, db) = SeedTwoSections(nameof(BuildCandidates_OffersOnlyTheRequestedSectionsTables));
+        using (db)
+        {
+            IReadOnlyList<TableCandidate> candidates = await CreateAssigner(db).BuildCandidatesAsync(
+                restaurant, seats: 4, DateTime.UtcNow.AddDays(10), sectionId: 1);
+
+            Assert.Equal([1, 2], candidates.Select(c => c.TableId));
+            Assert.All(candidates, c => Assert.Equal(1, c.SectionId));
+        }
+    }
+
+    [Fact]
+    public async Task BuildCandidates_SkipsAGroupWithAMemberOutsideTheRequestedSection()
+    {
+        var (restaurant, db) = SeedTwoSections(nameof(BuildCandidates_SkipsAGroupWithAMemberOutsideTheRequestedSection));
+        using (db)
+        {
+            IReadOnlyList<TableCandidate> candidates = await CreateAssigner(db).BuildCandidatesAsync(
+                restaurant, seats: 8, DateTime.UtcNow.AddDays(10), sectionId: 2);
+
+            TableCandidate group = Assert.Single(candidates);
+            Assert.Equal(1, group.TableGroupId);
+        }
+    }
+
     [Fact]
     public async Task BuildCandidates_PrefersStandaloneTable_WhenPartyFitsBoth()
     {

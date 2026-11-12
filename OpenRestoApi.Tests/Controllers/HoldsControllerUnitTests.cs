@@ -50,19 +50,17 @@ public class HoldsControllerUnitTests
     }
 
     [Fact]
-    public async Task PlaceHold_ReturnsBadRequest_WhenOnlyOneOfTableOrSectionProvided()
+    public async Task PlaceHold_ReturnsBadRequest_WhenATableIsGivenWithoutItsSection()
     {
         var result = await _controller.PlaceHold(new PlaceHoldRequest
         {
             RestaurantId = 1,
             TableId = 1,
-            // SectionId omitted
             Date = DateTime.UtcNow.AddDays(1)
         });
 
         BadRequestObjectResult bad = Assert.IsType<BadRequestObjectResult>(result);
-        MessageResponse msg = Assert.IsType<MessageResponse>(bad.Value);
-        Assert.Contains("Specify both TableId and SectionId", msg.Message);
+        Assert.Equal(ErrorCodes.BookingAmbiguousTableSelection, Assert.IsType<MessageResponse>(bad.Value).Code);
     }
 
     [Fact]
@@ -166,6 +164,32 @@ public class HoldsControllerUnitTests
 
         ConflictObjectResult conflict = Assert.IsType<ConflictObjectResult>(result);
         Assert.Equal(ErrorCodes.TableWalkInOnly, Assert.IsType<MessageResponse>(conflict.Value).Code);
+        _mockHoldService.Verify(
+            s => s.PlaceGroupHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task PlaceHold_ReturnsBadRequest_ForAGroup_WhenGuestsMayNotChooseTables()
+    {
+        var restaurant = new Restaurant { Id = 1, DefaultBookingDurationMinutes = 60, GuestsChooseTable = false };
+        var date = DateTime.UtcNow.AddDays(1);
+        _mockPolicy.Setup(p => p.ValidateAnyTableAsync(1, date, It.IsAny<int>()))
+            .ReturnsAsync(HoldPolicyResult.Eligible(restaurant, date));
+        _mockTableGroupRepository.Setup(r => r.GetByIdWithMembersAsync(7, 1)).ReturnsAsync(new TableGroup
+        {
+            Id = 7, RestaurantId = 1, CombinedSeats = 6,
+            Members =
+            [
+                new() { TableId = 1, Table = new Table { Id = 1, Seats = 2 } },
+                new() { TableId = 2, Table = new Table { Id = 2, Seats = 4 } },
+            ],
+        });
+
+        var result = await _controller.PlaceHold(new PlaceHoldRequest { RestaurantId = 1, TableGroupId = 7, Seats = 5, Date = date });
+
+        BadRequestObjectResult bad = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal(ErrorCodes.BookingTableChoiceDisabled, Assert.IsType<MessageResponse>(bad.Value).Code);
         _mockHoldService.Verify(
             s => s.PlaceGroupHold(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyList<int>>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<string?>()),
             Times.Never);

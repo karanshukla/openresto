@@ -481,6 +481,30 @@ describe("useTableHold", () => {
     expect(result.current.resolvedSectionId).toBe(7);
   });
 
+  it("auto-assign mode sends the section the hold must land in", async () => {
+    mockCreateHold.mockResolvedValueOnce({
+      ok: true,
+      hold: {
+        holdId: "auto-hold-2",
+        expiresAt: new Date(Date.now() + 120_000).toISOString(),
+        secondsRemaining: 120,
+        tableId: 42,
+        sectionId: 7,
+      },
+    });
+
+    renderHook(() =>
+      useTableHold({ ...defaultParams, autoAssign: true, autoAssignSectionId: 7, seats: 2 })
+    );
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(mockCreateHold).toHaveBeenCalledWith(
+      expect.objectContaining({ tableId: null, sectionId: 7, seats: 2 })
+    );
+  });
+
   it("auto-assign mode surfaces unavailable when server rejects", async () => {
     mockCreateHold.mockResolvedValueOnce({
       ok: false,

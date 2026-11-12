@@ -215,6 +215,28 @@ public class HoldsControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
+    public async Task PlaceHold_AutoAssign_StaysInTheRequestedSection()
+    {
+        HttpClient client = _factory.CreateClient();
+        (int restaurantId, _, _, int p1Id, _, int p1SectionId) = GetPastaPlaceTableIds();
+        // T2 is the smallest fit across the restaurant; asking for Patio must resolve to P1.
+        var date = DateTime.UtcNow.AddDays(125).ToString("yyyy-MM-ddT12:00:00");
+
+        HttpResponseMessage response = await client.PostAsJsonAsync("/api/holds", new
+        {
+            restaurantId,
+            sectionId = p1SectionId,
+            seats = 2,
+            date
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        JsonElement body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(p1Id, body.GetProperty("tableId").GetInt32());
+        Assert.Equal(p1SectionId, body.GetProperty("sectionId").GetInt32());
+    }
+
+    [Fact]
     public async Task PlaceHold_AutoAssign_Returns400_WhenSeatsMissing()
     {
         HttpClient client = _factory.CreateClient();

@@ -97,8 +97,8 @@ BRAND = {
 # both booking-reference formats, all three contact fallback states, every slot
 # interval (15/30/60), walk-in-only both globally and per-day, a live booking
 # pause, an archived location, the table-oversize cap, turn times by party
-# size, a walk-in-only table, a cover cap, combinable table groups both named
-# and unnamed, date exceptions of all three types (closed, special hours and
+# size, a walk-in-only table, a cover cap, a location whose guests choose only a
+# section, combinable table groups both named and unnamed, date exceptions of all three types (closed, special hours and
 # walk-in only), and every online booking limit (horizon, minimum notice, party
 # size floor and ceiling).
 
@@ -221,6 +221,9 @@ LOCATIONS = [
         # A party may leave at most 2 seats spare, so a solo diner never gets
         # handed the 6-top.
         "max_oversize": 2,
+        # GuestsChooseTable off: guests pick The Bar or the Back Room and the
+        # table is assigned for them, so the booking form shows no table list.
+        "guests_choose_table": False,
         "sections": [
             {"name": "The Bar", "tables": [("Bar Table", 2), ("Bar Booth", 4)]},
             {"name": "Back Room", "tables": [("BR1", 6), ("BR2", 2)]},
@@ -522,6 +525,7 @@ def build_dataset(now_utc):
                     "EmailAddress": spec.get("email"),
                     "MaxTableOversizeSeats": spec.get("max_oversize"),
                     "MaxCoversPerSlot": spec.get("max_covers"),
+                    "GuestsChooseTable": spec.get("guests_choose_table", True),
                     "BookingRefFormat": spec["ref_format"],
                     "DateExceptionsJson": date_exceptions_json,
                     "MaxBookingDaysAhead": spec.get("max_days_ahead"),

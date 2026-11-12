@@ -645,6 +645,9 @@ namespace OpenRestoApi.Migrations
                     b.Property<string>("EmailAddress")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("GuestsChooseTable")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("TEXT");
 
