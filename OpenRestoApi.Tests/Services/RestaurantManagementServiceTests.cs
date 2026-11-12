@@ -486,6 +486,31 @@ public class RestaurantManagementServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_TurnsOffGuestTableChoice()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_TurnsOffGuestTableChoice));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC" });
+        await db.SaveChangesAsync();
+
+        RestaurantDto? result = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R", GuestsChooseTable = false });
+
+        Assert.False(result!.GuestsChooseTable);
+        Assert.False((await db.Restaurants.SingleAsync()).GuestsChooseTable);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_LeavesGuestTableChoiceAlone_WhenNotSent()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_LeavesGuestTableChoiceAlone_WhenNotSent));
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "R", Timezone = "UTC", GuestsChooseTable = false });
+        await db.SaveChangesAsync();
+
+        RestaurantDto? result = await CreateService(db).UpdateAsync(1, new UpdateRestaurantRequest { Name = "R" });
+
+        Assert.False(result!.GuestsChooseTable);
+    }
+
+    [Fact]
     public async Task UpdateAsync_RejectsAMaxCoversPerSlotOfZero()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateAsync_RejectsAMaxCoversPerSlotOfZero));

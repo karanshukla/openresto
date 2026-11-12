@@ -178,6 +178,13 @@ has already ended there is nothing to pause, which is refused with
 
 ## Tables and combinable groups
 
+- **Seating choice.** Guests pick "Any section" or a section. In a section they can keep
+  "Any table" or pick a table. Either way, when no table is named the server assigns the best
+  free table: across the location for "Any section", otherwise inside that section, using only
+  groups whose tables are all in it.
+- **Section only.** Set `guestsChooseTable` to `false` on the restaurant and guests choose a
+  section but never a table. A hold or booking that names a table or a group is then declined
+  with `booking.table_choice_disabled` (400). Staff bookings and the waitlist are not affected.
 - **Groups** mark tables that can be pushed together. A group seats more than its largest
   table and no more than the total of its tables. Each table in a group can still be booked on
   its own. Auto-assign fills single tables first, then grouped tables, then groups.

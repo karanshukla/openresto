@@ -26,6 +26,7 @@ public static class ErrorCodes
     public const string BookingNoTablesAvailable = "booking.no_tables_available";
     public const string BookingAllTablesHeld = "booking.all_tables_held";
     public const string BookingAmbiguousTableSelection = "booking.ambiguous_table_selection";
+    public const string BookingTableChoiceDisabled = "booking.table_choice_disabled";
     public const string BookingPartySizeOutOfRange = "booking.party_size_out_of_range";
     public const string BookingAlreadyPast = "booking.already_past";
     public const string BookingAlreadyActive = "booking.already_active";

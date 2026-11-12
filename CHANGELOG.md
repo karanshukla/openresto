@@ -10,6 +10,11 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+### Added
+
+- Guests who pick a section can keep **Any table** and have the best free table in that section assigned to them, instead of having to choose one. ([#174](https://github.com/karanshukla/openresto/issues/174))
+- A location can let guests choose only a section, never a table, in **Booking Settings → Tables & references → Guests choose**. The booking form then shows no table list, and a hold or booking that names a table is declined. Staff bookings and the waitlist are unaffected. ([#174](https://github.com/karanshukla/openresto/issues/174))
+
 ## [2.6.0] - 2026-11-07
 
 Hey everyone, just a small update here to add a bit more customisation options to each location's behaviour. There's also a new embeddable widget making it easier to integrate your booking site into your other websites! Enjoy!

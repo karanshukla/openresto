@@ -2416,8 +2416,9 @@ export interface paths {
         /**
          * Places a temporary hold on a table for a given date.
          *     Returns 409 Conflict if the table is already held by someone else.
-         *     When int? PlaceHoldRequest.TableId/int? PlaceHoldRequest.SectionId
-         *     are omitted, the server auto-assigns the best available table across all sections.
+         *     When int? PlaceHoldRequest.TableId is omitted, the server auto-assigns the best
+         *     available table in int? PlaceHoldRequest.SectionId, or across all sections when
+         *     that is omitted too.
          *     When int? PlaceHoldRequest.TableGroupId is set, the server reserves all member
          *     tables of that combinable group as one hold (#272).
          */
@@ -4612,14 +4613,14 @@ export interface components {
             restaurantId?: number | string;
             /**
              * Format: int32
-             * @description Specific table to hold. When null (and int? PlaceHoldRequest.SectionId is also null), the
-             *     server auto-assigns the best available table across all sections ("Any section" flow).
+             * @description Specific table to hold. When null the server auto-assigns the best available table in
+             *     int? PlaceHoldRequest.SectionId, or across all sections when that is null too ("Any section").
              */
             tableId?: null | number | string;
             /**
              * Format: int32
-             * @description Specific section of int? PlaceHoldRequest.TableId. When null (and int? PlaceHoldRequest.TableId is
-             *     also null), the server auto-assigns. Must be provided whenever int? PlaceHoldRequest.TableId is.
+             * @description Section of int? PlaceHoldRequest.TableId, or the section to auto-assign within when
+             *     int? PlaceHoldRequest.TableId is null. Must be provided whenever int? PlaceHoldRequest.TableId is.
              */
             sectionId?: null | number | string;
             /**
@@ -4713,6 +4714,8 @@ export interface components {
              * @description Most guests whose online bookings may start in one slot, or null for no cap.
              */
             maxCoversPerSlot?: null | number | string;
+            /** @description False when guests choose only a section and the server picks the table. */
+            guestsChooseTable?: boolean;
             /** @description Format of references minted for new bookings: "AlphaNumeric" or "Numeric". */
             bookingRefFormat?: string;
             /** @description Dates that depart from the weekly schedule, earliest first. Empty when none. */
@@ -4877,6 +4880,8 @@ export interface components {
              *     assigned from the settings form, like int? UpdateRestaurantRequest.MaxTableOversizeSeats; validated as 1 or more.
              */
             maxCoversPerSlot?: null | number | string;
+            /** @description False lets guests choose only a section, never a table. Null leaves it untouched. */
+            guestsChooseTable?: null | boolean;
             /**
              * @description Booking reference format for new bookings — "AlphaNumeric" (three words) or "Numeric"
              *     (digits only), case-insensitive. Null leaves the stored value untouched (PATCH-style).

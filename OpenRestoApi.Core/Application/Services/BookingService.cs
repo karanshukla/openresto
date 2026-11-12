@@ -46,21 +46,20 @@ public class BookingService(
         RejectIfClosedToOnlineBookings(restaurant, bookingDate, bookingDto.Seats);
         RejectIfPartySizeOutOfRange(bookingDto.Seats);
         await RejectIfOverCoverCapAsync(restaurant, bookingDate, bookingDto.Seats);
+        RejectIfGuestMayNotChooseTable(restaurant, bookingDto);
 
         if (bookingDto.TableGroupId.HasValue && bookingDto.TableId is null)
         {
             return await CreateGroupBookingAsync(bookingDto, restaurant, bookingDate);
         }
 
-        if (bookingDto.TableId is null || bookingDto.SectionId is null)
+        if (bookingDto.TableId is null)
         {
-            bool ambiguousSelection = bookingDto.TableId is null ^ bookingDto.SectionId is null;
-            if (ambiguousSelection)
-            {
-                throw new ValidationException("Specify both TableId and SectionId, or neither for auto-assign.") { Code = ErrorCodes.BookingAmbiguousTableSelection };
-            }
-
             await ResolveAutoAssignAsync(bookingDto, restaurant, bookingDate);
+        }
+        else if (bookingDto.SectionId is null)
+        {
+            throw new ValidationException("Specify the SectionId of the TableId, or omit TableId for auto-assign.") { Code = ErrorCodes.BookingAmbiguousTableSelection };
         }
 
         // Auto-assign may have landed on a group rather than a table.
@@ -250,8 +249,23 @@ public class BookingService(
     }
 
     /// <summary>
-    /// Resolves an "Any section" request by writing concrete ids back onto
-    /// <paramref name="bookingDto"/>, so everything downstream runs unchanged. A hold the caller
+    /// A location that picks tables itself refuses a guest booking that names a table or a group;
+    /// the auto-assign path writes the picked unit onto the request only after this runs.
+    /// </summary>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsAChosenTable_WhenGuestsMayNotChooseTables</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsAChosenGroup_WhenGuestsMayNotChooseTables</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_AutoAssignsWithinTheSection_WhenGuestsMayNotChooseTables</seealso>
+    private static void RejectIfGuestMayNotChooseTable(Restaurant restaurant, BookingDto bookingDto)
+    {
+        if (!restaurant.GuestsChooseTable && (bookingDto.TableId.HasValue || bookingDto.TableGroupId.HasValue))
+        {
+            throw new ValidationException(TableChoice.DisabledMessage) { Code = ErrorCodes.BookingTableChoiceDisabled };
+        }
+    }
+
+    /// <summary>
+    /// Resolves an auto-assign request (no table; one section, or any) by writing concrete ids
+    /// back onto <paramref name="bookingDto"/>, so everything downstream runs unchanged. A hold the caller
     /// already owns is adopted rather than re-raced; otherwise a fresh one is placed atomically.
     /// The resulting <see cref="BookingDto.HoldId"/> is always the one to release after persisting.
     /// </summary>
@@ -263,7 +277,7 @@ public class BookingService(
         }
 
         IReadOnlyList<TableCandidate> candidates = await _autoAssigner.BuildCandidatesAsync(
-            restaurant, bookingDto.Seats, bookingDate);
+            restaurant, bookingDto.Seats, bookingDate, sectionId: bookingDto.SectionId);
 
         if (candidates.Count == 0)
         {

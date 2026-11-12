@@ -81,6 +81,9 @@ public class UpdateRestaurantRequest
     /// </summary>
     public int? MaxCoversPerSlot { get; set; }
 
+    /// <summary>False lets guests choose only a section, never a table. Null leaves it untouched.</summary>
+    public bool? GuestsChooseTable { get; set; }
+
     /// <summary>
     /// Booking reference format for new bookings — "AlphaNumeric" (three words) or "Numeric"
     /// (digits only), case-insensitive. Null leaves the stored value untouched (PATCH-style).
@@ -376,6 +379,9 @@ public class RestaurantDto
 
     /// <summary>Most guests whose online bookings may start in one slot, or null for no cap.</summary>
     public int? MaxCoversPerSlot { get; set; }
+
+    /// <summary>False when guests choose only a section and the server picks the table.</summary>
+    public bool GuestsChooseTable { get; set; } = true;
 
     /// <summary>Format of references minted for new bookings: "AlphaNumeric" or "Numeric".</summary>
     public string BookingRefFormat { get; set; } = Domain.BookingRefFormat.AlphaNumeric.ToString();

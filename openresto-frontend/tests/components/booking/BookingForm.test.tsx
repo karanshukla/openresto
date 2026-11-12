@@ -62,17 +62,21 @@ jest.mock("@/context/BrandContext", () => ({
 // Controllable hold status
 const mockSetHoldStatus = jest.fn();
 let mockHoldStatus = "idle";
+let mockHoldParams: Record<string, unknown> = {};
 
 jest.mock("@/components/booking/useTableHold", () => ({
-  useTableHold: () => ({
-    hold: null,
-    holdStatus: mockHoldStatus,
-    secondsLeft: 0,
-    holdId: null,
-    resolvedTableId: null,
-    resolvedSectionId: null,
-    setHoldStatus: mockSetHoldStatus,
-  }),
+  useTableHold: (params: Record<string, unknown>) => {
+    mockHoldParams = params;
+    return {
+      hold: null,
+      holdStatus: mockHoldStatus,
+      secondsLeft: 0,
+      holdId: null,
+      resolvedTableId: null,
+      resolvedSectionId: null,
+      setHoldStatus: mockSetHoldStatus,
+    };
+  },
 }));
 
 const mockFetchAvailability = jest.fn();
@@ -707,6 +711,43 @@ describe("BookingForm", () => {
     );
   });
 
+  it("holds and submits within the chosen section while 'Any table' is kept", async () => {
+    mockHoldStatus = "held";
+    const onSubmit = jest.fn();
+    render(<BookingForm restaurant={mockRestaurantAllDays} onSubmit={onSubmit} />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
+    expect(mockHoldParams).toEqual(
+      expect.objectContaining({ autoAssign: true, autoAssignSectionId: 20 })
+    );
+    fireEvent.changeText(screen.getByPlaceholderText("Your full name"), "Patio User");
+    fireEvent.changeText(screen.getByPlaceholderText("your@email.com"), "patio@test.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Confirm Booking"));
+    });
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ tableId: null, sectionId: 20, tableGroupId: null })
+    );
+  });
+
+  it("offers no table dropdown in a section when the location picks tables", async () => {
+    render(
+      <BookingForm
+        restaurant={{ ...mockRestaurantAllDays, guestsChooseTable: false }}
+        onSubmit={jest.fn()}
+      />
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("section-select"));
+    });
+    expect(screen.queryByTestId("table-select")).toBeNull();
+    expect(screen.getByText("We'll seat you at the best available table.")).toBeTruthy();
+    expect(mockHoldParams).toEqual(
+      expect.objectContaining({ autoAssign: true, autoAssignSectionId: 20 })
+    );
+  });
+
   // ── Max table oversize (#244) ──────────────────────────────────────────────
   // The section-select mock fires onSelect(20) -> Patio, so this variant puts an
   // oversized table in Patio to exercise the frontend oversize filter. With a 2-top
@@ -1116,6 +1157,14 @@ describe("BookingForm drawer layout", () => {
     // The toggle keeps one stable label and flips its chevron, rather than renaming
     // itself — the row is a section boundary, not a link that changes meaning.
     expect(screen.getByText("Choose a section or table")).toBeTruthy();
+  });
+
+  it("labels the seating disclosure for a section only when guests can't choose tables", async () => {
+    renderDrawer({ restaurant: { ...mockRestaurantAllDays, guestsChooseTable: false } });
+    await waitFor(() => expect(mockFetchAvailability).toHaveBeenCalled());
+
+    expect(screen.getByText("Choose a section")).toBeTruthy();
+    expect(screen.queryByText("Choose a section or table")).toBeNull();
   });
 
   it("groups the drawer into labelled sections and does not label two things 'Time'", async () => {

@@ -140,7 +140,9 @@ export function BookingFormDrawerLayout({
               <>
                 <Icon name="options-outline" size="md" color={accent} />
                 <ThemedText style={[styles.disclosureText, { color: accent }]}>
-                  {t("booking.drawer.seatingDisclosureLabel")}
+                  {restaurant.guestsChooseTable === false
+                    ? t("booking.drawer.sectionDisclosureLabel")
+                    : t("booking.drawer.seatingDisclosureLabel")}
                 </ThemedText>
                 <Icon name={seatingOpen ? "chevron-up" : "chevron-down"} size="md" color={accent} />
               </>

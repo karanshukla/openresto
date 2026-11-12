@@ -159,7 +159,9 @@ export function SectionField({
 }
 
 export function TableField({
-  isAutoAssign,
+  canChooseTable,
+  isAnySection,
+  hasEligibleUnits,
   /** Set once a hold resolves to a concrete table, which sharpens the auto-assign copy. */
   resolvedTableId,
   options,
@@ -168,10 +170,12 @@ export function TableField({
   mutedColor,
   onChange,
 }: {
-  isAutoAssign: boolean;
+  canChooseTable: boolean;
+  isAnySection: boolean;
+  hasEligibleUnits: boolean;
   resolvedTableId?: number | null;
   options: SelectOption[];
-  selectedValue: number | undefined;
+  selectedValue: number;
   seats: number;
   mutedColor: string;
   onChange: (value: number) => void;
@@ -179,13 +183,13 @@ export function TableField({
   const { t } = useTranslation();
   return (
     <Field label={t("booking.form.tableLabel")}>
-      {isAutoAssign ? (
+      {!canChooseTable ? (
         <ThemedText style={[styles.autoAssignHint, { color: mutedColor }]}>
-          {resolvedTableId
-            ? t("booking.form.autoAssignHint")
-            : t("booking.form.autoAssignHintAllSections")}
+          {isAnySection && !resolvedTableId
+            ? t("booking.form.autoAssignHintAllSections")
+            : t("booking.form.autoAssignHint")}
         </ThemedText>
-      ) : options.length === 0 ? (
+      ) : !hasEligibleUnits ? (
         <ThemedText style={[styles.noTables, { color: mutedColor }]}>
           {t("booking.form.noTablesAvailable", { count: seats })}
         </ThemedText>

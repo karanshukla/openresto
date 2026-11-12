@@ -162,6 +162,13 @@ public class Restaurant
     public int? MaxCoversPerSlot { get; set; }
 
     /// <summary>
+    /// False when guests booking online may only choose a section and the server always picks
+    /// the table. Holds and bookings that name a table or a combinable group are then refused;
+    /// staff bookings and the waitlist are exempt.
+    /// </summary>
+    public bool GuestsChooseTable { get; set; } = true;
+
+    /// <summary>
     /// True when a bookable unit of <paramref name="unitSeats"/> seats — a table or a
     /// combinable group — may take a party of <paramref name="partySize"/>: large enough to
     /// seat them, and not so much larger that <see cref="MaxTableOversizeSeats"/> would rather

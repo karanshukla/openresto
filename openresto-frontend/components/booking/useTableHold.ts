@@ -19,8 +19,10 @@ export interface UseTableHoldParams {
   date: string;
   time: string;
   email: string;
-  /** When true, fire holds without a specific table ("Any section") and let the server pick. */
+  /** When true, fire holds without a specific table and let the server pick. */
   autoAssign?: boolean;
+  /** The section an auto-assigned hold must land in; undefined lets the server pick any section. */
+  autoAssignSectionId?: number;
   /** Required when autoAssign is true — sent so the server can pick a fitting table. */
   seats?: number;
   /**
@@ -68,6 +70,7 @@ export function useTableHold({
   time,
   email,
   autoAssign = false,
+  autoAssignSectionId,
   seats,
   tableGroupId,
   enabled = true,
@@ -91,8 +94,9 @@ export function useTableHold({
 
   /**
    * The three shapes a hold request comes in. A group hold names the group and lets the server
-   * resolve its members; auto-assign names nothing and lets the server pick; an explicit pick
-   * names the table and resolves its own section, because the caller only tracks the table id.
+   * resolve its members; auto-assign names at most a section and lets the server pick; an
+   * explicit pick names the table and resolves its own section, because the caller only tracks
+   * the table id.
    * All three carry the party size, which sets how long the hold blocks the table.
    *
    * @see [useTableHold.test.ts](../../tests/hooks/useTableHold.test.ts) — pins that an explicit
@@ -103,7 +107,12 @@ export function useTableHold({
       return { tableId: null, sectionId: null, tableGroupId, seats };
     }
     if (autoAssign) {
-      return { tableId: null, sectionId: null, tableGroupId: undefined, seats };
+      return {
+        tableId: null,
+        sectionId: autoAssignSectionId ?? null,
+        tableGroupId: undefined,
+        seats,
+      };
     }
     return {
       tableId: tableId!,
@@ -193,7 +202,7 @@ export function useTableHold({
       return;
     }
 
-    const paramsKey = `${restaurantId}-${tableGroupId ? `g${tableGroupId}` : autoAssign ? "auto" : tableId}-${date}-${time}-${seats ?? ""}`;
+    const paramsKey = `${restaurantId}-${tableGroupId ? `g${tableGroupId}` : autoAssign ? `auto${autoAssignSectionId ?? ""}` : tableId}-${date}-${time}-${seats ?? ""}`;
     if (hold && holdStatus === "held" && lastAppliedParams.current === paramsKey) {
       return;
     }
@@ -252,7 +261,7 @@ export function useTableHold({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableId, date, time, email, autoAssign, seats, tableGroupId, enabled]);
+  }, [tableId, date, time, email, autoAssign, autoAssignSectionId, seats, tableGroupId, enabled]);
 
   useEffect(() => {
     return () => {

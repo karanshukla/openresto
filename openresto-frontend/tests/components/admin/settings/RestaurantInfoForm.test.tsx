@@ -504,6 +504,23 @@ describe("RestaurantInfoForm", () => {
     expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ bookingRefFormat: "Numeric" }));
   });
 
+  // ── What guests choose ──────────────────────────────────────────────────
+
+  it("saves a location that lets guests choose only a section", async () => {
+    (restaurantsApi.updateRestaurant as jest.Mock).mockResolvedValue({
+      ...mockRestaurant,
+      guestsChooseTable: false,
+    });
+    render(<RestaurantInfoForm restaurant={mockRestaurant} onSaved={onSaved} />);
+    chooseOption("A section and a table", "A section only");
+    await flushAutosave();
+    expect(restaurantsApi.updateRestaurant).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ guestsChooseTable: false })
+    );
+    expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ guestsChooseTable: false }));
+  });
+
   // ── Per-day opening hours (#175) ─────────────────────────────────────────
 
   const uniformWeek = [1, 2, 3, 4, 5, 6, 7].map((day) => ({

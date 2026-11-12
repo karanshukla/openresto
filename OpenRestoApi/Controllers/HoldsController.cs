@@ -25,8 +25,9 @@ public class HoldsController(
     /// <summary>
     /// Places a temporary hold on a table for a given date.
     /// Returns 409 Conflict if the table is already held by someone else.
-    /// When <see cref="PlaceHoldRequest.TableId"/>/<see cref="PlaceHoldRequest.SectionId"/>
-    /// are omitted, the server auto-assigns the best available table across all sections.
+    /// When <see cref="PlaceHoldRequest.TableId"/> is omitted, the server auto-assigns the best
+    /// available table in <see cref="PlaceHoldRequest.SectionId"/>, or across all sections when
+    /// that is omitted too.
     /// When <see cref="PlaceHoldRequest.TableGroupId"/> is set, the server reserves all member
     /// tables of that combinable group as one hold (#272).
     /// </summary>
@@ -54,12 +55,12 @@ public class HoldsController(
             return await PlaceGroupHold(request);
         }
 
-        bool autoAssign = request.TableId is null && request.SectionId is null;
-        if (request.TableId is null ^ request.SectionId is null)
+        bool autoAssign = request.TableId is null;
+        if (request.TableId.HasValue && request.SectionId is null)
         {
             return BadRequest(new MessageResponse
             {
-                Message = "Specify both TableId and SectionId, or omit both for auto-assign.",
+                Message = "Specify the SectionId of the TableId, or omit TableId for auto-assign.",
                 Code = ErrorCodes.BookingAmbiguousTableSelection
             });
         }
@@ -108,6 +109,11 @@ public class HoldsController(
         if (group.HasWalkInOnlyMember())
         {
             return Conflict(new MessageResponse { Message = "This table is kept for walk-ins and can't be booked online.", Code = ErrorCodes.TableWalkInOnly });
+        }
+
+        if (!policy.Restaurant!.GuestsChooseTable)
+        {
+            return BadRequest(new MessageResponse { Message = TableChoice.DisabledMessage, Code = ErrorCodes.BookingTableChoiceDisabled });
         }
 
         if (request.Seats <= 0)
@@ -210,7 +216,7 @@ public class HoldsController(
         }
 
         IReadOnlyList<TableCandidate> candidates = await _autoAssigner.BuildCandidatesAsync(
-            policy.Restaurant!, request.Seats, policy.BookingDate);
+            policy.Restaurant!, request.Seats, policy.BookingDate, sectionId: request.SectionId);
 
         if (candidates.Count == 0)
         {

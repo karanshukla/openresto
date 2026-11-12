@@ -28,6 +28,11 @@ public sealed class HoldPolicyService(
 
         DateTime bookingDate = restaurantPolicy.BookingDate;
         Restaurant restaurant = restaurantPolicy.Restaurant!;
+        if (!restaurant.GuestsChooseTable)
+        {
+            return HoldPolicyResult.Rejected(TableChoice.DisabledMessage, ErrorCodes.BookingTableChoiceDisabled);
+        }
+
         bool walkInOnly = restaurant.Sections?
             .SelectMany(s => s.Tables ?? [])
             .Any(t => t.Id == tableId && t.WalkInOnly) == true;

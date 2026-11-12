@@ -309,6 +309,37 @@ public class HoldPolicyServiceTests
     }
 
     [Fact]
+    public async Task ValidateAsync_ReturnsRejected_WhenGuestsMayNotChooseTables()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_ReturnsRejected_WhenGuestsMayNotChooseTables));
+        SeedRestaurant(db);
+        db.Restaurants.Find(1)!.GuestsChooseTable = false;
+        db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
+        db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 2, SectionId = 1 });
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAsync(1, 1, DateTime.UtcNow.AddDays(1), seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Rejected, result.Status);
+        Assert.Equal(ErrorCodes.BookingTableChoiceDisabled, result.Code);
+    }
+
+    [Fact]
+    public async Task ValidateAnyTableAsync_ReturnsEligible_WhenGuestsMayNotChooseTables()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(ValidateAnyTableAsync_ReturnsEligible_WhenGuestsMayNotChooseTables));
+        SeedRestaurant(db);
+        db.Restaurants.Find(1)!.GuestsChooseTable = false;
+        db.SaveChanges();
+        HoldPolicyService svc = NewService(db);
+
+        HoldPolicyResult result = await svc.ValidateAnyTableAsync(1, DateTime.UtcNow.AddDays(1), seats: 2);
+
+        Assert.Equal(HoldPolicyStatus.Eligible, result.Status);
+    }
+
+    [Fact]
     public async Task ValidateAsync_PassesRestaurantConfiguredDuration_ToBookingConflictCheck()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(ValidateAsync_PassesRestaurantConfiguredDuration_ToBookingConflictCheck));
