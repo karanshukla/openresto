@@ -10,6 +10,7 @@ import {
   getIsoDayFromDateString,
   getNextOpening,
   isoDayShortName,
+  isOpenNow,
   isOpenOnDate,
 } from "@/utils/openingHours";
 import { isWalkInOnlyOnDate, isWalkInOnlyOnDay, walkInBadgeLabel } from "@/utils/walkIn";
@@ -192,8 +193,8 @@ export default function LocationListItem({
     </Button>
   ) : null;
 
-  // The waitlist is today's queue, so a walk-in day offers it only when that day is today.
-  const takesWaitlist = walkInLocation || (walkInOnDate && isToday);
+  // The waitlist is today's queue, and the server takes a join only while the location is open.
+  const takesWaitlist = (walkInLocation || (walkInOnDate && isToday)) && isOpenNow(restaurant);
   const joinWaitlist = () => onJoinWaitlist(restaurant);
   const joinWaitlistButton =
     takesWaitlist && !bookNowButton ? (

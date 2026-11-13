@@ -9,20 +9,21 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { fetchAvailability, TimeSlotDto } from "@/api/availability";
-import { getHoursForDate, hasCustomHours, isOpenOnDate } from "@/utils/openingHours";
+import { getHoursForDate, hasCustomHours, isOpenNow, isOpenOnDate } from "@/utils/openingHours";
 import { isWalkInOnlyOnDate, walkInBadgeLabel } from "@/utils/walkIn";
 import { hexToRgb } from "@/utils/colors";
 import { getRestaurantDate, getRestaurantNow } from "@/utils/restaurantTime";
 import { cardStyles, openBadgeColor } from "@/components/restaurant/cardStyles";
 import { styles } from "./RestaurantCard.styles";
 import { Icon } from "@/components/common/Icon";
+import Button from "@/components/common/Button";
 import { RestaurantTags } from "@/components/restaurant/RestaurantTags";
 import { resolveServerUrl } from "@/utils/serverUrl";
 import { APPLE_MAPS_SEARCH, GOOGLE_MAPS_SEARCH, openDirections } from "@/utils/directions";
 
 /**
- * Both "open now" readings judge today as a date, so a closed date exception reads as shut and
- * a special-hours date reads on its own hours, the way the server answers for it.
+ * Judges today as a date, like `isOpenNow`, so a closed date exception reads as shut and a
+ * special-hours date reads on its own hours, the way the server answers for it.
  */
 function opensLaterToday(restaurant: RestaurantDto, t: TFunction): string | null {
   const timezone = restaurant.timezone ?? "UTC";
@@ -41,18 +42,6 @@ function opensLaterToday(restaurant: RestaurantDto, t: TFunction): string | null
   if (diffHours >= 1)
     return t("restaurant.card.opensInHoursMinutes", { hours: diffHours, minutes: diffRemMins });
   return t("restaurant.card.opensInMinutes", { minutes: diffMins });
-}
-
-function isOpenNow(restaurant: RestaurantDto): boolean {
-  const timezone = restaurant.timezone ?? "UTC";
-  const { totalMins } = getRestaurantNow(timezone || "UTC");
-  const today = getRestaurantDate(timezone || "UTC");
-  const { open: openTime, close: closeTime } = getHoursForDate(restaurant, today);
-  const [oh, om] = openTime.split(":").map(Number);
-  const [ch, cm] = closeTime.split(":").map(Number);
-  if (isNaN(oh) || isNaN(ch)) return true;
-  if (!isOpenOnDate(restaurant, today)) return false;
-  return totalMins >= oh * 60 + om && totalMins < ch * 60 + cm;
 }
 
 export default function RestaurantCard({
@@ -120,6 +109,8 @@ export default function RestaurantCard({
   const todayDate = getRestaurantDate(restaurant.timezone ?? "UTC");
   const walkInToday = !walkInLocation && isWalkInOnlyOnDate(restaurant, todayDate);
   const walkInBadgeText = walkInBadgeLabel(restaurant);
+  // The server takes a waitlist join only on a walk-in day while the location is open.
+  const takesWaitlist = (walkInLocation || walkInToday) && open;
   const todayHours = getHoursForDate(restaurant, todayDate);
   const hoursVary = hasCustomHours(restaurant);
   const closedToday = !isOpenOnDate(restaurant, todayDate);
@@ -355,6 +346,24 @@ export default function RestaurantCard({
                 <ThemedText style={[styles.walkInEmptyText, { color: mutedColor }]}>
                   {t("restaurant.card.noReservationsRequired")}
                 </ThemedText>
+                {takesWaitlist && (
+                  <Button
+                    testID="card-join-waitlist"
+                    size="sm"
+                    accessibilityLabel={t("restaurant.locationListItem.joinWaitlistAt", {
+                      name: restaurant.name,
+                    })}
+                    onPress={(event) => {
+                      // Button fires its own haptic; this only has to keep the press off the card.
+                      event?.stopPropagation?.();
+                      router.push(
+                        `/(user)/locations/${restaurant.id}?waitlist=1&party=${party}` as Href
+                      );
+                    }}
+                  >
+                    {t("restaurant.locationListItem.joinWaitlist")}
+                  </Button>
+                )}
               </View>
             ) : (
               <>
