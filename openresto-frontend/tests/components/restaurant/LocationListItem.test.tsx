@@ -578,12 +578,26 @@ describe("LocationListItem", () => {
     });
 
     it("offers the waitlist in place of Book now at a walk-in-only location", async () => {
+      (getRestaurantNow as jest.Mock).mockReturnValue({ totalMins: 720, isoDay: THURSDAY });
       const restaurant = { ...mockRestaurant, walkInOnly: true };
       renderWithProviders(<LocationListItem {...baseProps} restaurant={restaurant as any} />);
 
       fireEvent.press(await screen.findByTestId("location-join-waitlist-1"));
       expect(onJoinWaitlist).toHaveBeenCalledWith(restaurant);
       expect(screen.queryByTestId("location-book-now-1")).toBeNull();
+    });
+
+    // The server turns a join away outside opening hours, so the button waits for opening.
+    it("offers no waitlist at a walk-in-only location before it opens", async () => {
+      (getRestaurantNow as jest.Mock).mockReturnValue({ totalMins: 7 * 60, isoDay: THURSDAY });
+      renderWithProviders(
+        <LocationListItem
+          {...baseProps}
+          restaurant={{ ...mockRestaurant, walkInOnly: true } as any}
+        />
+      );
+      await waitFor(() => expect(screen.getByText("Toronto Resto")).toBeTruthy());
+      expect(screen.queryByTestId("location-join-waitlist-1")).toBeNull();
     });
 
     it("opens the waitlist from the walk-in notice inside Details", async () => {

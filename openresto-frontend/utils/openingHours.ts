@@ -1,6 +1,6 @@
 import { DateExceptionDto, DayHoursDto } from "@/api/restaurants";
 import { getDateException } from "@/utils/dateExceptions";
-import { parseDayOfWeek } from "@/utils/restaurantTime";
+import { getRestaurantDate, getRestaurantNow, parseDayOfWeek } from "@/utils/restaurantTime";
 
 /**
  * Shared helpers for per-day opening hours. The API returns `openHours` as a
@@ -174,6 +174,35 @@ export function isOpenOnDate(restaurant: HoursSource, date: string, openDays?: n
   if (openDays) return openDays.includes(isoDay);
   const week = weeklyOpenDays(restaurant.openDays);
   return week.length === 0 || week.includes(isoDay);
+}
+
+/**
+ * Whether the location is serving right now, judged in its own timezone the way the server's
+ * `IsServingAt` judges it: today's service, or yesterday's if it runs past midnight. Equal open
+ * and close times mean all day. Each day is read as a date, so date exceptions apply.
+ */
+export function isOpenNow(restaurant: HoursSource & { timezone?: string | null }): boolean {
+  const timezone = restaurant.timezone || "UTC";
+  const { totalMins } = getRestaurantNow(timezone);
+  const today = getRestaurantDate(timezone);
+  const todayHours = getHoursForDate(restaurant, today);
+  const open = toMinutes(todayHours.open);
+  const close = toMinutes(todayHours.close);
+  if (isNaN(open) || isNaN(close)) return true;
+  // Today's service, up to midnight when it runs past it.
+  if (isOpenOnDate(restaurant, today)) {
+    if (open === close) return true;
+    if (totalMins >= open && (close < open || totalMins < close)) return true;
+  }
+
+  const yesterday = new Date(`${today}T00:00:00Z`);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const prev = yesterday.toISOString().slice(0, 10);
+  const prevHours = getHoursForDate(restaurant, prev);
+  const prevClose = toMinutes(prevHours.close);
+  return (
+    prevClose < toMinutes(prevHours.open) && isOpenOnDate(restaurant, prev) && totalMins < prevClose
+  );
 }
 
 /** The weekly open days as the server reads them: names or numbers, anything else dropped. */

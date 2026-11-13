@@ -495,6 +495,40 @@ describe("RestaurantCard", () => {
       expect(fetchAvailability).not.toHaveBeenCalled();
     });
 
+    it("opens the waitlist for the card's party from the walk-in empty state", () => {
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInOnly: true }} party={4} />);
+      fireEvent.press(screen.getByTestId("card-join-waitlist"));
+      expect(mockPush).toHaveBeenCalledTimes(1);
+      expect(mockPush).toHaveBeenCalledWith("/(user)/locations/1?waitlist=1&party=4");
+    });
+
+    it("offers the waitlist on a walk-in day that is today", () => {
+      render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInDays: String(todayIso) }} />);
+      expect(screen.getByTestId("card-join-waitlist")).toBeTruthy();
+    });
+
+    // The server turns a join away outside opening hours, so the button waits for opening.
+    it("offers no waitlist while the walk-in location is closed", () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date("2026-01-01T23:59:30Z"));
+      try {
+        render(
+          <RestaurantCard
+            restaurant={{
+              ...mockRestaurant,
+              walkInOnly: true,
+              openTime: "23:00",
+              closeTime: "23:59",
+            }}
+          />
+        );
+        expect(screen.getByTestId("walk-in-slot-notice")).toBeTruthy();
+        expect(screen.queryByTestId("card-join-waitlist")).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
     it("shows the walk-in badge for walk-in only locations", () => {
       render(<RestaurantCard restaurant={{ ...mockRestaurant, walkInOnly: true }} />);
       expect(screen.getByTestId("walk-in-badge")).toBeTruthy();

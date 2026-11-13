@@ -7,6 +7,7 @@ import {
   getLastBookingForDay,
   getNextOpening,
   hasCustomHours,
+  isOpenNow,
   isWithinServiceWindow,
   isoDayShortName,
   lastBookingOptions,
@@ -172,6 +173,50 @@ describe("isWithinServiceWindow", () => {
 
   it("covers every time when open and close match", () => {
     expect(isWithinServiceWindow("00:00", "00:00", "13:00")).toBe(true);
+  });
+});
+
+// Mirrors the server's ServiceWindowHelper.IsServingAt, which gates a waitlist join.
+describe("isOpenNow", () => {
+  // Thursday 2026-01-01 in UTC.
+  const at = (time: string) => jest.setSystemTime(new Date(`2026-01-01T${time}:00Z`));
+  const restaurant = (open: string, close: string, openDays = "1,2,3,4,5,6,7") => ({
+    openTime: open,
+    closeTime: close,
+    openDays,
+    timezone: "UTC",
+  });
+
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it("covers today's window, opening inclusive and closing exclusive", () => {
+    at("09:00");
+    expect(isOpenNow(restaurant("09:00", "22:00"))).toBe(true);
+    at("22:00");
+    expect(isOpenNow(restaurant("09:00", "22:00"))).toBe(false);
+  });
+
+  it("reads equal open and close times as open all day", () => {
+    at("03:00");
+    expect(isOpenNow(restaurant("00:00", "00:00"))).toBe(true);
+  });
+
+  it("covers yesterday's service running past midnight, only if yesterday was open", () => {
+    at("01:00");
+    // Wednesday 18:00 through 02:00 reaches Thursday 01:00.
+    expect(isOpenNow(restaurant("18:00", "02:00", "3"))).toBe(true);
+    expect(isOpenNow(restaurant("18:00", "02:00", "4"))).toBe(false);
+  });
+
+  it("reads a closed date exception as shut", () => {
+    at("12:00");
+    expect(
+      isOpenNow({
+        ...restaurant("00:00", "00:00"),
+        dateExceptions: [{ date: "2026-01-01", type: "closed" }] as never,
+      })
+    ).toBe(false);
   });
 });
 
