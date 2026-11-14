@@ -10,10 +10,22 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-14
+
 ### Added
 
 - Guests who pick a section can keep **Any table** and have the best free table in that section assigned to them, instead of having to choose one. ([#174](https://github.com/karanshukla/openresto/issues/174))
 - A location can let guests choose only a section, never a table, in **Booking Settings → Tables & references → Guests choose**. The booking form then shows no table list, and a hold or booking that names a table is declined. Staff bookings and the waitlist are unaffected. ([#174](https://github.com/karanshukla/openresto/issues/174))
+- Walk-in locations on the front page now have a **Join waitlist** button on their card, shown while the location is open. It opens that location's waitlist with the card's party size. ([#529](https://github.com/karanshukla/openresto/pull/529))
+
+### Changed
+
+- **Tonight** seats a waitlist party from its own card. Each party has one seating button that names the table: **Seat at D2** when one table fits, or **Choose table** with the fitting tables listed under the party, smallest first. Arrivals get the same list. The floor's **Seat here** tiles still work, and picking a table no longer switches tabs on a portrait tablet. ([#531](https://github.com/karanshukla/openresto/pull/531))
+- Backend dependencies moved to MailKit 5, Magick.NET 15 and Microsoft.Extensions 11; npm dependencies updated to their latest releases within Expo SDK 57.
+
+### Fixed
+
+- A location open all day (`00:00–00:00`) no longer shows as Closed on its front page card, and overnight hours show the right open state. ([#529](https://github.com/karanshukla/openresto/pull/529))
 
 ## [2.6.0] - 2026-11-07
 
@@ -484,7 +496,9 @@ Hello! Thanks for reading, and for the 50 stars on GitHub! This release builds o
 [2.2.0]: https://github.com/karanshukla/openresto/releases/tag/v2.2.0
 [2.3.0]: https://github.com/karanshukla/openresto/releases/tag/v2.3.0
 [2.3.1]: https://github.com/karanshukla/openresto/releases/tag/v2.3.1
-[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/karanshukla/openresto/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/karanshukla/openresto/compare/v2.6.0...v2.7.0
+[2.6.0]: https://github.com/karanshukla/openresto/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/karanshukla/openresto/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/karanshukla/openresto/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/karanshukla/openresto/compare/v2.3.1...v2.4.0
