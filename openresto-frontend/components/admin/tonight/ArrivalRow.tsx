@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
@@ -13,7 +14,7 @@ import { styles } from "./ArrivalRow.styles";
 /**
  * One party due tonight. The moves come from the server's `nextStatuses`, so a button is never
  * offered that would come back refused; Seat puts the party at the table they booked, and
- * Choose table hands them to the floor to pick another.
+ * Choose table lists the others under the party (`tray`).
  *
  * @see [ArrivalRow.test.tsx](../../../tests/components/admin/tonight/ArrivalRow.test.tsx) — pins
  * the late/due wording, each move following `nextStatuses`, Seat withheld while the booked
@@ -27,6 +28,7 @@ export function ArrivalRow({
   ownTableFree,
   busy,
   isLast,
+  tray,
   onSetStatus,
   onChooseTable,
 }: {
@@ -39,6 +41,8 @@ export function ArrivalRow({
   ownTableFree: boolean;
   busy: boolean;
   isLast: boolean;
+  /** The table list, rendered while `choosing`. */
+  tray?: ReactNode;
   onSetStatus: (status: BookingStatus) => void;
   onChooseTable: () => void;
 }) {
@@ -167,6 +171,7 @@ export function ArrivalRow({
           />
         )}
       </View>
+      {choosing && tray}
     </View>
   );
 }

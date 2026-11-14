@@ -93,3 +93,25 @@ export function floorCounts(units: FloorUnit[]): Record<FloorUnit["state"], numb
   for (const unit of units) counts[unit.state] += 1;
   return counts;
 }
+
+/** The most tables a party's own list offers; the rest stay a tap away on the floor. */
+export const MAX_SEAT_OPTIONS = 6;
+
+/**
+ * The tiles a picked party can sit at right now, the one to offer first at the head: a booking's
+ * own table, then the smallest that fits, a single table ahead of a combined one of the same
+ * size so the bigger unit stays whole for a bigger party.
+ *
+ * @see [tonight.test.ts](../tests/utils/tonight.test.ts) — pins the order, and that a tile the
+ * party cannot take is left out.
+ */
+export function seatOptions(units: FloorUnit[], source: SeatingSource): FloorUnit[] {
+  const rank = (unit: FloorUnit) => (tileFit(unit, source) === "own" ? 0 : 1);
+  const kindRank = (unit: FloorUnit) => (unit.kind === "table" ? 0 : 1);
+  return units
+    .filter((unit) => {
+      const fit = tileFit(unit, source);
+      return fit === "fits" || fit === "own";
+    })
+    .sort((a, b) => rank(a) - rank(b) || a.seats - b.seats || kindRank(a) - kindRank(b));
+}

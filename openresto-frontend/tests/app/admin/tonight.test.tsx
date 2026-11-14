@@ -113,6 +113,10 @@ function tonight(over: Partial<Tonight> = {}): Tonight {
   };
 }
 
+/** Ada can take T2 or the T2 + T4 group, so her card lists tables instead of naming one. */
+const twoTablesForAda = () =>
+  tonight({ seatableNow: [{ seats: 2, tableIds: [2], tableGroupIds: [9] }] });
+
 const wide = () =>
   fireEvent(screen.getByTestId("tonight-screen"), "layout", {
     nativeEvent: { layout: { width: 1200, height: 800 } },
@@ -154,7 +158,7 @@ describe("admin tonight", () => {
     expect(within(screen.getByTestId("arrivals-late")).getByText("Priya")).toBeTruthy();
     expect(within(screen.getByTestId("arrivals-nextHour")).getByText("Sam")).toBeTruthy();
     expect(within(screen.getByTestId("arrivals-later")).getByText("Group")).toBeTruthy();
-    expect(screen.getByTestId("waitlist-row-40")).toBeTruthy();
+    expect(screen.getByTestId("waitlist-card-40")).toBeTruthy();
     expect(screen.getByTestId("summary-free")).toHaveTextContent("2 free");
     expect(screen.getByTestId("summary-seated")).toHaveTextContent("1 seated");
     expect(screen.queryByTestId("summary-overdue")).toBeNull();
@@ -272,7 +276,49 @@ describe("admin tonight", () => {
     );
   });
 
+  it("seats a waitlist party straight at the only table that can take them", async () => {
+    await renderScreen();
+    wide();
+
+    expect(screen.queryByTestId("waitlist-choose-40")).toBeNull();
+    expect(screen.getByTestId("waitlist-seat-40")).toHaveTextContent("Seat at T2");
+    fireEvent.press(screen.getByTestId("waitlist-seat-40"));
+
+    expect(await screen.findByText("Ada seated at T2")).toBeTruthy();
+    expect(mockSeatAt).toHaveBeenCalledWith(40, expect.objectContaining({ kind: "table", id: 2 }));
+    expect(mockAct).not.toHaveBeenCalled();
+  });
+
+  it("lists a waitlist party's tables under the party, and seats them from the list", async () => {
+    mockTonight.mockResolvedValue(twoTablesForAda());
+    await renderScreen();
+    wide();
+
+    fireEvent.press(screen.getByTestId("waitlist-choose-40"));
+    const tray = screen.getByTestId("seat-options-waitlist-40");
+    expect(within(tray).getByText("T2 · 2 seats")).toBeTruthy();
+    fireEvent.press(within(tray).getByTestId("seat-option-waitlist-40-group-9"));
+
+    expect(await screen.findByText("Ada seated at T2 + T4")).toBeTruthy();
+    expect(mockSeatAt).toHaveBeenCalledWith(40, expect.objectContaining({ kind: "group", id: 9 }));
+    expect(screen.queryByTestId("seat-options-waitlist-40")).toBeNull();
+  });
+
+  it("leaves the table to the server when the floor can't name one for the party", async () => {
+    mockTonight.mockResolvedValue(tonight({ seatableNow: [] }));
+    mockAct.mockResolvedValueOnce({ ok: false, message: "Already gone." });
+    await renderScreen();
+    wide();
+
+    expect(screen.getByTestId("waitlist-seat-40")).toHaveTextContent("Seat");
+    fireEvent.press(screen.getByTestId("waitlist-seat-40"));
+
+    expect(await screen.findByTestId("tonight-error")).toHaveTextContent("Already gone.");
+    expect(mockAct).toHaveBeenCalledWith(40, "seat");
+  });
+
   it("seats a waitlist party on the tile the host picks, passing the table through", async () => {
+    mockTonight.mockResolvedValue(twoTablesForAda());
     await renderScreen();
     wide();
 
@@ -289,6 +335,19 @@ describe("admin tonight", () => {
     expect(await screen.findByText("Ada seated at T2")).toBeTruthy();
     expect(mockSeatAt).toHaveBeenCalledWith(40, expect.objectContaining({ kind: "table", id: 2 }));
     expect(screen.queryByTestId("pick-banner")).toBeNull();
+  });
+
+  it("lists a booking's own table first, and moves it when another is picked", async () => {
+    await renderScreen();
+    wide();
+
+    fireEvent.press(screen.getByTestId("arrival-choose-13"));
+    const options = within(screen.getByTestId("seat-options-booking-13")).getAllByRole("button");
+    expect(options[0]).toHaveTextContent("Table 3 · 4 seats");
+    fireEvent.press(screen.getByTestId("seat-option-booking-13-table-2"));
+
+    expect(await screen.findByText("Priya seated at T2")).toBeTruthy();
+    expect(mockMove).toHaveBeenCalledWith(13, 2);
   });
 
   it("moves a booking to the picked table, then seats it", async () => {
@@ -332,8 +391,7 @@ describe("admin tonight", () => {
     await renderScreen();
     wide();
 
-    fireEvent.press(screen.getByTestId("waitlist-choose-40"));
-    fireEvent.press(screen.getByTestId("tile-seat-here-table-2"));
+    fireEvent.press(screen.getByTestId("waitlist-seat-40"));
 
     expect(await screen.findByTestId("tonight-error")).toHaveTextContent("No free table.");
   });
@@ -368,7 +426,6 @@ describe("admin tonight", () => {
     const interval = jest.spyOn(global, "setInterval");
     await renderScreen();
     wide();
-    fireEvent.press(screen.getByTestId("waitlist-choose-40"));
     fireEvent.press(screen.getByTestId("arrival-choose-14"));
 
     const later = tonight();
@@ -384,9 +441,11 @@ describe("admin tonight", () => {
 
   it("drops a picked waitlist party who has left the queue", async () => {
     const interval = jest.spyOn(global, "setInterval");
+    mockTonight.mockResolvedValue(twoTablesForAda());
     await renderScreen();
     wide();
     fireEvent.press(screen.getByTestId("waitlist-choose-40"));
+    expect(screen.getByTestId("pick-banner")).toBeTruthy();
 
     mockTonight.mockResolvedValueOnce(
       tonight({ waitlist: { restaurantId: 1, acceptingGuests: true, entries: [] } })
@@ -400,7 +459,7 @@ describe("admin tonight", () => {
     expect(screen.getByText("No one is waiting")).toBeTruthy();
   });
 
-  it("calls, seats and removes waitlist parties, removing only after a confirm", async () => {
+  it("calls and removes waitlist parties, removing only after a confirm", async () => {
     await renderScreen();
     wide();
 
@@ -411,10 +470,6 @@ describe("admin tonight", () => {
     expect(mockAct).not.toHaveBeenCalledWith(40, "remove");
     fireEvent.press(within(screen.getByTestId("confirm-modal")).getByText("Remove"));
     await waitFor(() => expect(mockAct).toHaveBeenCalledWith(40, "remove"));
-
-    mockAct.mockResolvedValueOnce({ ok: false, message: "Already gone." });
-    fireEvent.press(screen.getByTestId("waitlist-seat-40"));
-    expect(await screen.findByTestId("tonight-error")).toHaveTextContent("Already gone.");
   });
 
   it("keeps a waitlist party when the remove is cancelled", async () => {
@@ -466,7 +521,7 @@ describe("admin tonight", () => {
     expect(screen.queryByTestId("pane-arrivals")).toBeNull();
   });
 
-  it("puts every pane in tabs on a narrow screen, and jumps to the floor on a pick", async () => {
+  it("puts every pane in tabs on a narrow screen, and seats a pick without leaving its tab", async () => {
     await renderScreen();
     fireEvent(screen.getByTestId("tonight-screen"), "layout", {
       nativeEvent: { layout: { width: 500, height: 800 } },
@@ -479,8 +534,9 @@ describe("admin tonight", () => {
 
     fireEvent.press(screen.getByTestId("arrival-choose-14"));
 
-    expect(screen.getByTestId("pane-floor")).toBeTruthy();
-    expect(screen.getByTestId("pick-banner")).toBeTruthy();
+    expect(screen.queryByTestId("pane-floor")).toBeNull();
+    fireEvent.press(screen.getByTestId("seat-option-booking-14-table-2"));
+    expect(await screen.findByText("Sam seated at T2")).toBeTruthy();
   });
 
   it("names a hidden guest generically", async () => {

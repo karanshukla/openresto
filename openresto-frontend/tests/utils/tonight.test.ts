@@ -9,6 +9,7 @@ import {
   LATE_AFTER_MINUTES,
   minutesUntil,
   NEXT_HOUR_MINUTES,
+  seatOptions,
   tileFit,
   type SeatingSource,
 } from "@/utils/tonight";
@@ -174,5 +175,57 @@ describe("floorCounts", () => {
         unit({ state: "overdue" }),
       ])
     ).toEqual({ free: 2, bookedSoon: 0, seated: 1, overdue: 1 });
+  });
+});
+
+describe("seatOptions", () => {
+  const waitlist = (seats: number, tableIds: number[], tableGroupIds: number[] = []) =>
+    ({
+      kind: "waitlist",
+      id: 9,
+      seats,
+      seatable: { seats, tableIds, tableGroupIds },
+    }) satisfies SeatingSource;
+
+  it("offers the smallest table that fits first, and a table ahead of a group its size", () => {
+    const units = [
+      unit({ kind: "group", id: 7, seats: 4 }),
+      unit({ id: 1, seats: 6 }),
+      unit({ id: 2, seats: 4 }),
+      unit({ id: 3, seats: 2 }),
+    ];
+
+    const options = seatOptions(units, waitlist(2, [1, 2, 3], [7]));
+
+    expect(options.map((u) => `${u.kind}-${u.id}`)).toEqual([
+      "table-3",
+      "table-2",
+      "group-7",
+      "table-1",
+    ]);
+  });
+
+  it("leaves out a tile the party cannot take", () => {
+    const units = [
+      unit({ id: 1, seats: 2, state: "seated" }),
+      unit({ id: 2, seats: 2 }),
+      unit({ id: 3, seats: 1 }),
+      unit({ id: 4, seats: 2 }),
+    ];
+
+    expect(seatOptions(units, waitlist(2, [1, 2, 3])).map((u) => u.id)).toEqual([2]);
+  });
+
+  it("puts a booking's own table ahead of a smaller one", () => {
+    const units = [unit({ id: 2, seats: 2 }), unit({ id: 5, seats: 6, state: "bookedSoon" })];
+    const source = {
+      kind: "booking",
+      id: 1,
+      seats: 2,
+      tableId: 5,
+      isGroupBooking: false,
+    } satisfies SeatingSource;
+
+    expect(seatOptions(units, source).map((u) => u.id)).toEqual([5, 2]);
   });
 });
