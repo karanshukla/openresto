@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="csulpizi.CustomAccessibility" Version="1.0.3" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.17.2" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.13" />
