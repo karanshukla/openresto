@@ -101,8 +101,8 @@ public static class PwaIconGenerator
         if (variant is { FlattenToOpaque: true, Background: { } opaqueBackground })
         {
             image.BackgroundColor = new MagickColor(opaqueBackground);
-            image.Alpha(AlphaOption.Remove);
-            image.Alpha(AlphaOption.Off);
+            image.Alpha(AlphaAction.Remove);
+            image.Alpha(AlphaAction.Off);
         }
 
         image.Format = MagickFormat.Png;
