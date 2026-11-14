@@ -2338,7 +2338,7 @@
       },
       "pick": {
         "title": "Sentando a {{name}}, {{guests}}",
-        "hint": "Toca «Sentar aquí» en una mesa libre.",
+        "hint": "Elige una mesa de la lista o toca «Sentar aquí» en una mesa resaltada.",
         "cancel": "Cancelar"
       },
       "done": {
@@ -2350,6 +2350,13 @@
         "undo": "Deshacer",
         "undoLabel": "Deshacer: {{message}}",
         "dismiss": "Cerrar"
+      },
+      "seatAt": {
+        "title": "Sentar a {{name}} en",
+        "option": "{{table}} · {{seats}}",
+        "direct": "Sentar en {{table}}",
+        "more_one": "1 mesa más en la sala",
+        "more_other": "{{count}} mesas más en la sala"
       }
     },
     "waitlist": {

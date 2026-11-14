@@ -15,7 +15,9 @@ import Button from "@/components/common/Button";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import { Icon } from "@/components/common/Icon";
 import { LocationPills } from "@/components/admin/locations/LocationPills";
-import WaitlistRow, { waitlistPartyName } from "@/components/admin/waitlist/WaitlistRow";
+import { waitlistPartyName } from "@/components/admin/waitlist/WaitlistRow";
+import { WaitlistCard } from "@/components/admin/tonight/WaitlistCard";
+import { SeatOptions } from "@/components/admin/tonight/SeatOptions";
 import { FloorTile } from "@/components/admin/tonight/FloorTile";
 import { ArrivalRow } from "@/components/admin/tonight/ArrivalRow";
 import { UndoBar } from "@/components/admin/tonight/UndoBar";
@@ -37,6 +39,7 @@ import {
   floorCounts,
   groupArrivals,
   isAwaitingTable,
+  seatOptions,
   tileFit,
   type SeatingSource,
 } from "@/utils/tonight";
@@ -61,14 +64,15 @@ function layoutFor(width: number): Layout {
 }
 
 /**
- * The host stand: what's free, who is due, who is waiting, on one tablet screen. Tap a party
- * (Choose table) and then a tile (Seat here) to place them; every move is one press followed by
- * an undo rather than a confirm. Removing a waitlist party keeps its confirm, because nothing
- * can bring the entry back.
+ * The host stand: what's free, who is due, who is waiting, on one tablet screen. A party is
+ * seated from where it is listed: its row names the table it will land on, or lists the tables
+ * that can take it, and the same tables light up on the floor for a host who thinks in tiles.
+ * Every move is one press followed by an undo rather than a confirm. Removing a waitlist party
+ * keeps its confirm, because nothing can bring the entry back.
  *
  * @see [tonight.test.tsx](../../tests/app/admin/tonight.test.tsx) — pins the poll, each tile
- * and arrival move, seating a waitlist party on a chosen tile, moving a booking to another
- * table, undo, and the columns collapsing to tabs on a narrow screen.
+ * and arrival move, seating a waitlist party from its own table list or a chosen tile, moving a
+ * booking to another table, undo, and the columns collapsing to tabs on a narrow screen.
  */
 export default function TonightScreen() {
   const { t } = useTranslation();
@@ -136,6 +140,7 @@ export default function TonightScreen() {
   const layout = layoutFor(width);
   const bookingsById = useMemo(() => new Map((data?.bookings ?? []).map((b) => [b.id, b])), [data]);
   const tableUnits = useMemo(() => data?.sections.flatMap((s) => s.units) ?? [], [data]);
+  const allUnits = useMemo(() => [...tableUnits, ...(data?.groups ?? [])], [tableUnits, data]);
   const arrivals = data ? groupArrivals(data.bookings, nowMs) : [];
   const arrivalsCount = arrivals.reduce((sum, g) => sum + g.bookings.length, 0);
   const entries = data?.waitlist.entries ?? [];
@@ -194,10 +199,7 @@ export default function TonightScreen() {
   const setStatus = (booking: BookingDetailDto, status: BookingStatus, table?: string) =>
     run(() => applyStatus(booking, status, table));
 
-  const seatHere = (unit: FloorUnit) => {
-    /* istanbul ignore next -- Seat here only renders while a party is picked */
-    if (!picked) return;
-    const source = picked;
+  const seat = (source: Picked, unit: FloorUnit) => {
     const label = unitLabel(unit);
     setPicked(null);
     return run(async () => {
@@ -237,7 +239,6 @@ export default function TonightScreen() {
   const choose = (source: Picked) => {
     const same = picked?.kind === source.kind && picked.id === source.id;
     setPicked(same ? null : source);
-    if (!same && layout === "one") setTab("floor");
   };
 
   const dismissDone = useCallback(() => setDone(null), []);
@@ -298,7 +299,10 @@ export default function TonightScreen() {
       pick={picked ? { fit: tileFit(unit, picked), partyName: picked.name } : null}
       busy={busy}
       onSetStatus={(booking, status) => setStatus(booking, status, unitLabel(unit))}
-      onSeatHere={() => seatHere(unit)}
+      onSeatHere={
+        /* istanbul ignore next -- Seat here only renders while a party is picked */
+        () => picked && seat(picked, unit)
+      }
     />
   );
 
@@ -334,6 +338,34 @@ export default function TonightScreen() {
 
   const lateTone = isDark ? theme.floor.overdue.text.dark : theme.floor.overdue.text.light;
 
+  const seatTray = (source: Picked) => (
+    <SeatOptions
+      id={`${source.kind}-${source.id}`}
+      partyName={source.name}
+      options={seatOptions(allUnits, source)}
+      labelFor={unitLabel}
+      busy={busy}
+      onSeat={(unit) => seat(source, unit)}
+    />
+  );
+
+  const bookingSource = (booking: BookingDetailDto): Picked => ({
+    kind: "booking",
+    id: booking.id,
+    seats: booking.seats,
+    tableId: booking.tableId,
+    isGroupBooking: booking.tableGroupId != null,
+    name: guestName(booking),
+  });
+
+  const waitlistSource = (entry: WaitlistEntry): Picked => ({
+    kind: "waitlist",
+    id: entry.id,
+    seats: entry.seats,
+    seatable: data!.seatableNow.find((x) => x.seats === entry.seats),
+    name: waitlistPartyName(entry, t),
+  });
+
   const arrivalsPane = () => (
     <ScrollView contentContainerStyle={styles.paneBody} testID="pane-arrivals">
       {arrivals.length === 0
@@ -363,17 +395,9 @@ export default function TonightScreen() {
                   ownTableFree={ownTableFree(booking)}
                   busy={busy}
                   isLast={index === group.bookings.length - 1}
+                  tray={seatTray(bookingSource(booking))}
                   onSetStatus={(status) => setStatus(booking, status)}
-                  onChooseTable={() =>
-                    choose({
-                      kind: "booking",
-                      id: booking.id,
-                      seats: booking.seats,
-                      tableId: booking.tableId,
-                      isGroupBooking: booking.tableGroupId != null,
-                      name: guestName(booking),
-                    })
-                  }
+                  onChooseTable={() => choose(bookingSource(booking))}
                 />
               ))}
             </View>
@@ -389,27 +413,27 @@ export default function TonightScreen() {
             t("admin.tonight.waitlist.empty"),
             t("admin.tonight.waitlist.emptyBody")
           )
-        : entries.map((entry, index) => (
-            <WaitlistRow
-              key={entry.id}
-              entry={entry}
-              busy={busy}
-              isLast={index === entries.length - 1}
-              choosing={picked?.kind === "waitlist" && picked.id === entry.id}
-              onChooseTable={() =>
-                choose({
-                  kind: "waitlist",
-                  id: entry.id,
-                  seats: entry.seats,
-                  seatable: data!.seatableNow.find((x) => x.seats === entry.seats),
-                  name: waitlistPartyName(entry, t),
-                })
-              }
-              onAction={(action) =>
-                action === "remove" ? setRemoveTarget(entry) : actOnEntry(entry, action)
-              }
-            />
-          ))}
+        : entries.map((entry, index) => {
+            const source = waitlistSource(entry);
+            const options = seatOptions(allUnits, source);
+            const only = options.length === 1 ? options[0] : undefined;
+            return (
+              <WaitlistCard
+                key={entry.id}
+                entry={entry}
+                busy={busy}
+                isLast={index === entries.length - 1}
+                choosing={picked?.kind === "waitlist" && picked.id === entry.id}
+                tableCount={options.length}
+                onlyTable={only && unitLabel(only)}
+                tray={seatTray(source)}
+                onSeat={() => (only ? seat(source, only) : actOnEntry(entry, "seat"))}
+                onChooseTable={() => choose(source)}
+                onCall={() => actOnEntry(entry, "notify")}
+                onRemove={() => setRemoveTarget(entry)}
+              />
+            );
+          })}
     </ScrollView>
   );
 

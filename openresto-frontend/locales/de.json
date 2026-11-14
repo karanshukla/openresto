@@ -2338,7 +2338,7 @@
       },
       "pick": {
         "title": "{{name}} platzieren, {{guests}}",
-        "hint": "Tippen Sie bei einem freien Tisch auf „Hier platzieren“.",
+        "hint": "Wählen Sie einen Tisch aus der Liste oder tippen Sie bei einem hervorgehobenen Tisch auf „Hier platzieren“.",
         "cancel": "Abbrechen"
       },
       "done": {
@@ -2350,6 +2350,13 @@
         "undo": "Rückgängig",
         "undoLabel": "Rückgängig: {{message}}",
         "dismiss": "Schließen"
+      },
+      "seatAt": {
+        "title": "{{name}} platzieren an",
+        "option": "{{table}} · {{seats}}",
+        "direct": "An {{table}} platzieren",
+        "more_one": "1 weiterer Tisch im Raum",
+        "more_other": "{{count}} weitere Tische im Raum"
       }
     },
     "waitlist": {

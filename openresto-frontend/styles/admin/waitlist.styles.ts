@@ -42,7 +42,6 @@ export const styles = StyleSheet.create({
     gap: theme.spacing.md,
     padding: theme.spacing.lg,
   },
-  choosing: { borderLeftWidth: 4 },
   ticket: {
     ...theme.typography.bodyBold,
     fontSize: 18,

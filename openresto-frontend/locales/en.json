@@ -2338,7 +2338,7 @@
       },
       "pick": {
         "title": "Seating {{name}}, {{guests}}",
-        "hint": "Tap “Seat here” on a free table.",
+        "hint": "Pick a table from the list, or tap “Seat here” on a highlighted one.",
         "cancel": "Cancel"
       },
       "done": {
@@ -2350,6 +2350,13 @@
         "undo": "Undo",
         "undoLabel": "Undo: {{message}}",
         "dismiss": "Dismiss"
+      },
+      "seatAt": {
+        "title": "Seat {{name}} at",
+        "option": "{{table}} · {{seats}}",
+        "direct": "Seat at {{table}}",
+        "more_one": "1 more table on the floor",
+        "more_other": "{{count}} more tables on the floor"
       }
     },
     "waitlist": {

@@ -2338,7 +2338,7 @@
       },
       "pick": {
         "title": "Installation de {{name}}, {{guests}}",
-        "hint": "Touchez « Installer ici » sur une table libre.",
+        "hint": "Choisissez une table dans la liste, ou touchez « Installer ici » sur une table en surbrillance.",
         "cancel": "Annuler"
       },
       "done": {
@@ -2350,6 +2350,13 @@
         "undo": "Annuler",
         "undoLabel": "Annuler : {{message}}",
         "dismiss": "Fermer"
+      },
+      "seatAt": {
+        "title": "Installer {{name}} à",
+        "option": "{{table}} · {{seats}}",
+        "direct": "Installer à {{table}}",
+        "more_one": "1 autre table en salle",
+        "more_other": "{{count}} autres tables en salle"
       }
     },
     "waitlist": {
