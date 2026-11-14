@@ -43,7 +43,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "commander": "^12.1.0"
+    "commander": "^15.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
