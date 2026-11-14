@@ -28,7 +28,7 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "husky": "^9.1.7",
-    "prettier": "^3.5.1"
+    "prettier": "^3.10.0"
   },
   "overrides": {
     "shell-quote": ">=1.12.0"
