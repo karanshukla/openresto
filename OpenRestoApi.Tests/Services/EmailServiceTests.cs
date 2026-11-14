@@ -117,7 +117,7 @@ public class EmailServiceTests
 
         clientMock.Verify(c => c.ConnectAsync("smtp.test.com", 465, SecureSocketOptions.SslOnConnect, default), Times.Once);
         clientMock.Verify(c => c.AuthenticateAsync("user", "decrypted", default), Times.Once);
-        clientMock.Verify(c => c.SendAsync(It.IsAny<MimeMessage>(), default, It.IsAny<ITransferProgress>()), Times.Once);
+        clientMock.Verify(c => c.SendAsync(It.IsAny<ISendRequest>(), default), Times.Once);
         clientMock.Verify(c => c.DisconnectAsync(true, default), Times.Once);
     }
 
@@ -144,11 +144,10 @@ public class EmailServiceTests
 
         await service.SendEmailAsync("to@test.com", "Subject", "Body");
 
-        clientMock.Verify(c => c.SendAsync(It.Is<MimeMessage>(m =>
-            m.From.Count == 1 &&
-            ((MailboxAddress)m.From[0]).Name == "OpenResto" &&
-            ((MailboxAddress)m.From[0]).Address == "user@test.com"),
-            It.IsAny<System.Threading.CancellationToken>(),
-            It.IsAny<ITransferProgress>()), Times.Once);
+        clientMock.Verify(c => c.SendAsync(It.Is<ISendRequest>(r =>
+            r.Message.From.Count == 1 &&
+            ((MailboxAddress)r.Message.From[0]).Name == "OpenResto" &&
+            ((MailboxAddress)r.Message.From[0]).Address == "user@test.com"),
+            It.IsAny<System.Threading.CancellationToken>()), Times.Once);
     }
 }
