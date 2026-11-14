@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/karanshukla/openresto#readme",
   "devDependencies": {
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.7",
     "husky": "^9.1.7",
     "prettier": "^3.5.1"
   },
