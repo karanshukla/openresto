@@ -9,9 +9,9 @@
   <ItemGroup>
     <PackageReference Include="csulpizi.CustomAccessibility" Version="1.0.3" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="15.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.15" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.15" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.15" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
