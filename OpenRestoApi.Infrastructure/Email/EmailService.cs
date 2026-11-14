@@ -1,3 +1,4 @@
+using MailKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
@@ -60,7 +61,7 @@ public class EmailService(AppDbContext db, ICredentialProtector protector, Func<
 
         await client.ConnectAsync(settings.Host, settings.Port, options);
         await client.AuthenticateAsync(settings.Username, _protector.Decrypt(settings.EncryptedPassword));
-        await client.SendAsync(message);
+        await client.SendAsync(new SendRequest(message));
         await client.DisconnectAsync(true);
     }
 }
