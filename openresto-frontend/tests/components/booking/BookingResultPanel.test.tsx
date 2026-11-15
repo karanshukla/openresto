@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import React from "react";
 import { act, screen, fireEvent, waitFor } from "@testing-library/react-native";
@@ -170,7 +170,9 @@ describe("BookingResultPanel", () => {
 
   it("puts the reference, the restaurant, the time and the party on the share sheet", () => {
     Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
-    const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+    const shareSpy = jest
+      .spyOn(Share, "share")
+      .mockResolvedValue({ action: "sharedAction", activityType: undefined });
     try {
       renderWithProviders(
         <BookingResultPanel
@@ -236,7 +238,9 @@ describe("BookingResultPanel", () => {
         ok: true,
         json: async () => ({ appName: "Open Resto", websiteUrl: "https://bookings.example.com/" }),
       });
-      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      const shareSpy = jest
+        .spyOn(Share, "share")
+        .mockResolvedValue({ action: "sharedAction", activityType: undefined });
       try {
         renderWithProviders(
           <BookingResultPanel
@@ -262,7 +266,9 @@ describe("BookingResultPanel", () => {
     it("puts the link on its own line of the message on Android, falling back to the build's server", () => {
       Object.defineProperty(Platform, "OS", { get: () => "android", configurable: true });
       process.env.EXPO_PUBLIC_API_URL = "https://bookings.example.com/api";
-      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      const shareSpy = jest
+        .spyOn(Share, "share")
+        .mockResolvedValue({ action: "sharedAction", activityType: undefined });
       try {
         renderWithProviders(
           <BookingResultPanel
@@ -286,7 +292,9 @@ describe("BookingResultPanel", () => {
 
     it("shares the details alone when no origin is known, rather than a link to nowhere", () => {
       Object.defineProperty(Platform, "OS", { get: () => "ios", configurable: true });
-      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      const shareSpy = jest
+        .spyOn(Share, "share")
+        .mockResolvedValue({ action: "sharedAction", activityType: undefined });
       try {
         renderWithProviders(
           <BookingResultPanel
@@ -331,7 +339,9 @@ describe("BookingResultPanel", () => {
 
     it("opens the browser's share sheet with the link as its own item where there is one", () => {
       (navigator as { share?: unknown }).share = jest.fn().mockResolvedValue(undefined);
-      const shareSpy = jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" });
+      const shareSpy = jest
+        .spyOn(Share, "share")
+        .mockResolvedValue({ action: "sharedAction", activityType: undefined });
       try {
         renderWithProviders(
           <BookingResultPanel

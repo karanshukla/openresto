@@ -1,5 +1,11 @@
 import { ThemedText } from "@/components/themed-text";
-import { Pressable, ScrollView, View } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  View,
+  type ViewInstance,
+  type ScrollViewInstance,
+} from "react-native";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/components/common/Icon";
@@ -63,9 +69,9 @@ export default function Select({
   const resolvedPlaceholder = placeholder ?? t("common.select.placeholder");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const triggerRef = useRef<View>(null);
-  const listRef = useRef<ScrollView>(null);
-  const optionRefs = useRef<(View | null)[]>([]);
+  const triggerRef = useRef<ViewInstance>(null);
+  const listRef = useRef<ScrollViewInstance>(null);
+  const optionRefs = useRef<(ViewInstance | null)[]>([]);
   const typeahead = useRef("");
   const typeaheadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { panel, measure, release } = useAnchorTracking(triggerRef);

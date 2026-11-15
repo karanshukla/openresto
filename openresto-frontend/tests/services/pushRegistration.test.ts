@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { canRegisterForReminders, registerForReminders } from "@/services/pushRegistration";
 

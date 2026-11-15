@@ -10,6 +10,7 @@ import {
   type GestureResponderEvent,
   type PanResponderCallbacks,
   type PanResponderGestureState,
+  type ViewInstance,
 } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { haptics } from "@/utils/haptics";
@@ -142,7 +143,7 @@ export default function SlidePanel({
 
   // Entrance plays once, the moment the panel mounts (the transition out of idle) — it
   // stays mounted across later lookups, so a second search doesn't replay the slide-in.
-  const sideRef = useRef<View>(null);
+  const sideRef = useRef<ViewInstance>(null);
   useLayoutEffect(() => {
     if (variant !== "side") return;
     animateNode(

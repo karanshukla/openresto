@@ -30,7 +30,7 @@ function writeStorage(pref: ThemePreference) {
   else StorageService.setItem(STORAGE_KEY, pref);
 }
 
-/** Anything the OS does not declare as light — including its "unspecified" — keeps the dark default. */
+/** Anything the OS does not declare as light — including no scheme at all — keeps the dark default. */
 function fromDevice(scheme: ReturnType<typeof Appearance.getColorScheme>): ColorScheme {
   return scheme === "light" ? "light" : "dark";
 }

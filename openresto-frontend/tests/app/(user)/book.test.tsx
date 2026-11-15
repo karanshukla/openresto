@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The standalone booking screen has been folded into the Locations list
  * (issue #205). `book/[restaurantId]` is now a thin <Redirect> to

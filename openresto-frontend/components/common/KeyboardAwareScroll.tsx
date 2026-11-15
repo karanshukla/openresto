@@ -17,12 +17,13 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type StyleProp,
-  type View,
   type ViewStyle,
+  type ViewInstance,
+  type ScrollViewInstance,
 } from "react-native";
 import { scrollOffsetForField } from "@/utils/keyboardAwareScroll";
 
-type ScrollFieldIntoView = (fieldRef: RefObject<View | null>) => void;
+type ScrollFieldIntoView = (fieldRef: RefObject<ViewInstance | null>) => void;
 
 const KeyboardAwareScrollContext = createContext<ScrollFieldIntoView | null>(null);
 
@@ -41,10 +42,10 @@ export function useScrollFieldIntoView(): ScrollFieldIntoView | null {
  * typed structurally — the same reason `BookingDrawer`'s `ScrollShell` is.
  */
 type ScrollShell = ComponentType<{
-  ref?: RefObject<ScrollView | null>;
+  ref?: RefObject<ScrollViewInstance | null>;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
-  keyboardShouldPersistTaps?: boolean | "always" | "handled" | "never";
+  keyboardShouldPersistTaps?: "always" | "handled" | "never";
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   scrollEventThrottle?: number;
   onLayout?: (e: LayoutChangeEvent) => void;
@@ -83,22 +84,22 @@ export function KeyboardAwareScroll({
   /** The scroller to render. Defaults to a plain `ScrollView`. */
   as?: ScrollShell;
   /** Supply one where the caller also scrolls the view itself (a scroll-to-top control). */
-  scrollRef?: RefObject<ScrollView | null>;
+  scrollRef?: RefObject<ScrollViewInstance | null>;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
-  keyboardShouldPersistTaps?: boolean | "always" | "handled" | "never";
+  keyboardShouldPersistTaps?: "always" | "handled" | "never";
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   onLayout?: (e: LayoutChangeEvent) => void;
   children?: ReactNode;
 }) {
-  const ownRef = useRef<ScrollView | null>(null);
+  const ownRef = useRef<ScrollViewInstance | null>(null);
   const scrollRef = externalRef ?? ownRef;
 
   // None of this is rendered, and moving it into state would re-render the whole form on every
   // scroll frame and every focus.
   const scrollOffset = useRef(0);
   const keyboardTop = useRef(0);
-  const focusedField = useRef<RefObject<View | null> | null>(null);
+  const focusedField = useRef<RefObject<ViewInstance | null> | null>(null);
 
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {

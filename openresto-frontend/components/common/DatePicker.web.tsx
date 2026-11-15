@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Modal, View, Pressable } from "react-native";
+import { Modal, View, Pressable, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "@/components/common/Icon";
 import { IconButton } from "@/components/common/IconButton";
@@ -160,8 +160,8 @@ export default function DatePicker({
   const [focused, setFocused] = useState(() =>
     clampToRange(selectedDate ?? toDateStr(today), minDateStr, maxDateStr)
   );
-  const calendarRef = useRef<View>(null);
-  const dayRefs = useRef<Record<string, View | null>>({});
+  const calendarRef = useRef<ViewInstance>(null);
+  const dayRefs = useRef<Record<string, ViewInstance | null>>({});
   const followFocus = useRef(false);
   useDialogFocus(open, calendarRef);
 

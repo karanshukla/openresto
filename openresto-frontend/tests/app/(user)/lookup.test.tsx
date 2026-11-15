@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * /lookup is a thin wrapper around LookupScreen (which has its own tests). What's worth
  * pinning here is the wiring this file owns: parsing `?ref=&email=` off the URL into

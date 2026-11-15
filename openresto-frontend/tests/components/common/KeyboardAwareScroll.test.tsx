@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, type RefObject } from "react";
 import { render, screen } from "@testing-library/react-native";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, Text, View, type ViewInstance } from "react-native";
 import KeyboardAwareScroll, {
   useScrollFieldIntoView,
 } from "@/components/common/KeyboardAwareScroll";
@@ -46,7 +46,7 @@ const FakeScroll = forwardRef<unknown, { children?: React.ReactNode }>(function 
 });
 
 /** Hands the context function back to the test, which is the only way to observe it. */
-let reveal: ((field: RefObject<View | null>) => void) | null = null;
+let reveal: ((field: RefObject<ViewInstance | null>) => void) | null = null;
 function Probe() {
   reveal = useScrollFieldIntoView();
   return <Text>field</Text>;
@@ -59,7 +59,7 @@ const fieldAt = (bottom: number, height = 44) =>
       measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) =>
         cb(0, bottom - height, 0, height),
     },
-  }) as unknown as RefObject<View | null>;
+  }) as unknown as RefObject<ViewInstance | null>;
 
 const renderScroll = () =>
   render(
@@ -181,7 +181,7 @@ describe("KeyboardAwareScroll", () => {
     it("does nothing when the field has gone before the keyboard arrives", () => {
       renderScroll();
 
-      reveal?.({ current: null } as RefObject<View | null>);
+      reveal?.({ current: null } as RefObject<ViewInstance | null>);
       showKeyboard();
 
       expect(scrollTo).not.toHaveBeenCalled();

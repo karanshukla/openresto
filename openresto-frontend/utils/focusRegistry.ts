@@ -1,9 +1,9 @@
 import type { RefObject } from "react";
-import type { TextInput } from "react-native";
+import type { TextInputInstance } from "react-native";
 
 export type FocusTargetKey = "admin-lookup" | "user-lookup";
 
-const registry: Partial<Record<FocusTargetKey, RefObject<TextInput | null>>> = {};
+const registry: Partial<Record<FocusTargetKey, RefObject<TextInputInstance | null>>> = {};
 
 // A focusTarget() call for a screen that isn't mounted yet (e.g. right after
 // router.push() to that screen — the registration effect hasn't run on the
@@ -12,7 +12,7 @@ const registry: Partial<Record<FocusTargetKey, RefObject<TextInput | null>>> = {
 // missing it.
 let pendingFocusKey: FocusTargetKey | null = null;
 
-export function registerFocusTarget(key: FocusTargetKey, ref: RefObject<TextInput | null>) {
+export function registerFocusTarget(key: FocusTargetKey, ref: RefObject<TextInputInstance | null>) {
   registry[key] = ref;
   if (pendingFocusKey === key) {
     pendingFocusKey = null;

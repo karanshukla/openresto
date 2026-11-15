@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { Alert, Platform } from "react-native";
 import { confirm } from "@/utils/confirm";

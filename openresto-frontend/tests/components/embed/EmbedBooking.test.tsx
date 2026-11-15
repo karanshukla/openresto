@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import React from "react";
 import { Linking } from "react-native";
@@ -94,7 +94,7 @@ describe("EmbedBooking", () => {
 
   it("shows the reference in the frame and links out to the booking", async () => {
     (submitBooking as jest.Mock).mockResolvedValue({ id: 7, bookingRef: "ABC123" });
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     renderWithProviders(<EmbedBooking locationId={1} />);
 
     fireEvent.press(await screen.findByTestId("submit-trigger"));

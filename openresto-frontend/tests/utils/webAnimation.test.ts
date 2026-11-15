@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { animateNode, prefersReducedMotion } from "@/utils/webAnimation";
 

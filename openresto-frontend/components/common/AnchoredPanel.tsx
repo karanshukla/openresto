@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from "react";
-import { Modal, Pressable, type Role, type View } from "react-native";
+import { Modal, Pressable, type Role, type ViewInstance } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
 import { webProps, type WebKeyEvent } from "@/utils/webProps";
@@ -65,7 +65,7 @@ export function AnchoredPanel({
   children,
 }: AnchoredPanelProps) {
   const { colors } = useAppTheme();
-  const panelRef = useRef<View>(null);
+  const panelRef = useRef<ViewInstance>(null);
   useDialogFocus(visible, panelRef);
 
   return (

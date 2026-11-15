@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { Linking, Platform } from "react-native";
 import { openExternal } from "@/utils/openExternal";
@@ -16,7 +16,7 @@ describe("openExternal", () => {
     setPlatform("web");
     const open = jest.fn();
     (window as unknown as { open: jest.Mock }).open = open;
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 
     openExternal("https://example.com/x");
 
@@ -30,7 +30,7 @@ describe("openExternal", () => {
     setPlatform("android");
     const open = jest.fn();
     (window as unknown as { open: jest.Mock }).open = open;
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 
     openExternal("https://example.com/x");
 

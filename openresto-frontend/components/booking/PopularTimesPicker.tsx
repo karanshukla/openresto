@@ -6,6 +6,7 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Platform,
+  type ScrollViewInstance,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "../themed-text";
@@ -51,7 +52,7 @@ export default function PopularTimesPicker({
         ? t("restaurant.filterBar.dinner")
         : t("restaurant.filterBar.all");
 
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const [scrollPos, setScrollPos] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);

@@ -1,5 +1,5 @@
 import { useEffect, type RefObject } from "react";
-import { Platform, type View } from "react-native";
+import { Platform, type ViewInstance } from "react-native";
 
 /**
  * The popups currently holding focus, innermost last. Only the innermost one takes focus back,
@@ -29,7 +29,7 @@ const openPopups: HTMLElement[] = [];
  * and the restore, that a closed popup touches neither, that focus taken off an open popup
  * comes back, and that only the innermost of two open popups reclaims it.
  */
-export function useDialogFocus(visible: boolean, ref: RefObject<View | null>): void {
+export function useDialogFocus(visible: boolean, ref: RefObject<ViewInstance | null>): void {
   useEffect(() => {
     if (Platform.OS !== "web" || !visible) return;
     const doc = (globalThis as { document?: Document }).document;

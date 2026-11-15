@@ -6,6 +6,7 @@ import {
   View,
   type GestureResponderEvent,
   type LayoutChangeEvent,
+  type ViewInstance,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
@@ -117,7 +118,7 @@ export function ServiceView({
   // can take the whole screen. It is a dialog rather than a wider card because the admin chrome
   // around it is not what staff are reading during service.
   const [expanded, setExpanded] = useState(false);
-  const sheetRef = useRef<View>(null);
+  const sheetRef = useRef<ViewInstance>(null);
   useDialogFocus(expanded, sheetRef);
 
   // A day with no "now" on it (any day but today) has nothing to follow, so the floor opens on its

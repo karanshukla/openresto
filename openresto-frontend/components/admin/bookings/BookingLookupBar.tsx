@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { TextInput, View } from "react-native";
+import { TextInput, View, type TextInputInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Button from "@/components/common/Button";
@@ -38,7 +38,7 @@ export function BookingLookupBar({
   primaryColor,
 }: BookingLookupBarProps) {
   const { t } = useTranslation();
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   useEffect(() => {
     registerFocusTarget("admin-lookup", inputRef);

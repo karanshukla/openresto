@@ -19,6 +19,7 @@ import {
   View,
   type StyleProp,
   type ViewStyle,
+  type ViewInstance,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -61,7 +62,7 @@ export { shouldDismissSheet };
 type ScrollShell = ComponentType<{
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
-  keyboardShouldPersistTaps?: boolean | "always" | "handled" | "never";
+  keyboardShouldPersistTaps?: "always" | "handled" | "never";
   children?: ReactNode;
 }>;
 
@@ -179,7 +180,7 @@ export default function BookingDrawer({
   // The panel owns its exit as well as its entrance: the page drops it from state the
   // moment onClose fires, so anything that wants an exit animation has to finish it
   // before handing control back.
-  const sideRef = useRef<View>(null);
+  const sideRef = useRef<ViewInstance>(null);
   useLayoutEffect(() => {
     if (variant !== "side") return;
     animateNode(

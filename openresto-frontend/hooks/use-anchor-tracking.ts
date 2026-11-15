@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Dimensions, Platform, type View } from "react-native";
+import { Dimensions, Platform, type ViewInstance } from "react-native";
 import {
   anchorPanel,
   measureAnchor,
@@ -41,7 +41,7 @@ export interface AnchorTracking {
  * subscribing — there is no window scroll to follow, and a rotation closes the panel anyway.
  */
 export function useAnchorTracking(
-  triggerRef: React.RefObject<View | null>,
+  triggerRef: React.RefObject<ViewInstance | null>,
   options: AnchorOptions = {}
 ): AnchorTracking {
   const [panel, setPanel] = useState<AnchoredPanel | null>(null);

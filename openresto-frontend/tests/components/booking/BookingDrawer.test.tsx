@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * Covers the booking submission that moved out of the Locations card when booking became
  * a drawer beside the list rather than an accordion body inside it.

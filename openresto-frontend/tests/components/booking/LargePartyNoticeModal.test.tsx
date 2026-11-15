@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react-native";
@@ -110,7 +110,7 @@ describe("LargePartyNoticeModal", () => {
   });
 
   it("opens tel: and mailto: targets when the contact buttons are pressed", () => {
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     render(
       <LargePartyNoticeModal
         visible
@@ -149,7 +149,7 @@ describe("LargePartyNoticeModal", () => {
     expect(onClose).toHaveBeenCalled();
   });
   it("opens a social link when its fallback button is pressed", async () => {
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     render(<LargePartyNoticeModal visible maxCapacity={8} onClose={jest.fn()} />);
 
     const link = await screen.findByLabelText("Message us");

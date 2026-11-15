@@ -1,8 +1,8 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { renderHook } from "@testing-library/react-native";
-import { Platform, type View } from "react-native";
+import { Platform, type ViewInstance } from "react-native";
 import { useDialogFocus } from "@/hooks/use-dialog-focus";
 
 const originalOS = Platform.OS;
@@ -28,7 +28,7 @@ describe("useDialogFocus", () => {
     setOS(originalOS);
   });
 
-  const ref = () => ({ current: panel as unknown as View });
+  const ref = () => ({ current: panel as unknown as ViewInstance });
 
   /**
    * react-native-web's own Modal focuses the first focusable descendant it finds, which is the
@@ -88,8 +88,8 @@ describe("useDialogFocus", () => {
     const inner = document.createElement("div");
     inner.tabIndex = -1;
     document.body.append(inner);
-    const outerRef = { current: panel as unknown as View };
-    const innerRef = { current: inner as unknown as View };
+    const outerRef = { current: panel as unknown as ViewInstance };
+    const innerRef = { current: inner as unknown as ViewInstance };
     renderHook(() => useDialogFocus(true, outerRef));
     const innerHook = renderHook(() => useDialogFocus(true, innerRef));
     expect(document.activeElement).toBe(inner);

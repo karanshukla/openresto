@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The root error boundary. Two things here are easy to regress and both are user-visible:
  * the raw `error.message` must never reach a production build (it can leak internals), and

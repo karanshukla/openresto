@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Linking, ScrollView, TextInput, useWindowDimensions, View } from "react-native";
+import {
+  Linking,
+  useWindowDimensions,
+  View,
+  type ScrollViewInstance,
+  type TextInputInstance,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useFocusEffect } from "expo-router";
@@ -75,9 +81,9 @@ export default function LookupScreen({
   const [cached, setCached] = useState<CachedBooking[]>([]);
   const [tickets, setTickets] = useState(readWaitlistTickets);
   const [viewportHeight, setViewportHeight] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const fab = useScrollToTopFab();
-  const refInputRef = useRef<TextInput>(null);
+  const refInputRef = useRef<TextInputInstance>(null);
   const didDeepLink = useRef(false);
   const hasTyped = useRef(false);
 

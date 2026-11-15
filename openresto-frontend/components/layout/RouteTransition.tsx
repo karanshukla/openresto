@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { View } from "react-native";
+import { View, type ViewInstance } from "react-native";
 import { usePathname } from "expo-router";
 import { animateNode, EASE_ENTER } from "@/utils/webAnimation";
 import { styles } from "./RouteTransition.styles";
@@ -27,7 +27,7 @@ const START_OPACITY = 0.88;
  */
 export default function RouteTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const ref = useRef<View>(null);
+  const ref = useRef<ViewInstance>(null);
   const isFirstPaint = useRef(true);
 
   useLayoutEffect(() => {

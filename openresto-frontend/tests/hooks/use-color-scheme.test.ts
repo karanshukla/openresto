@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 // jest.setup.ts stubs this module for every other suite; this one is about the module itself.
 jest.unmock("@/hooks/use-color-scheme");

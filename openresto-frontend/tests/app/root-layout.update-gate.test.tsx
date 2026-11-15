@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The minimum-supported-version gate, which only exists off web. `root-layout.test.tsx` runs
  * the same layout as the web build (where the gate never applies) and Platform.OS is per-file,

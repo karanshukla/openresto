@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The admin is web-only — AdminLayout redirects off native — so this file runs the web
  * environment its DOM side-effects (document.title) need.
