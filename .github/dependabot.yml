@@ -9,7 +9,6 @@ updates:
     directories:
       - "/"
       - "/openresto-frontend"
-      - "/openresto-cli"
       - "/docs-site"
     schedule:
       interval: "weekly"
@@ -54,6 +53,19 @@ updates:
       - dependency-name: "jest"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/jest"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "npm"
+    directory: "/openresto-cli"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+    # `typescript` is only the compiler API for openapi-typescript, which needs 5.x;
+    # builds run on TypeScript 7 through the @typescript/native alias.
+    ignore:
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "nuget"
