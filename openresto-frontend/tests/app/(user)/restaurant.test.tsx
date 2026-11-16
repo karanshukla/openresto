@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The standalone restaurant detail screen has been folded into the Locations
  * list (issue #205). `restaurant/[id]` is now a thin <Redirect> to

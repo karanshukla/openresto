@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * /booking-confirmation/[bookingRef] is a thin wrapper around LookupScreen (which has its
  * own tests) — booking confirmation is a state of the lookup screen, not a page of its

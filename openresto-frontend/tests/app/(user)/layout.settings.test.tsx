@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The native guest chrome, rendered per tab by GuestTabStack: the header control that opens
  * language + appearance (the web build reaches both through the navbar's overflow menu, which

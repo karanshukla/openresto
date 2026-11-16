@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ViewInstance,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import Input from "@/components/common/Input";
@@ -42,7 +50,7 @@ interface NewBookingModalProps {
 export function NewBookingModal({ visible, onClose, onCreated }: NewBookingModalProps) {
   const { t } = useTranslation();
   const { colors, primaryColor: PRIMARY } = useAppTheme();
-  const dialogRef = useRef<View>(null);
+  const dialogRef = useRef<ViewInstance>(null);
   useDialogFocus(visible, dialogRef);
   const borderColor = colors.border;
   const mutedColor = colors.muted;

@@ -7,6 +7,8 @@ import {
   ScrollView,
   View,
   useWindowDimensions,
+  type ViewInstance,
+  type ScrollViewInstance,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -150,8 +152,8 @@ export default function LocationsScreen({
   // bar from one still sitting under the heading and only draw its edge once it is pinned.
   const filterTop = useRef(0);
 
-  const scrollRef = useRef<ScrollView>(null);
-  const itemRefs = useRef<Record<number, View | null>>({});
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const itemRefs = useRef<Record<number, ViewInstance | null>>({});
   const didDeepLink = useRef(false);
 
   const scrollToTop = useCallback(() => {
@@ -200,7 +202,7 @@ export default function LocationsScreen({
   const today = useMemo(() => getRestaurantDate(restaurants[0]?.timezone ?? "UTC"), [restaurants]);
   const date = dateOverride ?? today;
 
-  const registerRef = useCallback((id: number, ref: View | null) => {
+  const registerRef = useCallback((id: number, ref: ViewInstance | null) => {
     itemRefs.current[id] = ref;
   }, []);
 

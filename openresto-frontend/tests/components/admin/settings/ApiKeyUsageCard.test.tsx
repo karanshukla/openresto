@@ -79,7 +79,7 @@ describe("ApiKeyUsageCard", () => {
   });
 
   it("opens each configured destination", () => {
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     render(<ApiKeyUsageCard {...palette} />);
 
     fireEvent.press(screen.getByTestId("api-key-cli-link"));

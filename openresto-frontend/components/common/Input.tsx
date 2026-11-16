@@ -1,5 +1,11 @@
 import { forwardRef, useCallback, useRef } from "react";
-import { TextInput, TextInputProps, View } from "react-native";
+import {
+  TextInput,
+  TextInputProps,
+  View,
+  type ViewInstance,
+  type TextInputInstance,
+} from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useScrollFieldIntoView } from "@/components/common/KeyboardAwareScroll";
 import { styles } from "./Input.styles";
@@ -14,12 +20,12 @@ import { styles } from "./Input.styles";
  * @see [Input.test.tsx](../../tests/components/common/Input.test.tsx) — pins that focus asks to
  * be revealed and that the caller's own onFocus still runs.
  */
-const Input = forwardRef<TextInput, TextInputProps>(function Input(
+const Input = forwardRef<TextInputInstance, TextInputProps>(function Input(
   { style, onFocus, ...props },
   ref
 ) {
   const { colors } = useAppTheme();
-  const fieldRef = useRef<View>(null);
+  const fieldRef = useRef<ViewInstance>(null);
   const scrollFieldIntoView = useScrollFieldIntoView();
 
   const handleFocus = useCallback<NonNullable<TextInputProps["onFocus"]>>(

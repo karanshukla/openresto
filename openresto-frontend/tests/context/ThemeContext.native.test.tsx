@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * Covers the off-web half of `getSystemScheme` and its `Appearance` subscription. The rest of
  * the suite (`ThemeContext.test.tsx`) pins the web half against `matchMedia`, and Platform.OS
@@ -86,14 +86,14 @@ describe("ThemeContext on a device", () => {
     expect(getByTestId("scheme").props.children).toBe("dark");
   });
 
-  it("treats a switch to an unspecified device scheme as dark", () => {
+  it("treats a switch to no device scheme as dark", () => {
     const { getByTestId } = render(
       <AppThemeProvider>
         <TestComponent />
       </AppThemeProvider>
     );
 
-    emit("unspecified");
+    emit(null);
 
     expect(getByTestId("scheme").props.children).toBe("dark");
   });

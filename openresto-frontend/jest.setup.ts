@@ -136,3 +136,24 @@ jest.mock("expo-router/unstable-native-tabs", () => {
   NativeTabs.Trigger = Trigger;
   return { NativeTabs };
 });
+
+// Print a react-test-renderer element as its type and props. Its default print walks the whole
+// fiber graph, and since React Native 0.88 pretty-format probes every host node in it as a
+// possible DOM node, so each failed `toBeNull()` inside `waitFor` took over a second and polls
+// ran past the timeout. `ReactTestInstance` is not exported, hence reaching it through a root.
+{
+  const React = require("react");
+  const { create, act } = require("react-test-renderer");
+  const { View } = require("react-native");
+  let renderer: { root: object; unmount: () => void } | undefined;
+  act(() => {
+    renderer = create(React.createElement(View));
+  });
+  Object.getPrototypeOf(renderer!.root).toJSON = function (this: {
+    type: unknown;
+    props: unknown;
+  }) {
+    return { type: this.type, props: this.props };
+  };
+  act(() => renderer!.unmount());
+}

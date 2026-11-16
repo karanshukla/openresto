@@ -16,6 +16,7 @@ import {
   View,
   type StyleProp,
   type ViewStyle,
+  type ScrollViewInstance,
 } from "react-native";
 import { Image } from "expo-image";
 import { StatusBar } from "expo-status-bar";
@@ -307,7 +308,7 @@ export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const { brand, colors, primaryColor, isDark } = useAppTheme();
   const { t } = useTranslation();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const fab = useScrollToTopFab();
   const insets = useSafeAreaInsets();
   const tabBarClearance = useTabBarClearance();

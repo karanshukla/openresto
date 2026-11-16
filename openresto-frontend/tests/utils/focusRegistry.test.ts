@@ -1,9 +1,9 @@
 import type { RefObject } from "react";
-import type { TextInput } from "react-native";
+import type { TextInputInstance } from "react-native";
 import { registerFocusTarget, unregisterFocusTarget, focusTarget } from "@/utils/focusRegistry";
 
-function mockRef(focus: () => void): RefObject<TextInput | null> {
-  return { current: { focus } as unknown as TextInput };
+function mockRef(focus: () => void): RefObject<TextInputInstance | null> {
+  return { current: { focus } as unknown as TextInputInstance };
 }
 
 describe("focusRegistry", () => {

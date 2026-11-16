@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The two Locations routes are thin wrappers around `LocationsScreen` (which has its own tests).
  * What is worth pinning here is the wiring they own: the `Stack.Screen` title each sets, and the

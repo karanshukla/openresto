@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { Platform } from "react-native";
 import { buildCalendarUrls, buildIcs, deliverIcs, fmtCal } from "@/utils/calendar";

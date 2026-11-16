@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { Platform } from "react-native";
 import { File } from "expo-file-system";

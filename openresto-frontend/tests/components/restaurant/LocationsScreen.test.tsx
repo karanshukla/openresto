@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import React from "react";
 import { act, screen, waitFor, fireEvent, within } from "@testing-library/react-native";

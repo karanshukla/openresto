@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Linking, Pressable, View } from "react-native";
+import { Linking, Pressable, View, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useTheme } from "@/context/ThemeContext";
@@ -48,7 +48,7 @@ export default function OverflowMenu({ onOpenShortcuts }: { onOpenShortcuts: () 
   const [showLanguage, setShowLanguage] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [socialLinks, setSocialLinks] = useState<SocialLinkDto[]>([]);
-  const triggerRef = useRef<View>(null);
+  const triggerRef = useRef<ViewInstance>(null);
   const { panel, measure, release } = useAnchorTracking(triggerRef, {
     align: "end",
     width: PANEL_WIDTH,

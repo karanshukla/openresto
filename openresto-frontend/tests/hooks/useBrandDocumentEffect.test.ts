@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { renderHook } from "@testing-library/react-native";
 import { useBrandDocumentEffect } from "@/hooks/useBrandDocumentEffect";

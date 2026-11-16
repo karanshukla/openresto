@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The sheet is dismissed by dragging it downwards, which on a mobile browser is also the
  * pull-to-refresh gesture. Losing that race reloads the page, taking the sheet, the held

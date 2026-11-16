@@ -1,10 +1,12 @@
 /* istanbul ignore file */
-import { ScrollViewStyleReset } from "expo-router/html";
+import { ScrollViewStyleReset, useServerDocumentContext } from "expo-router/html";
 import type { PropsWithChildren } from "react";
 
 export default function Root({ children }: PropsWithChildren) {
+  // The bundle scripts reach the page only through these nodes; without them it never hydrates.
+  const { htmlAttributes, headNodes, bodyAttributes, bodyNodes } = useServerDocumentContext();
   return (
-    <html lang="en">
+    <html lang="en" {...htmlAttributes}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -34,6 +36,7 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
         <ScrollViewStyleReset />
+        {headNodes}
         {/* ScrollViewStyleReset sizes #root from body's height (`html,body,#root{height:100%}`),
             so any padding a third-party layer adds to body — e.g. a reverse-proxy demo banner
             reserving space with `body{padding-bottom}` — leaks into the sticky-footer flex chain
@@ -48,7 +51,10 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
       </head>
-      <body>{children}</body>
+      <body {...bodyAttributes}>
+        {children}
+        {bodyNodes}
+      </body>
     </html>
   );
 }

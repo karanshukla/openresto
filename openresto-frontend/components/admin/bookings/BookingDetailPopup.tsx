@@ -1,4 +1,12 @@
-import { Modal, Pressable, ScrollView, View, ActivityIndicator } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  View,
+  ActivityIndicator,
+  type ViewInstance,
+  type ScrollViewInstance,
+} from "react-native";
 import { useTranslation } from "react-i18next";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { ThemedText } from "@/components/themed-text";
@@ -87,9 +95,9 @@ export function BookingDetailPopup({
   const borderColor = colors.border;
   const mutedColor = colors.muted;
 
-  const scrollRef = useRef<ScrollView>(null);
-  const extendSectionRef = useRef<View>(null);
-  const emailSectionRef = useRef<View>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const extendSectionRef = useRef<ViewInstance>(null);
+  const emailSectionRef = useRef<ViewInstance>(null);
 
   // A form that silently fills itself in reads as a glitch. Bringing it into view is what turns
   // the prefill into an offer the admin can act on or ignore.

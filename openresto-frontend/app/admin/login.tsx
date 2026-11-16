@@ -5,7 +5,7 @@ import Button from "@/components/common/Button";
 import { ButtonRow } from "@/components/common/ButtonRow";
 import { login, getPvqStatus, verifyPvq, resetPassword } from "@/api/auth";
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, TextInput, View, Platform } from "react-native";
+import { Pressable, ScrollView, View, Platform, type TextInputInstance } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { theme } from "@/theme/theme";
@@ -35,7 +35,7 @@ export default function AdminLoginScreen() {
   const [fpLoading, setFpLoading] = useState(false);
   const [fpError, setFpError] = useState<string | null>(null);
 
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
 
   const router = useRouter();
   const { refresh } = useAuth();

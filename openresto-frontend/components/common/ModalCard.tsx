@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -35,7 +35,7 @@ export function ModalCard({
 }: ModalCardProps) {
   const { colors } = useAppTheme();
   const { t } = useTranslation();
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<ViewInstance>(null);
   useDialogFocus(visible, cardRef);
 
   return (

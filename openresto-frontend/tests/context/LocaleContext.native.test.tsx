@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * Covers the device-locale step of `resolveLocale`, which only exists off web: an installed
  * app follows the phone's language, a website follows the restaurant's. The web order is

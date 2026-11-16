@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The party-size control is the one field that differs by platform (issue #424), and the
  * autofill hints on name and email (issue #427) are props with no visible effect, so both

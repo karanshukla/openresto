@@ -6,6 +6,7 @@ import {
   type ScrollViewProps,
   type StyleProp,
   type ViewStyle,
+  type ScrollViewInstance,
 } from "react-native";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import IconButton from "@/components/common/IconButton";
@@ -59,7 +60,7 @@ export default function HorizontalScroller({
   ...rest
 }: Props) {
   const { colors, primaryColor } = useAppTheme();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const [offset, setOffset] = useState(0);
   const [scrollportWidth, setScrollportWidth] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);

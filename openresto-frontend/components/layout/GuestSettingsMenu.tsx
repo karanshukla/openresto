@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Pressable, View, type ViewStyle, type StyleProp } from "react-native";
+import { Pressable, View, type ViewStyle, type StyleProp, type ViewInstance } from "react-native";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
 import { AnchoredPanel } from "@/components/common/AnchoredPanel";
@@ -53,7 +53,7 @@ export default function GuestSettingsMenu({
   const { colors } = useAppTheme();
   const { locale } = useLocale();
   const { preference } = useTheme();
-  const triggerRef = useRef<View>(null);
+  const triggerRef = useRef<ViewInstance>(null);
   const [open, setOpen] = useState(false);
   const [pane, setPane] = useState<GuestSettingsPane | null>(null);
 

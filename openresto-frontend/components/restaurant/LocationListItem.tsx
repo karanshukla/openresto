@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { GestureResponderEvent, Linking, Pressable, View } from "react-native";
+import { GestureResponderEvent, Linking, Pressable, View, type ViewInstance } from "react-native";
 import { haptics } from "@/utils/haptics";
 import { useTranslation } from "react-i18next";
 import { ThemedText } from "@/components/themed-text";
@@ -58,7 +58,7 @@ export default function LocationListItem({
   defaultExpanded?: boolean;
   /** Phone-width layout: stacked rows, smaller thumbnail, fewer slots. */
   compact?: boolean;
-  registerRef: (id: number, ref: View | null) => void;
+  registerRef: (id: number, ref: ViewInstance | null) => void;
   onExpand?: (id: number) => void;
   onBook: (restaurant: RestaurantDto, time: string) => void;
   onJoinWaitlist: (restaurant: RestaurantDto) => void;
@@ -74,7 +74,7 @@ export default function LocationListItem({
   const borderColor = colors.border;
 
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const itemRef = useRef<View>(null);
+  const itemRef = useRef<ViewInstance>(null);
 
   const selectedIsoDay = getIsoDayFromDateString(date);
   const isToday = date === today;

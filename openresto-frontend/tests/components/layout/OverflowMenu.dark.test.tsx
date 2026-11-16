@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * Dismissal paths and the dark-mode variant of the overflow menu. The main panel's backdrop and
  * both modals' `onRequestClose` (Android back / Esc on web) are the only ways out of the menu

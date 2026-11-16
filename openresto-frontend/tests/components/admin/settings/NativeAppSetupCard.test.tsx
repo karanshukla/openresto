@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import React from "react";
 import { Linking, Platform } from "react-native";
@@ -141,7 +141,7 @@ describe("NativeAppSetupCard", () => {
       primaryColor: "#0a7ea4",
       repositoryUrl: "https://github.com/karanshukla/openresto/",
     } as Brand;
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     render(<NativeAppSetupCard {...baseProps} serverUrl="https://x.example.com" />);
 
     fireEvent.press(screen.getByTestId("native-app-guide-link"));

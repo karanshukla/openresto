@@ -1,13 +1,12 @@
 import type { RefObject } from "react";
-import { Platform } from "react-native";
-import type { ScrollView, View } from "react-native";
+import { Platform, type ViewInstance, type ScrollViewInstance } from "react-native";
 
 /**
  * `ScrollView`'s content view, which its own type declarations omit — the `getInnerViewNode`
  * they do declare returns the node handle the New Architecture no longer accepts.
  */
 type ScrollViewContent = {
-  getInnerViewRef?: () => Parameters<View["measureLayout"]>[0] | null;
+  getInnerViewRef?: () => Parameters<ViewInstance["measureLayout"]>[0] | null;
 };
 
 export interface ScrollIntoViewOptions {
@@ -33,8 +32,8 @@ export interface ScrollIntoViewOptions {
  * picks the instant path on both platforms.
  */
 export function scrollIntoView(
-  targetRef: RefObject<View | null>,
-  scrollRef: RefObject<ScrollView | null>,
+  targetRef: RefObject<ViewInstance | null>,
+  scrollRef: RefObject<ScrollViewInstance | null>,
   { block = "start", animated = true }: ScrollIntoViewOptions = {}
 ) {
   if (!targetRef.current) return;

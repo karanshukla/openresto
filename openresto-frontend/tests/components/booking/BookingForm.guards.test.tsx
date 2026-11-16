@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The guards around booking, kept apart from BookingForm.test.tsx (which covers the
  * form's own layout, hold and availability behaviour): the per-table capacity confirm,

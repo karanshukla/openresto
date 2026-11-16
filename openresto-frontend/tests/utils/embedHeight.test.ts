@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { EMBED_HEIGHT_MESSAGE, reportEmbedHeight } from "@/utils/embedHeight";
 

@@ -1,5 +1,5 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  *
  * The compact Locations row: identity, the meta row that states hours and walk-in policy,
  * the slot quick-pick driven by the page-level filter bar, and the "Details" body

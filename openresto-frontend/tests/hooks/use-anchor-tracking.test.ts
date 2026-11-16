@@ -1,8 +1,8 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
 import { act, renderHook } from "@testing-library/react-native";
-import { Platform, type View } from "react-native";
+import { Platform, type ViewInstance } from "react-native";
 import { useAnchorTracking } from "@/hooks/use-anchor-tracking";
 import { PANEL_GAP } from "@/utils/anchoredPanel";
 
@@ -15,7 +15,7 @@ const triggerAt = (top: number) => {
   const node = {
     getBoundingClientRect: () => ({ top, bottom: top + 40, left: 100, width: 240 }),
   };
-  return { current: node as unknown as View };
+  return { current: node as unknown as ViewInstance };
 };
 
 /** Runs the animation frame the listeners schedule, so the re-measure actually lands. */
@@ -67,7 +67,9 @@ describe("useAnchorTracking", () => {
     const ref = {
       current: { getBoundingClientRect: () => ({ top, bottom: top + 40, left: 100, width: 240 }) },
     };
-    const { result } = renderHook(() => useAnchorTracking(ref as unknown as { current: View }));
+    const { result } = renderHook(() =>
+      useAnchorTracking(ref as unknown as { current: ViewInstance })
+    );
 
     act(() => result.current.measure());
     top = 40;
@@ -84,7 +86,9 @@ describe("useAnchorTracking", () => {
     const ref = {
       current: { getBoundingClientRect: () => ({ top, bottom: top + 40, left: 100, width: 240 }) },
     };
-    const { result } = renderHook(() => useAnchorTracking(ref as unknown as { current: View }));
+    const { result } = renderHook(() =>
+      useAnchorTracking(ref as unknown as { current: ViewInstance })
+    );
 
     act(() => result.current.measure());
     top = 300;
@@ -122,7 +126,7 @@ describe("useAnchorTracking", () => {
     const ref: { current: unknown } = {
       current: { getBoundingClientRect: () => ({ top: 100, bottom: 140, left: 100, width: 240 }) },
     };
-    const { result } = renderHook(() => useAnchorTracking(ref as { current: View }));
+    const { result } = renderHook(() => useAnchorTracking(ref as { current: ViewInstance }));
 
     act(() => result.current.measure());
     const before = result.current.panel;
@@ -198,7 +202,7 @@ describe("useAnchorTracking", () => {
         measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) =>
           cb(100, top, 240, 40),
       };
-      return { current: node as unknown as View };
+      return { current: node as unknown as ViewInstance };
     };
 
     it("anchors to the trigger instead of falling back to the centred sheet", () => {
@@ -218,7 +222,9 @@ describe("useAnchorTracking", () => {
           cb(0, 0, 0, 0),
       };
 
-      const { result } = renderHook(() => useAnchorTracking({ current: node as unknown as View }));
+      const { result } = renderHook(() =>
+        useAnchorTracking({ current: node as unknown as ViewInstance })
+      );
       act(() => result.current.measure());
 
       expect(result.current.panel).toBeNull();
