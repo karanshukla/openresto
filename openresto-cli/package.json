@@ -35,8 +35,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "node node_modules/@typescript/native/bin/tsc -p tsconfig.json",
+    "typecheck": "node node_modules/@typescript/native/bin/tsc -p tsconfig.json --noEmit",
     "generate:types": "node scripts/generate-types.mjs",
     "test": "npm run build && node --test 'dist/**/*.test.js'",
     "start": "node dist/index.js",
@@ -47,8 +47,9 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "openapi-typescript": "^7.4.4",
-    "typescript": "^5.7.2"
+    "typescript": "~5.9.3"
   },
   "overrides": {
     "js-yaml": "^4.3.2"
