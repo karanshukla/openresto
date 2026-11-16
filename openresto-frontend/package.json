@@ -140,5 +140,12 @@
   "engines": {
     "node": ">=24.15.0"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "install": {
+      "exclude": [
+        "typescript"
+      ]
+    }
+  }
 }
