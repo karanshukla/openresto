@@ -5,30 +5,19 @@ sidebar:
   order: 4
 ---
 
-This page shows how to add HTTPS (TLS, the encryption behind the browser's lock icon) to your
-install.
-
-The release stack serves plain HTTP on `HOST_PORT`. Please make sure guests and admins reach it
-over HTTPS, because admin sign-ins and API keys travel over the connection. There are two ways
-to do this.
+The release stack serves plain HTTP on `HOST_PORT`. Because admin sign-ins and API keys travel over the connection, always expose OpenResto over HTTPS (TLS). You can terminate TLS either in an external reverse proxy or with the bundled VPS nginx setup.
 
 ## Option 1: a TLS-terminating proxy in front (recommended)
 
-Use any reverse proxy (a program that receives visitors and passes them on) that handles HTTPS and forwards to the stack's `reverse-proxy` container:
-Caddy, Traefik, Nginx Proxy Manager, a host nginx, or a Cloudflare Tunnel. Point it at
-`http://<host>:<HOST_PORT>`.
+Place any HTTPS-capable reverse proxy (such as Caddy, Traefik, Nginx Proxy Manager, a host nginx, or a Cloudflare Tunnel) in front of the stack's `reverse-proxy` container, forwarding traffic to `http://<host>:<HOST_PORT>`.
 
-Check these three things:
+Verify three requirements:
 
-1. **`CORS_ORIGINS` is the public HTTPS address**, e.g. `https://bookings.example.com`. Browsers
-   calling the API from any other address are turned away.
-2. **The proxy forwards `X-Forwarded-For` and `X-Forwarded-Proto`.** The API reads one
-   hop of these headers to learn the visitor's address and whether they used HTTPS, and rate
-   limits depend on that address. Most proxies do this by default.
-3. **Large uploads can pass through.** Menu PDFs can be 10 MB. If your proxy has an upload size
-   limit, set it to 12 MB or more.
+1. **Set `CORS_ORIGINS` to the public HTTPS URL** (for example, `https://bookings.example.com`). Browser API requests from any other origin are rejected.
+2. **Forward `X-Forwarded-For` and `X-Forwarded-Proto`.** The backend reads one proxy hop from these headers to identify the client IP (used for rate limiting) and whether the request arrived over HTTPS. Most proxies send them by default.
+3. **Allow uploads up to at least 12 MB.** Menu PDFs can be up to 10 MB; raise your proxy's body size limit if it defaults lower.
 
-A minimal Caddyfile is enough:
+A minimal Caddyfile is sufficient:
 
 ```txt
 bookings.example.com {
@@ -36,24 +25,19 @@ bookings.example.com {
 }
 ```
 
-If the proxy runs on the same host, set `HOST_PORT=8080` (or similar) in `.env` so it can own
-port 80, and point `reverse_proxy` at that port.
+If the proxy runs on the same host, set `HOST_PORT=8080` (or another free port) in `.env` so the proxy can bind to port 80, and point `reverse_proxy` to that port.
 
 ## Option 2: the bundled VPS nginx
 
-The repository includes `docker-compose.vps.yml`, an nginx that terminates TLS itself, redirects
-HTTP to HTTPS and adds security headers. Unlike the release stack, it **builds from source**, so
-clone the repository on the server.
+The repository includes `docker-compose.vps.yml`, which runs an nginx container configured for TLS termination, HTTP-to-HTTPS redirects, and security headers. Unlike the release stack, `docker-compose.vps.yml` **builds from source**, so clone the repository on the server first.
 
-You need a domain pointing at the server, plus a certificate and private key. Let's Encrypt
-is a free, popular choice:
+Obtain an SSL certificate and private key for your domain (for example, with Let's Encrypt):
 
 ```bash
 certbot certonly --standalone -d bookings.example.com
 ```
 
-If your CA issues a separate chain file, concatenate it onto the certificate first
-(`cat your_domain.crt your_domain.ca-bundle > server.crt`).
+If your CA provides a separate chain file, concatenate it onto the certificate first (`cat your_domain.crt your_domain.ca-bundle > server.crt`).
 
 Create `.env` in the repository root:
 
@@ -68,27 +52,24 @@ HOST_SSL_CERT_PATH=/etc/letsencrypt/live/bookings.example.com/fullchain.pem
 HOST_SSL_KEY_PATH=/etc/letsencrypt/live/bookings.example.com/privkey.pem
 ```
 
-Then:
+Start the stack:
 
 ```bash
 docker compose -f docker-compose.vps.yml up -d
 ```
 
-`CORS_ORIGINS` is set to `https://${DOMAIN_NAME}` for you, so you don't need to set it. The
-proxy listens on `127.0.0.1:8080` (HTTP) and `127.0.0.1:8443` (HTTPS) only, so something on
-the host, such as a firewall rule or a host-level proxy, needs to forward public ports 80 and
-443 to those. This keeps the container off the internet by design.
+`CORS_ORIGINS` is set automatically to `https://${DOMAIN_NAME}`. The container binds to `127.0.0.1:8080` (HTTP) and `127.0.0.1:8443` (HTTPS) only, keeping it off public interfaces directly; forward public ports 80 and 443 to those ports via your host firewall or proxy.
 
-After Let's Encrypt renews the certificate, restart the container so nginx picks up the new one:
+After renewing certificates with Let's Encrypt, restart nginx to reload them:
 
 ```bash
 docker compose -f docker-compose.vps.yml restart reverse-proxy
 ```
 
-## Check it
+## Verify HTTPS
 
 ```bash
 curl -I https://bookings.example.com/api/health
 ```
 
-You should see `200`. If you don't, check that your domain points at the server and that ports 80 and 443 are open.
+A working setup returns HTTP `200`. If it fails, confirm your DNS record points to the server and ports 80 and 443 are reachable.

@@ -5,40 +5,34 @@ sidebar:
   order: 6
 ---
 
-This page helps you turn on push notifications, the pop-up alerts a browser can show. Push is
-optional. Without keys, the app works normally and the push toggles stay hidden or disabled.
-With keys, you get:
+Web push notifications are optional. Without VAPID keys configured, OpenResto runs normally with push toggles hidden or disabled. With VAPID keys configured, you enable:
 
-- **Admin notifications**: a browser you've enabled gets a notification for new bookings,
-  cancellations and capacity alerts.
-- **Guest reminders and "table ready"**: guests can opt in from the booking screens, and the
-  server sends reminders before their booking and a notice when a waitlist table is ready.
+- **Admin notifications:** Subscribed browsers receive alerts for new bookings, cancellations, and capacity warnings.
+- **Guest reminders and waitlist alerts:** Guests can opt in from booking and waitlist screens to receive booking reminders and "table ready" alerts.
 
 ## What VAPID is
 
-Browsers deliver push through their maker's service (Google, Mozilla, Apple). VAPID is a pair of
-keys that lets those services confirm a message really comes from your server. You make the pair
-once. There's no account to create and nothing to pay for.
+Browsers route Web Push messages through vendor push services (Google, Mozilla, Apple). A VAPID key pair lets those services verify that messages originate from your server. You generate the pair once; no third-party account or fee is required.
 
-| Value | What it is | Keep secret? |
-| ----- | ---------- | ------------ |
-| `VAPID_PUBLIC_KEY` | Shared with browsers when they subscribe. | No |
-| `VAPID_PRIVATE_KEY` | Signs each message. | **Yes** |
-| `VAPID_SUBJECT` | A contact for the push services, as `mailto:you@example.com` or an `https://` URL. | No |
+| Variable            | Purpose                                                                          | Keep secret? |
+| ------------------- | -------------------------------------------------------------------------------- | ------------ |
+| `VAPID_PUBLIC_KEY`  | Shared with browsers when subscribing.                                           | No           |
+| `VAPID_PRIVATE_KEY` | Signs outgoing push messages.                                                    | **Yes**      |
+| `VAPID_SUBJECT`     | Contact identifier for push services (`mailto:you@example.com` or `https://` URL). | No           |
 
-You need all three. If any one is empty, push stays off.
+All three variables must be set; if any is empty, web push remains disabled.
 
 ## 1. Generate a key pair
 
-Anywhere with Node installed:
+On any machine with Node.js installed:
 
 ```bash
 npx web-push generate-vapid-keys
 ```
 
-It prints a public and a private key. You don't need to install anything on the server.
+This prints a public and private key without installing anything on your server.
 
-## 2. Put them in `.env`
+## 2. Add them to `.env`
 
 ```dotenv
 VAPID_PUBLIC_KEY=...
@@ -46,46 +40,36 @@ VAPID_PRIVATE_KEY=...
 VAPID_SUBJECT=mailto:you@example.com
 ```
 
-Then recreate the backend so it reads them:
+Recreate the backend container so it loads the new environment variables:
 
 ```bash
 docker compose up -d
 ```
 
 :::caution
-Please keep the same pair once you start. Browsers sign up using the public key, so if you
-replace it, everyone has to opt in again. Include the keys when you back up `.env`.
+Keep the same VAPID key pair after enabling push. Browser subscriptions are tied to the public key, so rotating keys requires every admin and guest to opt in again. Include `.env` in your backups.
 :::
 
-## 3. Turn it on in a browser
+## 3. Enable notifications in the browser
 
-Admins enable notifications from the admin settings, per browser. A subscription belongs to the
-browser, not to a location, so it receives every location's bookings. Guests are offered the
-opt-in on the booking screens.
+Admins turn notifications on per browser under admin settings. Subscriptions apply to the browser across all locations, not to a single location. Guests see the opt-in toggle on booking confirmation and waitlist pages.
 
-Browsers only offer push on **HTTPS** (or `localhost`), so please set up
-[HTTPS](/self-hosting/https/) first.
+Browsers only allow Web Push over **HTTPS** (or `localhost`), so configure [HTTPS](/self-hosting/https/) first.
 
 ## What the toggle is telling you
 
-| What the admin settings card says | Meaning | Fix |
-| --------------------------------- | ------- | --- |
-| Push needs VAPID keys configured | The server has no complete key set. | Check all three values are in `.env` and that you ran `docker compose up -d` after editing. |
-| Not supported in this browser | The browser can't do push. This includes plain `http://` pages. | Use HTTPS and a current browser. |
-| Blocked by your browser | Notifications were declined earlier. | Allow notifications for the site in the browser's site settings, then reload. |
+| Admin settings card message     | Cause                                                       | Fix                                                                                           |
+| ------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Push needs VAPID keys configured | One or more VAPID variables are missing on the server.      | Confirm all three variables are set in `.env` and run `docker compose up -d`.                 |
+| Not supported in this browser   | Browser does not support Push API (including plain `http://`). | Serve the site over HTTPS and use a modern browser.                                           |
+| Blocked by your browser         | Notification permission was previously denied.              | Re-enable notifications for the site in browser site settings, then reload.                   |
 
-Browsers remember a refusal, so the app can't ask again for you.
+Browsers remember a denied permission prompt, so the app cannot re-prompt automatically.
 
 ## Reminder timing
 
-Guest reminders go out a set time before a booking. The default is 24 hours and 2 hours.
-Change it with `GUEST_PUSH_REMINDER_LEAD_HOURS`, for example `48,24,2`. A reminder is only sent
-if the guest opted in before its time opened, so booking tomorrow's table won't trigger a
-"24 hours to go" push straight away.
+By default, guest reminders are sent 24 hours and 2 hours before a booking. Customize this with `GUEST_PUSH_REMINDER_LEAD_HOURS` (for example, `48,24,2`). A reminder only sends if the guest opted in before that lead window opened, so booking less than 24 hours ahead does not immediately fire a 24-hour reminder.
 
 ## The native app is separate
 
-The native guest app doesn't use VAPID. Its reminders go through Expo's push service, which
-needs no certificates on your server. The only setting is `EXPO_ACCESS_TOKEN`, and only if your
-EAS project turned on enhanced push security. See
-[Native app overview](/guides/native-app-overview/).
+The native guest app does not use VAPID keys. Its reminders go through Expo's push service without requiring certificates on your server. Only `EXPO_ACCESS_TOKEN` is needed, and only if your EAS project enables enhanced push security. See [Native app overview](/guides/native-app-overview/).

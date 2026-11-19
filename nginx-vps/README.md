@@ -1,39 +1,39 @@
 # Nginx VPS Configuration
 
-This directory contains the Nginx configuration for production VPS deployment. It handles SSL termination, HTTP→HTTPS redirect, security headers, and reverse proxying to the backend and frontend.
+Nginx configuration for production VPS deployments. It handles SSL termination, HTTP-to-HTTPS redirects, security headers, and reverse proxying to the backend and frontend.
 
 ## Prerequisites
 
-- A domain pointed at your VPS (A record → server IP)
+- A domain pointed at your VPS (`A` record pointing to the server IP)
 - An SSL certificate and private key for that domain
 - Docker and Docker Compose installed on the VPS
 
 ## SSL Certificate
 
-You need a certificate file and a private key. How you obtain them depends on your setup:
+You need a certificate file and a private key. Choose the option that matches your setup:
 
-**Let's Encrypt (free, recommended)**
+### Let's Encrypt (free, recommended)
 
 ```bash
-# Using certbot on the host before starting Docker
+# Run certbot on the host before starting Docker
 certbot certonly --standalone -d yourdomain.com
 # Certificate: /etc/letsencrypt/live/yourdomain.com/fullchain.pem
 # Key:         /etc/letsencrypt/live/yourdomain.com/privkey.pem
 ```
 
-**Commercial certificate (any CA)**
+### Commercial certificate (any CA)
 
-If your CA gives you separate certificate and chain files, concatenate them first:
+If your CA provides separate certificate and chain files, concatenate them first:
 
 ```bash
 cat your_domain.crt your_domain.ca-bundle > server.crt
 ```
 
-Then use `server.crt` and your `server.key`.
+Use `server.crt` and your `server.key`.
 
-**Existing system certificate**
+### Existing system certificate
 
-If a cert is already present on the host (e.g. `/etc/ssl/certs/`), mount it directly — no copying needed.
+If a certificate already exists on the host (for example, under `/etc/ssl/certs/`), mount it directly without copying it.
 
 ## Deployment
 

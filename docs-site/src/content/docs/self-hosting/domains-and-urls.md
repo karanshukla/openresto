@@ -5,80 +5,61 @@ sidebar:
   order: 3
 ---
 
-This page helps you pick the right address for each setting. Several settings look like "my
-site's address" but do different jobs. Mixing them up is the most common reason a login fails in
-the browser, an email link points at `localhost`, or a native app talks to the wrong server.
+OpenResto has several URL settings that serve different purposes. Mixing them up is the most common reason browser logins fail, confirmation email links point to `localhost`, or a native app connects to the wrong host.
 
-Here, your public address is `https://bookings.example.com`.
+The examples below assume your public address is `https://bookings.example.com`.
 
 ## At a glance
 
-| Setting | Where you set it | What it controls |
-| ------- | ---------------- | ---------------- |
-| `CORS_ORIGINS` | `.env` | Which browser addresses the API will answer. Needed. It is a safety list, not a link. |
-| `WEBSITE_URL` | `.env` (uncomment it in the compose file) | The address put into emails, Wallet passes and the native app readiness checks. Optional. |
-| **Website URL** in the brand settings | Admin, Brand | The same job as `WEBSITE_URL`, set from the admin. Takes priority over the others. |
-| `--server` for `native:init` | Command line, when building the app | The address the native app talks to. Baked into the app at build time. |
-| `EXPO_PUBLIC_API_URL` | Already set to `/api` in the release compose | Where the web app finds the API. Leave it alone. |
+| Setting                             | Where it is set                           | What it controls |
+| ----------------------------------- | ----------------------------------------- | ---------------- |
+| `CORS_ORIGINS`                      | `.env`                                    | Browser origins permitted to call the API. Required. |
+| `WEBSITE_URL`                       | `.env` (uncomment in `docker-compose.yml`) | Base URL for email links, Wallet passes, and native app checks. Optional. |
+| **Website URL** (brand settings)    | Admin → Settings → Brand                  | Same role as `WEBSITE_URL`, configured in the admin UI. Takes priority over `.env`. |
+| `--server` for `native:init`        | Command line when building the app        | Server URL compiled into the native iOS/Android app. |
+| `EXPO_PUBLIC_API_URL`               | Set to `/api` in the release compose file | API base path used by the web frontend. Leave unchanged. |
 
-## `CORS_ORIGINS`: who may call the API
+## `CORS_ORIGINS`: allowed browser origins
 
-Browsers don't let a page on one address call an API on another unless the API says it's
-allowed. This rule is called CORS, and `CORS_ORIGINS` is the list of allowed addresses. Please
-use:
+Browsers enforce Cross-Origin Resource Sharing (CORS), blocking API requests from origins the server has not explicitly allowed. Format `CORS_ORIGINS` as follows:
 
-- the exact address people type: `https://`, the host and any port, with **no path and no
-  trailing slash** (`https://bookings.example.com`, not `https://bookings.example.com/`);
-- comma-separated if there are several (`https://bookings.example.com,https://www.example.com`);
-- never `*`. The API won't start with a wildcard or an empty value.
+- Include scheme, host, and non-default port with **no path and no trailing slash** (`https://bookings.example.com`, not `https://bookings.example.com/`).
+- Separate multiple origins with commas (`https://bookings.example.com,https://www.example.com`).
+- Never use `*` or leave it empty; the backend refuses to start with a wildcard or empty value.
 
-Because the release stack serves the web app and the API from the same origin (nginx sends `/api`
-to the backend), the simple rule is: **put your public address here and nothing else**. If
-you add a second hostname that points at the same stack, add it here too. Otherwise the browser
-will block calls from that hostname.
+Because the release stack serves both the frontend and `/api` from the same origin via nginx, set `CORS_ORIGINS` to your public URL. If you expose the same stack under an additional hostname, include that hostname as well.
 
-## The website URL: what goes into links
+## Website URL: base address for links
 
-Anything the server writes that has to contain your address uses the **website URL**: the link in
-a confirmation email, the QR code on a Wallet pass, and the checks on the admin's Native app
-page. The server picks it from the first of these that is set:
+The server uses the **website URL** for confirmation email links, Wallet pass QR codes, and readiness checks on the admin Native app page. It resolves in priority order, using the first non-empty value:
 
-1. **Website URL in the admin brand settings.**
-2. **`WEBSITE_URL`** in the environment.
-3. **The first entry of `CORS_ORIGINS`.**
-4. `http://localhost:8081`, which is just the development default.
+1. **Website URL** in admin brand settings
+2. `WEBSITE_URL` in the environment
+3. The first entry of `CORS_ORIGINS`
+4. `http://localhost:8081` (development fallback)
 
-For most installs step 3 is right and you set nothing. You only need `WEBSITE_URL` (or the brand setting)
-when the address in emails should differ from the one in `CORS_ORIGINS`, for example when
-`CORS_ORIGINS` lists several origins and the first is not the one you want guests to click.
+For most deployments, step 3 is enough and you do not need to set `WEBSITE_URL` or the brand field. Set one of them only when links should use a different origin than the first entry in `CORS_ORIGINS`.
 
 :::caution
-If emails or Wallet passes contain `localhost`, `CORS_ORIGINS` still holds its default (the
-release compose defaults it to `http://localhost`). Set it to your public address and try again.
+If emails or Wallet passes link to `localhost`, `CORS_ORIGINS` is still using the release compose default (`http://localhost`). Set `CORS_ORIGINS` to your public HTTPS address and run `docker compose up -d`.
 :::
 
-The brand setting wins over the environment, so if you set it in the admin and later
-change `WEBSITE_URL` in `.env`, you won't see any change. Clear the field in the admin to
-use the `.env` value again.
+Because the admin brand setting takes priority over `WEBSITE_URL`, clear the admin field if you want changes to `WEBSITE_URL` in `.env` to take effect.
 
-## The native app's server address
+## Native app server address
 
-The native app does not read your `.env`. The address is chosen when you build it:
+The native app does not read `.env`. You pass the server URL when generating the native build configuration:
 
 ```bash
 npm run native:init -- --server https://bookings.example.com --bundle-id com.example.bistro
 ```
 
-It needs to be `https` (plain `http` only works for `localhost`) and it is built into the app.
-If you later move to a different domain, rebuild and resubmit the app. Use the same address as
-your public one so the readiness checks and the app agree. See
-[Native app overview](/guides/native-app-overview/).
+The address must use `https` (plain `http` is only allowed for `localhost`) and is compiled into the binary. Use the same public address as your web deployment so readiness checks match. See [Native app overview](/guides/native-app-overview/).
 
 ## Moving to a new domain
 
-1. Point DNS and your TLS setup at the new name, see [HTTPS and reverse proxies](/self-hosting/https/).
-2. Update `CORS_ORIGINS` (and `WEBSITE_URL` if you set it) in `.env`, then `docker compose up -d`.
-3. Check the **Website URL** in the admin brand settings: if it holds the old address, update it.
-4. Browser push subscriptions are tied to the origin, so admins and guests turn them on again at the new
-   address.
-5. The native app still points at the old server. Rebuild it with the new `--server`.
+1. Point DNS and TLS termination to the new domain (see [HTTPS and reverse proxies](/self-hosting/https/)).
+2. Update `CORS_ORIGINS` (and `WEBSITE_URL` if set) in `.env`, then run `docker compose up -d`.
+3. Update **Website URL** under **Admin → Settings → Brand** if it still holds the old domain.
+4. Re-enable browser push notifications on the new domain (push subscriptions are bound to the browser origin).
+5. Rebuild and resubmit the native app with the new `--server` value.

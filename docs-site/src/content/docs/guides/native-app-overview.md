@@ -5,53 +5,47 @@ sidebar:
   order: 2
 ---
 
-OpenResto ships a native guest app (iOS and Android) that you build and publish under your own
-name. This page is the map. [Publishing the guest app](/guides/native-app/) has every command.
+OpenResto includes a native iOS and Android guest app that you build and publish under your own brand and developer accounts. This page summarizes the prerequisites and workflow; see [Publishing the guest app](/guides/native-app/) for exact commands.
 
-You don't need the native app to take bookings. The web app already works on phones, and guests
-can install it from their browser. The native app is a good fit when you want a store listing,
-Wallet passes or emails that open the app.
+A native app is optional. The web app works on phones and can be installed as a PWA from the browser. Build the native app if you want an App Store / Play Store listing, native Wallet pass integration, or confirmation emails that open directly in your app.
 
 ## What you need
 
-| Need | Notes |
-| ---- | ----- |
-| A running, public HTTPS OpenResto | The app is built against your server address, see [Which URL goes where](/self-hosting/domains-and-urls/). |
-| A clone of this repository at your server's release | The app and server should match, so check out the same tag (for example `v2.4.0`). |
-| Node.js and an [Expo](https://expo.dev) account | For EAS (Expo's build service) builds. |
-| A Google Play developer account | For Android. |
-| An Apple Developer Program membership | For iOS only. |
+| Requirement                                        | Notes                                                                                                    |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| A public HTTPS OpenResto server                    | The server URL is baked into the app at build time; see [Which URL goes where](/self-hosting/domains-and-urls/). |
+| A clone of this repository at your server's release | Check out the tag matching your server version (for example, `v2.4.0`).                                  |
+| Node.js and an [Expo](https://expo.dev) account    | Required for EAS Build.                                                                                  |
+| A Google Play developer account                    | Required for Android store distribution.                                                                 |
+| An Apple Developer Program membership              | Required for iOS only.                                                                                   |
 
 ## Order of work
 
-1. **Check the Native app page in the admin.** It lists what your server is missing before you
-   start.
-2. **Generate the config** with `native:init`, passing your public address and a bundle id you
-   choose. The bundle id can't be changed once the app is published, so choose it with care.
-3. **Create the EAS project** and note its id.
-4. **Build an Android `.apk`** and try it on a real phone. You don't need a store account for this.
-5. **Build the `.aab`** and upload it to Google Play.
-6. **Optional, after the first build:** app links, so confirmation emails open the app, and
-   Wallet passes.
-7. **iOS** last, because it needs the Apple membership and an app review.
+1. **Review the Native app page in the admin:** It reports what your server still needs before you build.
+2. **Generate native config:** Run `native:init` with your public HTTPS URL and a bundle ID. Choose the bundle ID carefully because it cannot be changed after publishing.
+3. **Create the EAS project:** Initialize EAS and save the generated project ID.
+4. **Test on Android:** Build a preview `.apk` and test it on a physical device (no Play Console account needed yet).
+5. **Publish to Google Play:** Build a production `.aab` and upload it to Play Console.
+6. **Optional post-build setup:** Configure `.well-known` app links (so confirmation emails open the app) and Wallet passes.
+7. **Publish to iOS:** Tackle iOS last, as it requires an Apple Developer membership and App Store review.
 
 ## What the server needs for each feature
 
-| Feature | Server needs |
-| ------- | ------------ |
-| Booking in the app | Public HTTPS address only. |
-| Store listing | A privacy policy URL, set in Admin, Settings, Brand. Both stores ask for it. |
-| Booking reminders | Nothing on your server. They use Expo's push service. `EXPO_ACCESS_TOKEN` only if you enabled enhanced push security. |
-| Emails that open the app | Two `.well-known` files that `native:init` generates, copied to your server after the first build. |
-| Wallet passes | Apple and Google credentials, see the Wallet passes section of [Publishing the guest app](/guides/native-app/). |
+| Feature                  | Server requirements                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Booking in the app       | Public HTTPS address only.                                                                                                |
+| Store listing            | A privacy policy URL set in **Admin → Settings → Brand** (required by both stores).                                       |
+| Booking reminders        | No server credentials needed; uses Expo's push service. Set `EXPO_ACCESS_TOKEN` only if you enabled enhanced push security. |
+| Emails that open the app | Two `.well-known` files generated by `native:init`, copied to your server after the first build.                          |
+| Wallet passes            | Apple and Google issuer credentials; see [Wallet passes](/guides/native-app/#wallet-passes).                              |
 
-Browser push, by contrast, uses [VAPID keys](/self-hosting/push-notifications/).
+Browser push notifications use [VAPID keys](/self-hosting/push-notifications/) separately.
 
 ## Good to know
 
-- **The server address is built into the app.** If you change domain, rebuild and resubmit the app.
-- **The bundle id is fixed** after you publish.
-- **Keep the app and server on the same version.** Update both when you [upgrade](/self-hosting/upgrading/).
-- **Use an `https` address.** Plain `http` only works for `localhost`.
+- **Server URL is compiled in:** Changing your domain requires rebuilding and resubmitting the app.
+- **Bundle ID is permanent:** It cannot be changed once published to either store.
+- **Match app and server versions:** Rebuild the app when you [upgrade](/self-hosting/upgrading/) your server.
+- **HTTPS is required:** Plain `http` is only accepted for `localhost`.
 
-Details of each are in [Publishing the guest app](/guides/native-app/).
+For step-by-step instructions and commands, continue to [Publishing the guest app](/guides/native-app/).

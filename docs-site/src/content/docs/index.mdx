@@ -16,40 +16,36 @@ hero:
 
 import { CardGrid, LinkCard, Steps } from "@astrojs/starlight/components";
 
-## New here? Start with these
+## Getting started
 
 <Steps>
 
-1. **[Install it](/self-hosting/installation/).** One `docker-compose.yml`, a four-line `.env`
-   and `docker compose up -d`. A small VPS, a NAS or a Raspberry Pi is enough.
+1. **[Install with Docker](/self-hosting/installation/).** Download `docker-compose.yml`, create a four-line `.env` file, and run `docker compose up -d`. A small VPS, NAS, or Raspberry Pi is enough.
 
-2. **[Add HTTPS](/self-hosting/https/).** Put your own domain in front so guests and staff
-   connect securely.
+2. **[Add HTTPS](/self-hosting/https/).** Put your domain in front of OpenResto so guests and staff connect over TLS.
 
-3. **[Connect email](/self-hosting/email/).** Optional, but guests get a confirmation with a
-   link back to their booking.
+3. **[Connect email](/self-hosting/email/).** Optional. Send guests booking confirmations with a link back to their reservation.
 
-4. **[Schedule backups](/self-hosting/backup-restore/).** Everything lives in two Docker
-   volumes, and one command saves both.
+4. **[Schedule backups](/self-hosting/backup-restore/).** All persistent data lives in two Docker volumes, and a single command backs up both.
 
 </Steps>
 
 ## Running it
 
 <CardGrid>
-  <LinkCard title="Configuration" href="/self-hosting/configuration/" description="Every setting you can change, grouped by what it does." />
-  <LinkCard title="Which URL goes where" href="/self-hosting/domains-and-urls/" description="Which address to use for CORS_ORIGINS, WEBSITE_URL and the native app." />
-  <LinkCard title="Push notifications" href="/self-hosting/push-notifications/" description="Turn on browser notifications for new bookings and guest reminders." />
-  <LinkCard title="Admin accounts" href="/self-hosting/admin-accounts/" description="Add staff, choose roles, and get back in if you are locked out." />
-  <LinkCard title="Upgrading" href="/self-hosting/upgrading/" description="Move to a new release, and roll back if you need to." />
-  <LinkCard title="Troubleshooting" href="/self-hosting/troubleshooting/" description="Where to look first when something doesn't work." />
+  <LinkCard title="Configuration" href="/self-hosting/configuration/" description="Every environment variable and setting, grouped by feature." />
+  <LinkCard title="Which URL goes where" href="/self-hosting/domains-and-urls/" description="What to set for CORS_ORIGINS, WEBSITE_URL, and the native app." />
+  <LinkCard title="Push notifications" href="/self-hosting/push-notifications/" description="Enable browser notifications for new bookings and guest reminders." />
+  <LinkCard title="Admin accounts" href="/self-hosting/admin-accounts/" description="Add staff, manage roles, and recover from a lockout." />
+  <LinkCard title="Upgrading" href="/self-hosting/upgrading/" description="Upgrade to a new release and roll back if needed." />
+  <LinkCard title="Troubleshooting" href="/self-hosting/troubleshooting/" description="Common issues and where to look first." />
 </CardGrid>
 
 ## Using and extending it
 
 <CardGrid>
-  <LinkCard title="Feature reference" href="/guides/features/" description="How opening hours, walk-ins, pacing, statuses and the rest behave." />
-  <LinkCard title="Your own guest app" href="/guides/native-app-overview/" description="Publish a branded iOS and Android app for your restaurant." />
-  <LinkCard title="Calling the API" href="/api/authentication/" description="API keys, permissions and curl examples." />
-  <LinkCard title="API reference" href="/api/reference/" description="Every endpoint, generated from the running API." />
+  <LinkCard title="Feature reference" href="/guides/features/" description="Opening hours, walk-ins, cover pacing, booking statuses, and API fields." />
+  <LinkCard title="Your own guest app" href="/guides/native-app-overview/" description="Build and publish a branded iOS and Android app for your restaurant." />
+  <LinkCard title="Calling the API" href="/api/authentication/" description="API keys, scopes, and curl examples." />
+  <LinkCard title="API reference" href="/api/reference/" description="Every endpoint, generated from the OpenAPI schema." />
 </CardGrid>
