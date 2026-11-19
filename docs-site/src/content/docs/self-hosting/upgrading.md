@@ -5,30 +5,22 @@ sidebar:
   order: 8
 ---
 
-This page shows how to move to a new OpenResto release. The database updates itself when the
-backend starts, so an upgrade comes down to getting the new images and restarting. The steps
-below take a backup first, so you can always go back.
+The backend applies database migrations automatically on startup, so upgrading comes down to backing up, pulling the new images, and restarting the stack.
 
 ## Steps
 
-1. **Read the changelog** for every version between yours and the new one:
-   [CHANGELOG.md](https://github.com/karanshukla/openresto/blob/main/CHANGELOG.md). It points
-   out anything you need to do. `docker compose images` shows the version you run now.
-2. **Back up** the database and media volumes. See [Backup and restore](/self-hosting/backup-restore/).
-3. **Get the new `docker-compose.yml`.** The file attached to each release names its own
-   version, so replacing it is what moves you forward:
+1. **Review the changelog:** Read [CHANGELOG.md](https://github.com/karanshukla/openresto/blob/main/CHANGELOG.md) for every release between your current version and the target version. Check your running version with `docker compose images`.
+2. **Back up your data:** Take a backup of the database and media volumes before upgrading (see [Backup and restore](/self-hosting/backup-restore/)).
+3. **Update `docker-compose.yml`:** Release compose files pin exact image tags, so download the new release's compose file to move forward (it also includes any new optional environment variables):
 
    ```bash
    cp docker-compose.yml docker-compose.yml.bak
    curl -fsSLO https://github.com/karanshukla/openresto/releases/latest/download/docker-compose.yml
    ```
 
-   For a specific release, swap `latest/download` for `download/v2.4.0` (with your version).
-   The new file also carries any new optional settings, so it is worth taking even when only
-   the version changed.
+   To upgrade to a specific tag, replace `latest/download` with `download/v2.4.0` (using your target tag).
 
-   If you run `docker-compose.release.yml` from the repository instead, skip this step and
-   change `OPENRESTO_VERSION` in `.env`, or leave it unset to follow `latest`.
+   If you use `docker-compose.release.yml` from the repository instead, skip this step and update `OPENRESTO_VERSION` in `.env` (or leave it unset to track `latest`).
 
 4. **Pull and restart:**
 
@@ -37,7 +29,7 @@ below take a backup first, so you can always go back.
    docker compose up -d
    ```
 
-5. **Check it came up:**
+5. **Verify the upgrade:**
 
    ```bash
    docker compose ps
@@ -45,19 +37,16 @@ below take a backup first, so you can always go back.
    docker compose logs backend --tail 50
    ```
 
-   While the database updates, the logs show lines like
-   `Applying migration '20260604104824_NullableBookingTableSection'`.
+   During migration, backend logs show entries such as `Applying migration '20260604104824_NullableBookingTableSection'`.
 
 ## If something goes wrong
 
-If the database update fails, the backend stops rather than running half-updated, so the site
-stays offline until it is sorted. Your data is safe. To go back:
+If a database migration fails, the backend exits rather than running in a partially migrated state, leaving your data intact while the site stays offline. To roll back:
 
-1. Restore your backup (see [Backup and restore](/self-hosting/backup-restore/#restore)).
-2. Put back the old file: `mv docker-compose.yml.bak docker-compose.yml`.
-3. `docker compose up -d`.
+1. Restore your pre-upgrade backup (see [Backup and restore](/self-hosting/backup-restore/#restore)).
+2. Restore the previous compose file: `mv docker-compose.yml.bak docker-compose.yml`.
+3. Restart the stack: `docker compose up -d`.
 
-Then [open an issue](https://github.com/karanshukla/openresto/issues) with the log output.
+Then [open an issue](https://github.com/karanshukla/openresto/issues) with the backend logs.
 
-Always restore a backup when you go back to an older version. A newer database may contain
-changes that the older version doesn't understand.
+Always restore your backup when downgrading: an older OpenResto version may not be compatible with a database schema migrated by a newer release.

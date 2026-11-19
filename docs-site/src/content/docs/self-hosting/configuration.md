@@ -5,106 +5,89 @@ sidebar:
   order: 2
 ---
 
-This page lists the settings you can change. They are environment variables (named values the
-server reads when it starts), normally kept in the `.env` file next to `docker-compose.yml`.
-Email (SMTP) is the exception. You set it in the admin, see [Email](/self-hosting/email/).
+OpenResto is configured through environment variables in the `.env` file next to `docker-compose.yml`. Email (SMTP) is the exception and is configured in the admin UI (see [Email](/self-hosting/email/)).
 
-After editing `.env`, apply it with `docker compose up -d`. Compose restarts only the containers
-whose settings changed.
+After editing `.env`, apply changes with `docker compose up -d`. Docker Compose recreates only the containers whose settings changed.
 
-The names on this page are the ones the release `docker-compose.yml` reads from `.env`. The
-compose file passes each one to the backend under its configuration name (for example
-`VAPID_PUBLIC_KEY` becomes `Vapid__PublicKey`), which is the name you would use when
-[running from a clone](#running-from-a-clone).
+The variable names below are the `.env` names read by the release `docker-compose.yml`. The compose file maps them to backend configuration keys (for example, `VAPID_PUBLIC_KEY` maps to `Vapid__PublicKey`), which are the names used when [running from a clone](#running-from-a-clone).
 
 ## Required
 
-You need to set these three.
-
 | Variable         | Description |
 | ---------------- | ----------- |
-| `JWT_KEY`        | Signing key for admin sessions. At least 32 characters, unique per deployment. Generate with `openssl rand -base64 48`. Changing it signs every admin out. |
-| `CORS_ORIGINS`   | Comma-separated list of origins allowed to call the API, e.g. `https://bookings.example.com`. Wildcards (`*`) aren't accepted. The default in the release compose is `http://localhost`. |
-| `ADMIN_PASSWORD` | Password for the first Owner account. Only read while the database has no accounts, so changing it later has no effect (see [Admin accounts](/self-hosting/admin-accounts/)). |
+| `JWT_KEY`        | Signing key for admin sessions. Must be at least 32 characters and unique per deployment (generate with `openssl rand -base64 48`). Changing it signs out all active admins. |
+| `CORS_ORIGINS`   | Comma-separated list of browser origins allowed to call the API (e.g., `https://bookings.example.com`). Wildcards (`*`) are rejected. Defaults to `http://localhost` in the release compose file. |
+| `ADMIN_PASSWORD` | Password for the initial Owner account. Read only when the database has no accounts; editing it later has no effect (see [Admin accounts](/self-hosting/admin-accounts/)). |
 
 ## Core
 
-| Variable                  | Default                | Description |
-| ------------------------- | ---------------------- | ----------- |
-| `ADMIN_EMAIL`             | `admin@openresto.com`  | Email for the first Owner account. Same first-boot-only rule as the password. |
-| `HOST_PORT`               | `80`                   | Port the reverse proxy listens on, on the host. |
-| `OPENRESTO_VERSION`       | `latest`               | Image tag to run. Only read by `docker-compose.release.yml`; the file attached to a release is already pinned (see [Installation](/self-hosting/installation/#which-version-you-are-running)). |
-| `WEBSITE_URL`             | first entry of `CORS_ORIGINS` | Public address used in email links, Wallet passes and the native app checks, if it differs from `CORS_ORIGINS`. Uncomment its line in the compose file to use it. See [Which URL goes where](/self-hosting/domains-and-urls/). |
-| `OPENRESTO_DEFAULT_LOCALE`| `en`                   | UI language served to new visitors: `en`, `fr`, `es` or `de`. If unset or unsupported, it uses `en`. Uncomment its line in the compose file to use it. |
+| Variable                   | Default                       | Description |
+| -------------------------- | ----------------------------- | ----------- |
+| `ADMIN_EMAIL`              | `admin@openresto.com`         | Email for the initial Owner account. Read only on first boot when no accounts exist. |
+| `HOST_PORT`                | `80`                          | Host port the reverse proxy listens on. |
+| `OPENRESTO_VERSION`        | `latest`                      | Image tag to run. Read only by `docker-compose.release.yml`; the `docker-compose.yml` attached to a release pins its image tags (see [Installation](/self-hosting/installation/#which-version-you-are-running)). |
+| `WEBSITE_URL`              | First entry of `CORS_ORIGINS` | Public URL used in email links, Wallet passes, and native app checks when different from `CORS_ORIGINS`. Uncomment its line in `docker-compose.yml` to use it. See [Which URL goes where](/self-hosting/domains-and-urls/). |
+| `OPENRESTO_DEFAULT_LOCALE` | `en`                          | Default UI language for new visitors (`en`, `fr`, `es`, or `de`; falls back to `en` if unset or unsupported). Uncomment its line in `docker-compose.yml` to use it. |
 
-The database path and Data Protection key directory (`/data/openresto.db`, `/data/dp-keys`) are
-fixed by the compose file and live on the `db_data` volume. Please leave them as they are unless you are
-moving where data is stored.
+The database path (`/data/openresto.db`) and Data Protection key directory (`/data/dp-keys`) are fixed by the compose file on the `db_data` volume. Leave them unchanged unless relocating storage.
 
 ## Admin screen links
 
-The API Keys screen links to the CLI package, the API guide and the source repository. They
-default to the upstream project, so you only need to change them on a fork. Uncomment their
-lines in the compose file to use them. Values that are not `http(s)` URLs are ignored.
+The API Keys screen links to the CLI package, API guide, and source repository. These default to the upstream OpenResto project and only need to be changed on a fork. Uncomment their lines in `docker-compose.yml` to enable them. Non-`http(s)` values are ignored.
 
-| Variable                    | Default |
-| --------------------------- | ------- |
+| Variable                    | Default                      |
+| --------------------------- | ---------------------------- |
 | `OPENRESTO_CLI_PACKAGE_URL` | npm page for `openresto-cli` |
-| `OPENRESTO_API_DOCS_URL`    | The API guide on these docs |
-| `OPENRESTO_REPOSITORY_URL`  | The GitHub repository |
+| `OPENRESTO_API_DOCS_URL`    | The API guide on these docs  |
+| `OPENRESTO_REPOSITORY_URL`  | The GitHub repository        |
 
 ## Push notifications
 
-Leave these empty to keep push off. See [Push notifications](/self-hosting/push-notifications/).
+Leave these empty to keep web push disabled. See [Push notifications](/self-hosting/push-notifications/).
 
 | Variable            | Description |
 | ------------------- | ----------- |
-| `VAPID_PUBLIC_KEY`  | Public half of the VAPID key pair (the keys that let browsers trust your notifications). |
-| `VAPID_PRIVATE_KEY` | Private half. Please keep it secret. |
-| `VAPID_SUBJECT`     | A `mailto:` address or URL identifying you to push services. |
+| `VAPID_PUBLIC_KEY`  | Public half of the VAPID key pair shared with subscribing browsers. |
+| `VAPID_PRIVATE_KEY` | Private half of the VAPID key pair. Keep secret. |
+| `VAPID_SUBJECT`     | `mailto:` address or `https://` URL identifying your server to push services. |
 
 ## Guest reminders and native app
 
-| Variable                             | Default | Description |
-| ------------------------------------ | ------- | ----------- |
-| `GUEST_PUSH_REMINDER_LEAD_HOURS`     | `24,2`  | Hours before a booking at which a reminder is sent. |
-| `EXPO_ACCESS_TOKEN`                  | empty   | Only needed if your EAS project enabled enhanced push security. |
+| Variable                         | Default | Description |
+| -------------------------------- | ------- | ----------- |
+| `GUEST_PUSH_REMINDER_LEAD_HOURS` | `24,2`  | Comma-separated hours before a booking when reminders are sent. |
+| `EXPO_ACCESS_TOKEN`              | empty   | Needed only if your EAS project has enhanced push security enabled. |
 
-See [Publishing the guest app](/guides/native-app/) for the rest of the native setup.
+See [Publishing the guest app](/guides/native-app/) for the full native setup.
 
 ## Wallet passes
 
-Each Wallet button stays hidden until its settings are filled in. Mount the certificate files under `./wallet`
-next to the compose file (it is mounted read-only at `/wallet`) and name them here. Setup is in
-[Publishing the guest app](/guides/native-app/#wallet-passes).
+Each Wallet button remains hidden until its settings are configured. Place certificate files in `./wallet` next to `docker-compose.yml` (mounted read-only at `/wallet`) and configure these variables. See [Wallet passes](/guides/native-app/#wallet-passes) for issuer setup.
 
-| Variable                              | Description |
-| ------------------------------------- | ----------- |
-| `APPLE_PASS_TYPE_ID`                  | Apple Pass Type ID. |
-| `APPLE_TEAM_ID`                       | Apple developer team ID. |
-| `APPLE_PASS_CERTIFICATE_PATH`         | Path to the `.p12` pass certificate. |
-| `APPLE_PASS_CERTIFICATE_PASSWORD`     | Password for that certificate. |
-| `APPLE_WWDR_CERTIFICATE_PATH`         | Path to Apple's WWDR intermediate certificate. |
-| `GOOGLE_WALLET_ISSUER_ID`             | Google Wallet issuer ID. |
-| `GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_PATH` | Path to the service-account JSON key. |
+| Variable                                 | Description |
+| ---------------------------------------- | ----------- |
+| `APPLE_PASS_TYPE_ID`                     | Apple Pass Type ID. |
+| `APPLE_TEAM_ID`                          | Apple Developer Team ID. |
+| `APPLE_PASS_CERTIFICATE_PATH`            | Path to the `.p12` pass certificate inside the container. |
+| `APPLE_PASS_CERTIFICATE_PASSWORD`        | Password for the `.p12` certificate. |
+| `APPLE_WWDR_CERTIFICATE_PATH`            | Path to Apple's WWDR intermediate certificate inside the container. |
+| `GOOGLE_WALLET_ISSUER_ID`                | Google Wallet issuer ID. |
+| `GOOGLE_WALLET_SERVICE_ACCOUNT_KEY_PATH` | Path to the service-account JSON key inside the container. |
 
 ## Fixed limits
 
-A few limits are built in and can't be changed from `.env`:
+These limits are built into the backend and cannot be changed via `.env`:
 
-| Limit | Value |
-| ----- | ----- |
-| Requests per visitor IP address, overall | 300 a minute |
-| Public guest pages (browsing, availability, booking) | 120 a minute per IP |
-| Booking lookups by reference (lookup, cancel, reminders, waitlist tickets) | 10 a minute per IP |
-| Sign-in attempts | 10 a minute per IP |
-| Requests made with an API key | 1000 a minute per IP |
-| Table holds | 5 minutes each, at most 5 at once per IP |
-| Uploads | Hero image 5 MB, location photo 2 MB, menu PDF 10 MB |
+| Limit                                                                     | Value                                                 |
+| ------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Overall requests per visitor IP                                           | 300/minute                                            |
+| Public guest pages (browsing, availability, booking)                      | 120/minute per IP                                     |
+| Reference lookups (lookup, cancel, reminders, waitlist tickets)           | 10/minute per IP                                      |
+| Admin sign-in attempts                                                    | 10/minute per IP                                      |
+| API key requests                                                          | 1000/minute per IP                                    |
+| Table holds                                                               | 5 minutes each, max 5 concurrent holds per IP         |
+| Uploads                                                                   | Hero image 5 MB, location photo 2 MB, menu PDF 10 MB  |
 
 ## Running from a clone
 
-If you run the API from source instead of Docker, `.env.example` is the starting point, and
-the same settings can also live in `OpenRestoApi/appsettings.Local.json`, which the backend
-loads when present and `.gitignore` keeps out of commits. Environment names map to
-configuration keys with `__` for nesting, for example `Vapid__PublicKey` or `Jwt__Key`.
+When running the API directly from source instead of Docker, start from `.env.example` or put local overrides in `OpenRestoApi/appsettings.Local.json` (loaded automatically when present and ignored by `.gitignore`). Environment variable names use `__` for nested configuration keys (for example, `Vapid__PublicKey` or `Jwt__Key`).

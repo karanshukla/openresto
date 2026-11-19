@@ -5,28 +5,23 @@ sidebar:
   order: 9
 ---
 
-This page shows what to back up and how to restore it. Everything OpenResto saves lives in two
-Docker volumes, so there is no separate database server or storage service to worry about.
+All persistent OpenResto data lives in two Docker volumes, with no separate database server or external storage service required.
 
 ## What to back up
 
-| What | Where | Why it matters |
-| ---- | ----- | -------------- |
-| The database, `openresto.db` | `/data` in the backend (volume `db_data`) | **Everything**: bookings, locations, tables, accounts, brand and email settings. |
-| Data Protection keys | `/data/dp-keys`, in the same volume | Encrypt the saved SMTP password and the guest "recent bookings" cookie. Lose them and you re-enter the SMTP password; no bookings are lost. |
-| Uploaded media | `/app/wwwroot/media` (volume `media_data`) | Hero image, location photos and menu PDFs. |
-| `.env` and `docker-compose.yml` | Next to each other on the host | Your secrets and settings, including the VAPID keys browsers subscribed with. |
-| `./wallet`, `./well-known` | Next to `docker-compose.yml` | Only if you set up Wallet passes or a native app. |
+| Item                          | Location                                   | Why it matters                                                                                                                               |
+| ----------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| SQLite database (`openresto.db`) | `/data` in `backend` (volume `db_data`)    | Stores all bookings, locations, tables, accounts, branding, and email settings.                                                              |
+| Data Protection keys          | `/data/dp-keys` (same `db_data` volume)    | Encrypts the saved SMTP password and guest "recent bookings" cookies. Losing them requires re-entering the SMTP password; bookings are safe. |
+| Uploaded media                | `/app/wwwroot/media` (volume `media_data`) | Hero image, location photos, and menu PDFs.                                                                                                  |
+| `.env` and `docker-compose.yml` | Next to each other on the host             | Secrets and configuration, including the VAPID keys browsers subscribed with.                                                                |
+| `./wallet`, `./well-known`    | Next to `docker-compose.yml`               | Required only if you configured Wallet passes or a native app.                                                                               |
 
-The commands below are run from the directory that holds `docker-compose.yml`. They reach the
-volumes through the backend container (`--volumes-from`), so they work whatever Docker named
-the volumes. Docker prefixes them with the project name, so `db_data` is really something like
-`openresto_db_data`, which `docker volume ls` shows.
+Run the commands below from the directory containing `docker-compose.yml`. They attach to volumes via `--volumes-from`, so they work regardless of how Docker prefixes volume names (for example, `openresto_db_data` in `docker volume ls`).
 
 ## Back up
 
-Stopping the backend for a few seconds gives you a clean copy, since SQLite finishes writing
-everything when it shuts down. Guests see the site as unavailable for that moment.
+Stopping the backend briefly ensures SQLite flushes all writes for a clean archive. The site is briefly unavailable during the copy.
 
 ```bash
 mkdir -p backups
@@ -39,13 +34,11 @@ docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
 docker compose start backend
 ```
 
-That one archive holds the database, the keys and the media. Copy `.env` and `backups/` somewhere
-off the server too: a backup on the same disk doesn't help if the disk dies.
+This archive contains the database, Data Protection keys, and uploaded media. Store copies of both `.env` and `backups/` off the server so a disk failure does not destroy your backups.
 
-### Without stopping anything
+### Online database snapshot (no downtime)
 
-To back up while OpenResto keeps running, let SQLite take a snapshot of itself, then copy the
-snapshot out:
+To back up the database without stopping OpenResto, use SQLite's online `.backup` command and copy the resulting file out:
 
 ```bash
 docker compose exec backend sqlite3 /data/openresto.db ".backup /data/openresto-snapshot.db"
@@ -55,16 +48,16 @@ docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
   mv /data/openresto-snapshot.db "/backups/openresto-$(date +%Y%m%d-%H%M%S).db"
 ```
 
-This covers the database only. Back up media with the archive above when it changes.
+This backs up the database only. Archive uploaded media separately whenever it changes.
 
 ## Restore
 
-The restore replaces what is in the volumes now. If you are unsure, take a fresh backup first.
+Restoring overwrites the current contents of both volumes. Take a fresh backup first if you are unsure.
 
 ```bash
 docker compose stop backend
 
-# Swap TIMESTAMP for the backup you want.
+# Replace TIMESTAMP with the backup archive you want to restore.
 docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
   -v "$PWD/backups":/backups alpine \
   sh -c 'rm -rf /data/* /app/wwwroot/media/* && tar xzf /backups/openresto-TIMESTAMP.tar.gz -C /'
@@ -72,10 +65,9 @@ docker run --rm --volumes-from "$(docker compose ps -aq backend)" \
 docker compose start backend
 ```
 
-To restore a `.db` snapshot instead, stop the backend, copy it over `/data/openresto.db` the
-same way (and delete any `openresto.db-wal` and `openresto.db-shm` beside it), then start it.
+To restore a `.db` snapshot instead, stop the backend, copy the snapshot over `/data/openresto.db`, remove any leftover `openresto.db-wal` and `openresto.db-shm` files beside it, and start the backend again.
 
-Afterwards, check the database is sound:
+Verify database integrity afterward:
 
 ```bash
 docker compose exec backend sqlite3 /data/openresto.db "PRAGMA integrity_check;"
@@ -84,9 +76,7 @@ docker compose exec backend sqlite3 /data/openresto.db "PRAGMA integrity_check;"
 
 ## Automatic daily backups
 
-This script backs up the database every night without stopping anything and keeps a week of
-copies. Save it as `/opt/openresto/backup.sh`, change `COMPOSE_DIR` to your install directory,
-and make it executable with `chmod +x`.
+This script creates an online database snapshot every night and retains seven days of backups. Save it as `/opt/openresto/backup.sh`, update `COMPOSE_DIR` to your install directory, and make it executable (`chmod +x /opt/openresto/backup.sh`):
 
 ```bash
 #!/bin/sh
@@ -110,17 +100,15 @@ find "$BACKUP_DIR" -name "openresto-*.db" -mtime +7 -delete
 echo "$DATE backup complete: $BACKUP_DIR/openresto-$DATE.db"
 ```
 
-Then schedule it for 3 a.m. with a file at `/etc/cron.d/openresto-backup`:
+Schedule it at 3:00 a.m. in `/etc/cron.d/openresto-backup`:
 
 ```txt
 0 3 * * * root /opt/openresto/backup.sh >> /var/log/openresto-backup.log 2>&1
 ```
 
-## The VPS compose file
+## Using `docker-compose.vps.yml`
 
-`docker-compose.vps.yml` keeps the database in a `./data` folder on the host rather than a
-volume. Every command above still works, because `--volumes-from` follows bind mounts too. You
-can also just copy the folder while the backend is stopped:
+`docker-compose.vps.yml` stores the database in a host `./data` directory instead of a named volume. The commands above still work because `--volumes-from` follows bind mounts, or you can copy `./data` directly while the backend is stopped:
 
 ```bash
 docker compose -f docker-compose.vps.yml stop backend
@@ -128,10 +116,8 @@ cp -r ./data "./backups/openresto-data-$(date +%Y%m%d-%H%M%S)"
 docker compose -f docker-compose.vps.yml start backend
 ```
 
-Add `-f docker-compose.vps.yml` to every `docker compose` command on this page when you use it.
+Pass `-f docker-compose.vps.yml` to every `docker compose` command on this page when using the VPS compose file.
 
 ## Before an upgrade
 
-Take a backup first, every time. The database updates itself when a new version starts, and an
-older version may not understand the updated database. The full steps are in
-[Upgrading](/self-hosting/upgrading/).
+Always back up before upgrading. New releases apply database migrations automatically on startup, and older versions may not be compatible with a migrated schema. See [Upgrading](/self-hosting/upgrading/).

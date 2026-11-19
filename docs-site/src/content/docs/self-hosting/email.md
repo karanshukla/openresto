@@ -5,56 +5,42 @@ sidebar:
   order: 5
 ---
 
-This page helps you send booking confirmation emails. OpenResto sends mail through any SMTP
-account (the outgoing mail account from your email provider). Email is optional. Without it,
-bookings still work and guests just don't get a confirmation email.
+OpenResto sends booking confirmation emails through any SMTP account. Email is optional; without SMTP configured, bookings still work normally without sending mail.
 
 ## Configure it in the admin
 
-SMTP is set in the admin, not in `.env`. Go to **Settings → Email** and fill in:
+SMTP is configured in the admin UI rather than in `.env`. Open **Settings → Email** and fill in:
 
-| Field                               | Notes                                                                                                                    |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Host and port                       | From your provider, e.g. `smtp.example.com` and `587`.                                                                   |
-| Username and password               | The password is stored encrypted in the database and not shown again.                                                    |
-| Use SSL                             | See below.                                                                                                               |
-| From name and address               | What guests see. Many providers need this to be an address you have verified.                                            |
-| Send booking confirmation emails    | Off by default. Turn it on once the test passes.                                                                         |
-| Email the restaurant about bookings | Off by default. Sends each location an email when a booking is made or cancelled, alongside the admin push notification. |
+| Field                               | Notes                                                                                                                  |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Host and port                       | Provided by your mail host (for example, `smtp.example.com` and `587`).                                                |
+| Username and password               | The password is stored encrypted in the database and is not displayed again.                                           |
+| Use SSL                             | Controls TLS mode on non-587 ports (see below).                                                                        |
+| From name and address               | Displayed to guests. Most SMTP providers require a verified sender address.                                            |
+| Send booking confirmation emails    | Off by default. Enable after verifying your test email succeeds.                                                       |
+| Email the restaurant about bookings | Off by default. Sends each location an email on new bookings and cancellations, alongside admin push notifications.    |
 
-Press **Send a test email** before you rely on it. It saves the settings and tries to connect,
-so a wrong host or password shows up straight away. The same page shows a preview of the
-confirmation guests receive, and a list of recent send failures.
+Click **Send a test email** to save the settings and test the SMTP connection immediately. The same screen includes a preview of the guest confirmation email and a log of recent delivery failures.
 
 ### Port and encryption
 
-- **Port 587** always uses STARTTLS, whatever the SSL toggle says. Most providers use this.
-- **Any other port** uses an implicit TLS connection (`465`) when **Use SSL** is on, and an
-  unencrypted connection when it is off. Only turn SSL off for a relay on a network you trust.
+- **Port `587`:** Always uses STARTTLS regardless of the **Use SSL** toggle. Recommended for most providers.
+- **Any other port:** Uses implicit TLS (such as port `465`) when **Use SSL** is enabled, and unencrypted SMTP when disabled. Only disable SSL for a local relay on a trusted network.
 
 ## What gets sent
 
-- Booking confirmations and cancellations to the guest, when confirmations are enabled.
-- New-booking and cancellation alerts to the restaurant, when restaurant alerts are enabled.
-  They go to the location's contact email, or the brand's contact email when the location has
-  none (both under **Settings → Brand** and the location's own Contact card); a location with
-  neither gets no email. Each alert links to the booking in the admin.
-- "Table ready" notices for the walk-in waitlist.
+- **Guest emails:** Booking confirmations and cancellation notices (when booking confirmation emails are enabled).
+- **Restaurant alerts:** New-booking and cancellation alerts with a link to the booking in the admin (when restaurant alerts are enabled). Sent to the location's contact email, falling back to the brand contact email (**Settings → Brand** and each location's Contact card). Locations with neither receive no alerts.
+- **Waitlist alerts:** "Table ready" notifications when staff call a walk-in waitlist guest who provided an email address.
 
-Emails link back to your site using your public address: the **Website URL** in the brand
-settings if set, otherwise `WEBSITE_URL`, otherwise the first entry of `CORS_ORIGINS`. See
-[Which URL goes where](/self-hosting/domains-and-urls/).
+Links inside emails use your resolved public URL: **Website URL** in brand settings, else `WEBSITE_URL`, else the first entry in `CORS_ORIGINS`. See [Which URL goes where](/self-hosting/domains-and-urls/).
 
 ## If mail does not arrive
 
-1. Re-run the test in **Settings → Email**.
-2. Check the provider's own log. Common causes are a sender address the provider hasn't
-   verified, or SPF/DKIM (settings that prove mail is really from your domain) not set up,
-   which can send the mail to spam.
-3. Look at the backend logs: `docker compose logs backend`.
+1. Re-run **Send a test email** in **Settings → Email**.
+2. Check your mail provider's logs for rejected senders, unverified `From` addresses, or missing SPF/DKIM records causing messages to land in spam.
+3. Inspect the backend logs: `docker compose logs backend`.
 
 :::note
-`.env.example` and the compose file still list `EmailSettings__*` / `SMTP_*` variables. The
-backend reads SMTP settings only from the database, so those variables do nothing. Set email
-up in the admin.
+`.env.example` and the compose files still reference `EmailSettings__*` / `SMTP_*` variables. The backend reads SMTP settings exclusively from the database, so those environment variables have no effect. Configure SMTP in the admin UI.
 :::

@@ -4,11 +4,11 @@ The mobile and web frontend for OpenResto, built with Expo and React Native.
 
 ## Features
 
-- **Multi-platform:** Runs on Android, iOS, and Web.
-- **Modern UI:** Built with custom themed components and a responsive layout.
-- **Fast Navigation:** Uses `expo-router` for file-based routing with smooth animations.
-- **Intelligent Loading:** Features a rich branded initial loading screen and high-performance skeleton loaders for subsequent page transitions.
-- **Admin Dashboard:** Comprehensive management interface for restaurant owners.
+- **Multi-platform:** Runs on Android, iOS, and Web from one codebase.
+- **Themed UI:** Custom themed components with responsive layouts.
+- **File-based routing:** Uses `expo-router` for navigation.
+- **Loading states:** Branded initial loading screen and skeleton loaders for page transitions.
+- **Admin dashboard:** Management interface for restaurant owners and managers.
 
 ## Getting Started
 
@@ -32,22 +32,23 @@ The mobile and web frontend for OpenResto, built with Expo and React Native.
    cp .env.template .env
    ```
 
-   Update the `.env` file with your API URL.
+   Update `.env` with your backend API URL.
 
 3. Start the development server:
+
    ```bash
    npx expo start
    ```
 
 ## Testing
 
-The project aims for 100% test coverage. To run tests:
+This package targets 100% test coverage. Run the test suite:
 
 ```bash
 npm test
 ```
 
-To view coverage report:
+Run with a coverage report:
 
 ```bash
 npm test -- --coverage
