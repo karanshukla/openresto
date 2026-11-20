@@ -1,4 +1,4 @@
-FROM nginx:alpine
+FROM nginx:1.31.9-alpine
 
 # Install gettext for envsubst and curl for healthchecks
 RUN apk add --no-cache gettext curl

@@ -83,3 +83,10 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/nginx"
+      - "/nginx-vps"
+    schedule:
+      interval: "weekly"
