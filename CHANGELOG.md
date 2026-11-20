@@ -10,6 +10,16 @@ How each feature behaves, its API fields and its error codes are in
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-11-20
+
+### Security
+
+- The nginx images are pinned to nginx 1.31.9, which fixes the nginx2root remote code execution CVEs (CVE-2026-123007, CVE-2026-123633, CVE-2026-121810, CVE-2026-123634, CVE-2026-113425). They previously built from an unpinned `nginx:alpine`, so the version depended on the build host's cache. The shipped configs don't enable the affected features, but a proxy with `http2` added to a `listen` line was exploitable. If you build `nginx/` or `nginx-vps/` yourself, rebuild them. ([#563](https://github.com/karanshukla/openresto/issues/563))
+
+### Changed
+
+- The frontend moved to Expo SDK 58 (React Native 0.88, React 19.3), and the CLI now builds on TypeScript 7. Backend and npm dependencies updated to their latest releases.
+
 ## [2.7.0] - 2026-11-14
 
 ### Added
