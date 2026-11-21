@@ -33,32 +33,22 @@ export function bundleIdSuffix(appName: string): string {
 }
 
 /**
- * Normalizes a candidate server URL to a safe `http(s)://host[:port]` origin (or clean URL
- * without shell metacharacters/whitespace), falling back to null when invalid.
+ * Single-quotes a value for a POSIX shell. The server address is the brand's public address,
+ * which anyone with `brand:write` can set, and the person pasting this command may not be them.
+ *
+ * @see [NativeAppSetupCard.test.tsx](../../../tests/components/admin/settings/NativeAppSetupCard.test.tsx) —
+ * pins that an address carrying shell syntax reaches the command as one inert argument.
  */
-function sanitizeServerUrl(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const trimmed = raw.trim();
-  if (!trimmed || /[\s"'`$\\;|&<>(){}[\]*?!#~]/.test(trimmed)) return null;
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
-    if (parsed.username || parsed.password) return null;
-    return parsed.origin;
-  } catch {
-    return null;
-  }
+export function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
 /** The address the generator should be pointed at: what the server checked, else this page. */
 export function resolveServerAddress(serverUrl: string | null, websiteUrl?: string): string {
-  const checked = sanitizeServerUrl(serverUrl);
-  if (checked) return checked;
+  if (serverUrl) return serverUrl;
   const origin =
-    Platform.OS === "web" && typeof window !== "undefined"
-      ? sanitizeServerUrl(window.location?.origin)
-      : null;
-  return origin || sanitizeServerUrl(websiteUrl) || EXAMPLE_SERVER;
+    Platform.OS === "web" && typeof window !== "undefined" ? window.location?.origin : undefined;
+  return origin || websiteUrl || EXAMPLE_SERVER;
 }
 
 /**
@@ -107,7 +97,7 @@ export function NativeAppSetupCard({
 
   const command = [
     "npm run native:init -- \\",
-    `  --server ${resolveServerAddress(serverUrl, brand.websiteUrl)} \\`,
+    `  --server ${shellQuote(resolveServerAddress(serverUrl, brand.websiteUrl))} \\`,
     `  --bundle-id com.example.${bundleIdSuffix(brand.appName)}`,
   ].join("\n");
 

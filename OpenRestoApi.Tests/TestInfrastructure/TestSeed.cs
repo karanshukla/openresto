@@ -20,7 +20,7 @@ internal static class TestSeed
             Id = 1,
             Name = "Test Restaurant",
             OpenTime = "00:00",
-            CloseTime = "23:59",
+            CloseTime = "00:00",
             Timezone = "UTC",
         });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });

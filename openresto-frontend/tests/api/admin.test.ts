@@ -723,10 +723,22 @@ describe("saveEmailSettings", () => {
 
     const result = await saveEmailSettings(data);
 
-    expect(result).toEqual({ message: "Saved" });
+    expect(result).toEqual({ ok: true, data: { message: "Saved" } });
     const [url, opts] = mockFetch.mock.calls[0];
     expect(url).toContain("/api/admin/email-settings");
     expect(opts.method).toBe("PATCH");
+  });
+
+  it("returns the server's reason when it refuses the save", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: "Re-enter the SMTP password." }),
+    });
+
+    expect(await saveEmailSettings(data)).toEqual({
+      ok: false,
+      message: "Re-enter the SMTP password.",
+    });
   });
 
   it("returns null on network error", async () => {

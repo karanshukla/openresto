@@ -421,7 +421,8 @@
     },
     "email": {
       "connection_failed": "Verbindung fehlgeschlagen: {{detail}}",
-      "not_configured": "E-Mail ist nicht konfiguriert."
+      "not_configured": "E-Mail ist nicht konfiguriert.",
+      "password_required": "Geben Sie das SMTP-Passwort erneut ein, um Host, Port oder Benutzernamen zu ändern oder SSL zu deaktivieren."
     },
     "generic": "Etwas ist schiefgelaufen",
     "genericMessage": "Ein unerwarteter Fehler ist aufgetreten. Versuchen Sie es erneut.",

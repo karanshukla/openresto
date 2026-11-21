@@ -236,7 +236,10 @@ describe("EmailSettingsCard", () => {
   });
 
   it("calls saveEmailSettings when Save SMTP settings is pressed", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Settings saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Settings saved." },
+    });
     render(<EmailSettings {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
@@ -248,7 +251,10 @@ describe("EmailSettingsCard", () => {
   });
 
   it("shows save success message after successful save", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Settings saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Settings saved." },
+    });
     render(<EmailSettings {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
     fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
@@ -275,8 +281,25 @@ describe("EmailSettingsCard", () => {
     });
   });
 
+  it("shows the server's reason when it refuses the save", async () => {
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: false,
+      message: "Re-enter the SMTP password.",
+    });
+    render(<EmailSettings {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
+    fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save SMTP settings"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Re-enter the SMTP password.")).toBeTruthy();
+    });
+  });
+
   it("shows Saving… while saving is in progress", async () => {
-    let resolve: (v: { message: string }) => void;
+    let resolve: (v: { ok: true; data: { message: string } }) => void;
     (adminApi.saveEmailSettings as jest.Mock).mockReturnValue(
       new Promise((r) => {
         resolve = r;
@@ -291,12 +314,15 @@ describe("EmailSettingsCard", () => {
     });
     expect(screen.getByText("Saving…")).toBeTruthy();
     await act(async () => {
-      resolve!({ message: "Done." });
+      resolve!({ ok: true, data: { message: "Done." } });
     });
   });
 
   it("runs test connection when Send test is pressed with host and username", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({
       ok: true,
       message: "Connected.",
@@ -313,8 +339,29 @@ describe("EmailSettingsCard", () => {
     });
   });
 
+  it("does not test a connection the server refused to save", async () => {
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: false,
+      message: "Re-enter the SMTP password.",
+    });
+    render(<EmailSettings {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
+    fireEvent.changeText(screen.getByPlaceholderText("smtp.gmail.com"), "smtp.gmail.com");
+    fireEvent.changeText(screen.getByPlaceholderText("you@example.com"), "user@example.com");
+    await act(async () => {
+      fireEvent.press(screen.getByText("Send test"));
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Re-enter the SMTP password.")).toBeTruthy();
+    });
+    expect(adminApi.testEmailConnection).not.toHaveBeenCalled();
+  });
+
   it("shows connection successful status after successful test", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({
       ok: true,
       message: "Authentication accepted.",
@@ -332,7 +379,10 @@ describe("EmailSettingsCard", () => {
   });
 
   it("shows connection failed status after failed test", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({
       ok: false,
       message: "Connection refused.",
@@ -350,7 +400,10 @@ describe("EmailSettingsCard", () => {
   });
 
   it("shows Re-test button after successful connection test", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({
       ok: true,
       message: "Connected.",
@@ -391,7 +444,10 @@ describe("EmailSettingsCard", () => {
       isConfigured: true,
       sendRestaurantBookingAlerts: false,
     });
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     render(<EmailSettings {...baseProps} />);
     await waitFor(() => expect(screen.getByDisplayValue("smtp.example.com")).toBeTruthy());
 
@@ -527,7 +583,10 @@ describe("EmailSettingsCard", () => {
   });
 
   it("toggles booking confirmation when connection is tested and ok", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({ ok: true, message: "OK." });
     render(<EmailSettings {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
@@ -581,7 +640,10 @@ describe("EmailSettingsCard", () => {
   });
 
   it("toggles booking confirmation toggle when connection is enabled (role=switch)", async () => {
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     (adminApi.testEmailConnection as jest.Mock).mockResolvedValue({ ok: true, message: "OK." });
     render(<EmailSettings {...baseProps} />);
     await waitFor(() => expect(screen.getByText("Email (SMTP)")).toBeTruthy());
@@ -603,7 +665,10 @@ describe("EmailSettingsCard", () => {
 
   it("shows Testing… status while test is in progress", async () => {
     let resolve: (v: { ok: boolean; message: string }) => void;
-    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({ message: "Saved." });
+    (adminApi.saveEmailSettings as jest.Mock).mockResolvedValue({
+      ok: true,
+      data: { message: "Saved." },
+    });
     (adminApi.testEmailConnection as jest.Mock).mockReturnValue(
       new Promise((r) => {
         resolve = r;

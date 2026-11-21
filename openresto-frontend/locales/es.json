@@ -421,7 +421,8 @@
     },
     "email": {
       "connection_failed": "Error de conexión: {{detail}}",
-      "not_configured": "El correo electrónico no está configurado."
+      "not_configured": "El correo electrónico no está configurado.",
+      "password_required": "Vuelve a introducir la contraseña SMTP para cambiar el servidor, el puerto o el usuario, o para desactivar SSL."
     },
     "generic": "Ha ocurrido un error",
     "genericMessage": "Se ha producido un error inesperado. Inténtalo de nuevo.",

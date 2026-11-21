@@ -48,7 +48,7 @@ public class TestDbFactoryTests
         Table table = Assert.Single(db.Tables);
         Assert.Equal(4, table.Seats);
         Assert.Equal("00:00", db.Restaurants.First().OpenTime);
-        Assert.Equal("23:59", db.Restaurants.First().CloseTime);
+        Assert.Equal("00:00", db.Restaurants.First().CloseTime);
     }
 
     [Fact]

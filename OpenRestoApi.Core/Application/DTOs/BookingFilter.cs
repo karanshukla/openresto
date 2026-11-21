@@ -22,10 +22,4 @@ public sealed class BookingFilter
     /// narrow single-field filters the deep links use.
     /// </summary>
     public string? Query { get; init; }
-
-    /// <summary>
-    /// False when the caller lacks <c>guests:read</c>: prevents substring oracle exfiltration of
-    /// guest names and email addresses via <see cref="Email"/> or <see cref="Query"/>.
-    /// </summary>
-    public bool AllowGuestSearch { get; init; } = true;
 }

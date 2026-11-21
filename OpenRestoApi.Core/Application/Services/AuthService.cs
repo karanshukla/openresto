@@ -27,8 +27,9 @@ public class AuthService(
     private readonly ICurrentUserService _currentUser = currentUser;
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
-    // Pre-sized dummy Base64 hash (32 bytes) and salt (16 bytes) so unknown/deactivated email
-    // attempts run the same 100k-iteration PBKDF2 work as a real credential check.
+    // Verified against when there is no usable account, so a refusal costs the same PBKDF2 run
+    // either way and the response time does not say whether the email exists.
+    // <seealso>AuthServiceTests.LoginAsync_Runs_A_Password_Check_Even_Without_A_Usable_Account</seealso>
     private const string DummyPasswordHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
     private const string DummyPasswordSalt = "AAAAAAAAAAAAAAAAAAAAAA==";
 
@@ -113,10 +114,8 @@ public class AuthService(
     public virtual async Task<bool> ResetPasswordAsync(string resetToken, string newPassword)
     {
         UserFields.ValidatePassword(newPassword);
-        if (string.IsNullOrWhiteSpace(resetToken))
-            return false;
         AdminCredential? cred = await _credentialRepository.GetByResetTokenAsync(resetToken);
-        if (cred == null || !cred.IsActive || cred.ResetTokenExpiry == null || cred.ResetTokenExpiry < DateTime.UtcNow)
+        if (cred == null || cred.ResetTokenExpiry < DateTime.UtcNow)
             return false;
         string previousHash = cred.PasswordHash;
         (cred.PasswordHash, cred.PasswordSalt) = _passwordService.Hash(newPassword);

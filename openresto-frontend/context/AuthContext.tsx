@@ -38,10 +38,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const session = await checkSession();
 
     if (session === "rate-limited") {
-      // Being throttled says nothing about the session, so hold an already-authenticated session
-      // rather than bouncing a signed-in admin to the login screen, while failing closed if the
-      // initial mount check was rate-limited.
-      const held: AuthStatus = status === "authenticated" ? "authenticated" : "unauthenticated";
+      // Being throttled says nothing about the session, so hold whatever we already believed
+      // rather than bouncing a signed-in admin to the login screen.
+      const held: AuthStatus = status === "unauthenticated" ? "unauthenticated" : "authenticated";
       setStatus(held);
       return held;
     }

@@ -1,9 +1,13 @@
+using Moq;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
+using OpenRestoApi.Core.Application.Interfaces;
+using OpenRestoApi.Core.Application.Mappings;
 using OpenRestoApi.Core.Application.Services;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
+using OpenRestoApi.Infrastructure.Persistence.Repositories;
 
 namespace OpenRestoApi.Tests.Services;
 
@@ -16,7 +20,7 @@ public partial class BookingServiceTests
     {
         var restaurant = new Restaurant
         {
-            Id = 1, Name = "Limited", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC",
+            Id = 1, Name = "Limited", OpenTime = "00:00", CloseTime = "00:00", Timezone = "UTC",
         };
         configure(restaurant);
         db.Restaurants.Add(restaurant);
@@ -133,5 +137,68 @@ public partial class BookingServiceTests
         await CreateService(db).CreateBookingAsync(GuestAt(walkInDay.AddDays(1)));
 
         Assert.Single(db.Bookings);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_RejectsABookingOutsideOpeningHours_WithoutAHold()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_RejectsABookingOutsideOpeningHours_WithoutAHold));
+        SeedLimitedRestaurant(db, r => { r.OpenTime = "17:00"; r.CloseTime = "22:00"; });
+
+        await AssertRefusedAsync(db, GuestAt(DateTime.UtcNow.Date.AddDays(2).AddHours(22)), ErrorCodes.RestaurantClosedAtTime);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_AcceptsABookingInsideOpeningHours_WithoutAHold()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_AcceptsABookingInsideOpeningHours_WithoutAHold));
+        SeedLimitedRestaurant(db, r => { r.OpenTime = "17:00"; r.CloseTime = "22:00"; });
+
+        await CreateService(db).CreateBookingAsync(GuestAt(DateTime.UtcNow.Date.AddDays(2).AddHours(21)));
+
+        Assert.Single(db.Bookings);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_ConcurrentRequestsForOneTable_BookItOnce()
+    {
+        string name = nameof(CreateBookingAsync_ConcurrentRequestsForOneTable_BookItOnce);
+        using AppDbContext seed = TestDbFactory.Create(name);
+        SeedLimitedRestaurant(seed, _ => { });
+        DateTime sitting = DateTime.UtcNow.Date.AddDays(2).AddHours(19);
+
+        // Each request gets its own context, as it would per HTTP request, and the conflict check
+        // yields before answering so the two would interleave without the lock.
+        async Task<bool> Attempt()
+        {
+            using AppDbContext db = TestDbFactory.Create(name);
+            var real = new BookingRepository(db);
+            var slow = new Mock<IBookingRepository>();
+            slow.Setup(r => r.IsUnitBookedOnDateAsync(It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<int?>()))
+                .Returns(async (int? t, int? g, DateTime d, int m, int? x) =>
+                {
+                    await Task.Delay(50);
+                    return await real.IsUnitBookedOnDateAsync(t, g, d, m, x);
+                });
+            slow.Setup(r => r.AddAsync(It.IsAny<Booking>())).Returns((Booking b) => real.AddAsync(b));
+            var holds = new OpenRestoApi.Infrastructure.Holds.HoldService(new UtcClock());
+            var svc = new BookingService(
+                slow.Object, new TableRepository(db), new RestaurantRepository(db), holds, new BookingMapper(),
+                new TableAutoAssigner(real, holds), new TableGroupRepository(db));
+            try
+            {
+                await svc.CreateBookingAsync(GuestAt(sitting));
+                return true;
+            }
+            catch (ConflictException ex) when (ex.Code == ErrorCodes.BookingTableConflict)
+            {
+                return false;
+            }
+        }
+
+        bool[] outcomes = await Task.WhenAll(Attempt(), Attempt());
+
+        Assert.Single(outcomes, booked => booked);
+        Assert.Single(seed.Bookings);
     }
 }

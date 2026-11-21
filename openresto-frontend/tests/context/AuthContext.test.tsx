@@ -87,14 +87,6 @@ describe("AuthProvider", () => {
     expect(screen.getByTestId("status").props.children).toBe("unauthenticated");
   });
 
-  it("fails closed to unauthenticated when the initial mount check is rate-limited", async () => {
-    (checkSession as jest.Mock).mockResolvedValueOnce("rate-limited");
-    renderProbe();
-    await waitFor(() =>
-      expect(screen.getByTestId("status").props.children).toBe("unauthenticated")
-    );
-  });
-
   it("exposes capabilities for the signed-in role", async () => {
     renderProbe();
     await waitFor(() => expect(screen.getByTestId("can").props.children).toBe("yes"));

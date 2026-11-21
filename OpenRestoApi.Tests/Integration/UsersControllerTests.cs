@@ -209,6 +209,19 @@ public class UsersControllerTests(TestWebAppFactory factory) : IClassFixture<Tes
     }
 
     [Fact]
+    public async Task Session_StaysEnded_OnceTheAccountIsReactivated()
+    {
+        AdminCredential target = await SeedUserAsync("reactivated-session@test.com", UserRoles.Manager);
+        HttpClient session = _factory.CreateClientWithToken(
+            TestWebAppFactory.GenerateJwt(target.Id, target.Email, target.Role));
+
+        await OwnerClient().PatchAsJsonAsync($"/api/admin/users/{target.Id}/active", new { isActive = false });
+        await OwnerClient().PatchAsJsonAsync($"/api/admin/users/{target.Id}/active", new { isActive = true });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await session.GetAsync("/api/admin/overview")).StatusCode);
+    }
+
+    [Fact]
     public async Task Session_LosesOwnerAccess_OnceTheAccountIsDemoted()
     {
         AdminCredential target = await SeedUserAsync("demoted-session@test.com", UserRoles.Owner);

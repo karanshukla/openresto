@@ -298,10 +298,11 @@ public static class ServiceCollectionExtensions
     /// A token outlives the account state it was signed with by up to 30 days, so the account is
     /// read back on every request, as the API-key handler does: a deactivated account is refused,
     /// and the role comes from the row rather than the token, so a demotion applies at once. A token
-    /// minted before the account's sessions were revoked (password change or reset, sign-out) is
-    /// refused too.
+    /// minted before the account's sessions were revoked (password change or reset, sign-out,
+    /// deactivation) is refused too, so reactivating an account does not revive its old tokens.
     /// </summary>
     /// <seealso>UsersControllerTests.Session_StopsWorking_OnceTheAccountIsDeactivated</seealso>
+    /// <seealso>UsersControllerTests.Session_StaysEnded_OnceTheAccountIsReactivated</seealso>
     /// <seealso>UsersControllerTests.Session_LosesOwnerAccess_OnceTheAccountIsDemoted</seealso>
     /// <seealso>UsersControllerTests.Session_StopsWorking_OnceAnOwnerResetsThePassword</seealso>
     /// <seealso>AuthControllerTests.Logout_EndsTheSession</seealso>

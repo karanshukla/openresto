@@ -15,7 +15,7 @@ namespace OpenRestoApi.Controllers;
 // integration can find out its guests are receiving nothing without touching this.
 [ApiController]
 [Route("api/admin/email-settings")]
-[Authorize(Policy = AuthPolicies.RequireOwner)]
+[Authorize(Policy = AuthPolicies.RequireAdmin)]
 [NoApiKeyAccess]
 public class EmailSettingsController(EmailSettingsService emailSettings) : ControllerBase
 {
@@ -64,12 +64,13 @@ public class EmailSettingsController(EmailSettingsService emailSettings) : Contr
                 ? Ok(new { message = "Connection successful." })
                 : BadRequest(new MessageResponse { Message = "Email is not configured.", Code = ErrorCodes.EmailNotConfigured });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             return BadRequest(new MessageResponse
             {
-                Message = "Connection failed. Please verify the SMTP host, port, and credentials.",
+                Message = $"Connection failed: {ex.Message}",
                 Code = ErrorCodes.EmailConnectionFailed,
+                Args = new Dictionary<string, object> { ["detail"] = ex.Message }
             });
         }
     }

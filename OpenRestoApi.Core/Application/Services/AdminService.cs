@@ -197,6 +197,7 @@ public class AdminService(
 
     public virtual async Task<List<BookingDetailDto>> GetBookingsAsync(int? restaurantId, DateTime? bookingDate, string status, string? email = null, string? bookingRef = null, string? query = null)
     {
+        RejectGuestSearchWhenRedacted(email, query);
         List<Booking> bookings = await _bookingFilterRepository.QueryAsync(new BookingFilter
         {
             RestaurantId = restaurantId,
@@ -205,10 +206,27 @@ public class AdminService(
             Email = email,
             BookingRef = bookingRef,
             Query = query,
-            AllowGuestSearch = !BookingGuestVisibility.IsRedactedFor(_currentUser),
         });
 
         return await WithNoShowHistoryAsync(bookings);
+    }
+
+    /// <summary>
+    /// A filter on a field the caller cannot see is still an oracle for it: which bookings match
+    /// <c>email=a</c>, then <c>email=al</c>, spells the address out a character at a time.
+    /// </summary>
+    /// <seealso>AdminServiceTests.GetBookingsAsync_EmailSearch_IsRefused_ForAnApiKeyWithoutGuestsRead</seealso>
+    /// <seealso>AdminServiceTests.GetBookingsAsync_FreeTextSearch_IsRefused_ForAnApiKeyWithoutGuestsRead</seealso>
+    /// <seealso>AdminServiceTests.GetBookingsAsync_RefSearch_StillWorks_ForAnApiKeyWithoutGuestsRead</seealso>
+    private void RejectGuestSearchWhenRedacted(string? email, string? query)
+    {
+        if (BookingGuestVisibility.IsRedactedFor(_currentUser)
+            && (!string.IsNullOrWhiteSpace(email) || !string.IsNullOrWhiteSpace(query)))
+        {
+            throw new ValidationException(
+                $"Searching by guest email or name needs the '{ApiKeyScopes.Guests}:{ApiKeyScopes.Read}' scope.")
+            { Code = ErrorCodes.ApiKeyScopeMissing };
+        }
     }
 
     public virtual async Task<BookingDetailDto?> GetBookingAsync(int id)

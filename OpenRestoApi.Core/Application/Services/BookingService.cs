@@ -20,7 +20,7 @@ public class BookingService(
     INotificationQueue? notificationQueue = null,
     ICurrentUserService? currentUser = null)
 {
-    private static readonly ConcurrentDictionary<int, SemaphoreSlim> _restaurantBookingGates = new();
+    private static readonly ConcurrentDictionary<int, SemaphoreSlim> _bookingGates = new();
 
     private readonly IBookingRepository _bookingRepository = bookingRepository;
     private readonly ITableRepository _tableRepository = tableRepository;
@@ -50,38 +50,12 @@ public class BookingService(
         RejectIfPartySizeOutOfRange(bookingDto.Seats);
         RejectIfGuestMayNotChooseTable(restaurant, bookingDto);
 
-        SemaphoreSlim gate = _restaurantBookingGates.GetOrAdd(restaurant.Id, static _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync();
         Booking newBooking;
+        SemaphoreSlim gate = _bookingGates.GetOrAdd(restaurant.Id, static _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync();
         try
         {
-            await RejectIfOverCoverCapAsync(restaurant, bookingDate, bookingDto.Seats);
-
-            if (bookingDto.TableGroupId.HasValue && bookingDto.TableId is null)
-            {
-                newBooking = await CreateGroupBookingAsync(bookingDto, restaurant, bookingDate);
-            }
-            else
-            {
-                if (bookingDto.TableId is null)
-                {
-                    await ResolveAutoAssignAsync(bookingDto, restaurant, bookingDate);
-                }
-                else if (bookingDto.SectionId is null)
-                {
-                    throw new ValidationException("Specify the SectionId of the TableId, or omit TableId for auto-assign.") { Code = ErrorCodes.BookingAmbiguousTableSelection };
-                }
-
-                // Auto-assign may have landed on a group rather than a table.
-                if (bookingDto.TableGroupId.HasValue)
-                {
-                    newBooking = await CreateGroupBookingAsync(bookingDto, restaurant, bookingDate);
-                }
-                else
-                {
-                    newBooking = await PersistTableBookingCoreAsync(bookingDto, restaurant, bookingDate);
-                }
-            }
+            newBooking = await PlaceBookingAsync(bookingDto, restaurant, bookingDate);
         }
         finally
         {
@@ -93,8 +67,36 @@ public class BookingService(
         return _mapper.ToDtoWithGroup(newBooking);
     }
 
-    private async Task<Booking> PersistTableBookingCoreAsync(BookingDto bookingDto, Restaurant restaurant, DateTime bookingDate)
+    /// <summary>
+    /// Every check here reads the bookings already written and then writes one, so two requests for
+    /// the same unit or the last covers of a slot must not interleave. The caller serialises them per
+    /// location; holds live in this process too, so a process-wide lock is the whole of it.
+    /// </summary>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_ConcurrentRequestsForOneTable_BookItOnce</seealso>
+    private async Task<Booking> PlaceBookingAsync(BookingDto bookingDto, Restaurant restaurant, DateTime bookingDate)
     {
+        await RejectIfOverCoverCapAsync(restaurant, bookingDate, bookingDto.Seats);
+
+        if (bookingDto.TableGroupId.HasValue && bookingDto.TableId is null)
+        {
+            return await CreateGroupBookingAsync(bookingDto, restaurant, bookingDate);
+        }
+
+        if (bookingDto.TableId is null)
+        {
+            await ResolveAutoAssignAsync(bookingDto, restaurant, bookingDate);
+        }
+        else if (bookingDto.SectionId is null)
+        {
+            throw new ValidationException("Specify the SectionId of the TableId, or omit TableId for auto-assign.") { Code = ErrorCodes.BookingAmbiguousTableSelection };
+        }
+
+        // Auto-assign may have landed on a group rather than a table.
+        if (bookingDto.TableGroupId.HasValue)
+        {
+            return await CreateGroupBookingAsync(bookingDto, restaurant, bookingDate);
+        }
+
         int tableId = bookingDto.TableId!.Value;
         int sectionId = bookingDto.SectionId!.Value;
         int durationMinutes = BookingDuration.For(restaurant, bookingDto.Seats);
@@ -124,13 +126,6 @@ public class BookingService(
         }
 
         Booking booking = _mapper.ToEntity(bookingDto);
-        booking.Id = 0;
-        booking.IsCancelled = false;
-        booking.CancelledAt = null;
-        booking.Status = BookingStatus.Booked;
-        booking.PreviousStatus = null;
-        booking.StatusChangedAt = null;
-        booking.OriginalEndTime = null;
         booking.Date = bookingDate;
         booking.BookingRef = BookingRefFactory.GenerateFor(restaurant);
         booking.EndTime = bookingDate.AddMinutes(durationMinutes);
@@ -163,6 +158,8 @@ public class BookingService(
     /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingInsideTheMinimumNotice</seealso>
     /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsAPartyOverTheOnlineMaximum</seealso>
     /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingOnAWalkInOnlyDate</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_RejectsABookingOutsideOpeningHours_WithoutAHold</seealso>
+    /// <seealso>BookingServiceTests.CreateBookingAsync_AcceptsABookingInsideOpeningHours_WithoutAHold</seealso>
     private static void RejectIfClosedToOnlineBookings(Restaurant restaurant, DateTime bookingDate, int seats)
     {
         DateTime nowUtc = DateTime.UtcNow;
@@ -354,7 +351,7 @@ public class BookingService(
         }
 
         HoldEntry? held = _holdService.GetHold(bookingDto.HoldId);
-        if (held is null || held.RestaurantId != restaurant.Id || held.Date.ToUniversalTime() != bookingDate)
+        if (held is null || held.RestaurantId != restaurant.Id)
         {
             return false;
         }
@@ -431,13 +428,6 @@ public class BookingService(
         }
 
         Booking booking = _mapper.ToEntity(bookingDto);
-        booking.Id = 0;
-        booking.IsCancelled = false;
-        booking.CancelledAt = null;
-        booking.Status = BookingStatus.Booked;
-        booking.PreviousStatus = null;
-        booking.StatusChangedAt = null;
-        booking.OriginalEndTime = null;
         booking.Date = bookingDate;
         booking.BookingRef = BookingRefFactory.GenerateFor(restaurant);
         booking.EndTime = bookingDate.AddMinutes(durationMinutes);
