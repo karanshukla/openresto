@@ -1,7 +1,7 @@
 (function () {
   try {
-    var s = localStorage.getItem("openresto-theme");
-    var d =
+    const s = localStorage.getItem("openresto-theme");
+    const d =
       s === "light" || s === "dark"
         ? s
         : window.matchMedia && window.matchMedia("(prefers-color-scheme:dark)").matches
@@ -9,5 +9,5 @@
           : "light";
     document.documentElement.classList.add(d);
     document.documentElement.style.backgroundColor = d === "dark" ? "#111214" : "#f2f3f5";
-  } catch (e) {}
+  } catch {}
 })();
