@@ -46,7 +46,7 @@ jobs:
           changed=$(git diff --name-only HEAD^1 HEAD)
           touches() { grep -qE "$1" <<< "$changed" && echo true || echo false; }
           echo "backend=$(touches '^(OpenRestoApi(\.Core|\.Infrastructure|\.Tests)?/|tools/|openresto\.sln$|Directory\.Build\.props$|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
-          echo "frontend=$(touches '^(openresto-frontend/|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
+          echo "frontend=$(touches '^(openresto-frontend/|nginx(-vps)?/|\.editorconfig$|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
           echo "docs=$(touches '^(docs-site/|openresto-cli/openapi/|\.github/workflows/ci\.yml$)')" >> "$GITHUB_OUTPUT"
 
   frontend:
@@ -156,6 +156,11 @@ jobs:
       # tree. tsc, Jest and lint all stay green when that happens; only routing notices.
       - name: Check Route Manifest
         run: npm run routes:check
+
+      # The CSP has no 'unsafe-inline' for scripts, so an inline script in the export that the
+      # nginx policy does not hash would be blocked in production. Reuses routes:check's dist/.
+      - name: Check Inline Scripts Against CSP
+        run: npm run csp:check -- --no-build
 
   native-bundle:
     name: Native Bundle
