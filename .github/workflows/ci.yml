@@ -693,16 +693,7 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    needs:
-      [
-        frontend,
-        frontend-android,
-        routes,
-        backend,
-        docker,
-        e2e-smoke,
-        e2e-extensive,
-      ]
+    needs: [frontend, frontend-android, routes, backend, docker, e2e-smoke, e2e-extensive]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
