@@ -605,10 +605,14 @@ export async function getEmailSettings(): Promise<EmailSettingsDto> {
 
 export async function saveEmailSettings(
   data: Omit<EmailSettingsDto, "isConfigured">
-): Promise<{ message: string } | null> {
+): Promise<AdminMutationResult<{ message: string }> | null> {
   try {
     const res = await patch("/admin/email-settings", data);
-    return await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => null);
+      return { ok: false, message: apiErrorMessage(err, "Failed to save.") };
+    }
+    return { ok: true, data: await res.json() };
   } catch {
     return null;
   }

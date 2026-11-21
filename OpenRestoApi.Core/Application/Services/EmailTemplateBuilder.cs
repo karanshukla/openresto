@@ -33,7 +33,7 @@ public static class EmailTemplateBuilder
                     {contentHtml}
                     <tr><td style="padding:0 40px 32px;border-top:1px solid #f0f0f0;text-align:center;">
                       <p style="margin:24px 0 4px;font-size:13px;color:#6b7280;">
-                        <a href="{cleanUrl}" style="color:{primaryColor};text-decoration:none;">{displayUrl}</a>
+                        <a href="{WebUtility.HtmlEncode(cleanUrl)}" style="color:{primaryColor};text-decoration:none;">{WebUtility.HtmlEncode(displayUrl)}</a>
                       </p>
                       <p style="margin:0;font-size:12px;color:#9ca3af;">
                         &copy; {year} {WebUtility.HtmlEncode(appName)}
@@ -57,7 +57,7 @@ public static class EmailTemplateBuilder
             $"<p style='margin:8px 0 0;font-size:16px;color:#6b7280;'>{WebUtility.HtmlEncode(subtitle)}</p>";
         return $"""
             <tr><td style="padding:0;text-align:center;background-color:#ffffff;">
-              <img src="{imageUrl}" alt="{WebUtility.HtmlEncode(altText)}"
+              <img src="{WebUtility.HtmlEncode(imageUrl)}" alt="{WebUtility.HtmlEncode(altText)}"
                    width="520"
                    style="width:100%;max-width:520px;height:200px;object-fit:cover;display:block;">
               <div style="padding:24px 40px 20px;">
@@ -78,7 +78,7 @@ public static class EmailTemplateBuilder
             $"<p style='margin:8px 0 0;font-size:16px;color:#6b7280;'>{WebUtility.HtmlEncode(subtitle)}</p>";
         return $"""
             <tr><td style="padding:40px 40px 24px;text-align:center;background-color:#ffffff;">
-              <img src="{iconUrl}" alt="{WebUtility.HtmlEncode(altText)}"
+              <img src="{WebUtility.HtmlEncode(iconUrl)}" alt="{WebUtility.HtmlEncode(altText)}"
                    width="72" height="72"
                    style="width:72px;height:72px;display:block;margin:0 auto 16px;border-radius:12px;">
               <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827;">{WebUtility.HtmlEncode(title)}</h1>

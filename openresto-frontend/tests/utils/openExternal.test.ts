@@ -20,7 +20,7 @@ describe("openExternal", () => {
 
     openExternal("https://example.com/x");
 
-    expect(open).toHaveBeenCalledWith("https://example.com/x", "_blank");
+    expect(open).toHaveBeenCalledWith("https://example.com/x", "_blank", "noopener,noreferrer");
     expect(openURL).not.toHaveBeenCalled();
   });
 

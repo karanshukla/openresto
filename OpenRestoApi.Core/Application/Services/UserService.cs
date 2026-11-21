@@ -101,6 +101,7 @@ public class UserService(
                 }
 
                 await EnsureAnotherActiveOwnerRemainsAsync(user, "deactivate", ErrorCodes.UserLastActiveOwnerDeactivate);
+                user.RevokeSessions();
             }
 
             user.IsActive = req.IsActive;

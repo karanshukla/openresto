@@ -27,6 +27,12 @@ public class AuthService(
     private readonly ICurrentUserService _currentUser = currentUser;
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
+    // Verified against when there is no usable account, so a refusal costs the same PBKDF2 run
+    // either way and the response time does not say whether the email exists.
+    // <seealso>AuthServiceTests.LoginAsync_Runs_A_Password_Check_Even_Without_A_Usable_Account</seealso>
+    private const string DummyPasswordHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    private const string DummyPasswordSalt = "AAAAAAAAAAAAAAAAAAAAAA==";
+
     public virtual async Task<string?> LoginAsync(string email, string password)
     {
         string attempted = email ?? string.Empty;
@@ -34,7 +40,10 @@ public class AuthService(
         // Unknown email, deactivated account, and wrong password are deliberately
         // indistinguishable to the caller — the controller turns all three into the same 401.
         if (cred == null || !cred.IsActive)
+        {
+            _passwordService.Verify(password ?? string.Empty, DummyPasswordHash, DummyPasswordSalt);
             return RecordFailedLogin(attempted);
+        }
         if (!CredentialHelper.VerifyPassword(cred, password, _passwordService))
             return RecordFailedLogin(attempted);
 

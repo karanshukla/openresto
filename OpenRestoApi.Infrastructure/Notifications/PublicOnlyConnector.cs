@@ -6,12 +6,13 @@ using OpenRestoApi.Core.Application.Utilities;
 namespace OpenRestoApi.Infrastructure.Notifications;
 
 /// <summary>
-/// The connect step for the Web Push client. A push endpoint is a URL a browser — or anyone
-/// holding a booking or waitlist reference — hands the server, and <see cref="PushEndpointValidator"/>
-/// can only judge its text: a host name that resolves inside the deployment passes it. So the
-/// name is resolved here, refused when any address it lands on is private, and the socket is
-/// opened to exactly those addresses, which leaves no second lookup for a rebinding name to
-/// answer differently.
+/// The connect step for the Web Push client and the well-known probe. A push endpoint is a URL a
+/// browser — or anyone holding a booking or waitlist reference — hands the server, and
+/// <see cref="PushEndpointValidator"/> can only judge its text: a host name that resolves inside
+/// the deployment passes it. So the name is resolved here, refused when any address it lands on is
+/// private, and the socket is opened to exactly those addresses, which leaves no second lookup for
+/// a rebinding name to answer differently. The probe's own pre-check resolves once and the
+/// client would resolve again, so it connects through here for the same reason.
 /// </summary>
 /// <seealso>PublicOnlyConnectorTests.Send_RefusesAHostThatResolvesToAPrivateAddress</seealso>
 /// <seealso>PublicOnlyConnectorTests.Send_RefusesAPrivateLiteralWithoutResolving</seealso>

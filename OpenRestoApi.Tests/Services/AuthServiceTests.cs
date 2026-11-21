@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Moq;
 using OpenRestoApi.Core.Application.DTOs;
 using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
@@ -148,6 +149,25 @@ public class AuthServiceTests
         AuthService svc = CreateService(db);
 
         Assert.Null(await svc.LoginAsync("disabled@example.com", "secret123"));
+    }
+
+    [Theory]
+    [InlineData("nobody@example.com")]
+    [InlineData("disabled@example.com")]
+    public async Task LoginAsync_Runs_A_Password_Check_Even_Without_A_Usable_Account(string email)
+    {
+        using AppDbContext db = TestDbFactory.Create($"{nameof(LoginAsync_Runs_A_Password_Check_Even_Without_A_Usable_Account)}_{email}");
+        SeedCredential(db, "disabled@example.com", "secret123", isActive: false);
+        var passwords = new Mock<IPasswordService>();
+        var svc = new AuthService(
+            new AdminCredentialRepository(db),
+            passwords.Object,
+            new JwtTokenService(BuildConfig()),
+            FakeCurrentUser.Anonymous());
+
+        Assert.Null(await svc.LoginAsync(email, "secret123"));
+
+        passwords.Verify(p => p.Verify("secret123", It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]

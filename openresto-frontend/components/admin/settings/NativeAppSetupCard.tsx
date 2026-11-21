@@ -32,6 +32,17 @@ export function bundleIdSuffix(appName: string): string {
   return /^[a-z]/.test(suffix) ? suffix : `app${suffix}`;
 }
 
+/**
+ * Single-quotes a value for a POSIX shell. The server address is the brand's public address,
+ * which anyone with `brand:write` can set, and the person pasting this command may not be them.
+ *
+ * @see [NativeAppSetupCard.test.tsx](../../../tests/components/admin/settings/NativeAppSetupCard.test.tsx) —
+ * pins that an address carrying shell syntax reaches the command as one inert argument.
+ */
+export function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
 /** The address the generator should be pointed at: what the server checked, else this page. */
 export function resolveServerAddress(serverUrl: string | null, websiteUrl?: string): string {
   if (serverUrl) return serverUrl;
@@ -86,7 +97,7 @@ export function NativeAppSetupCard({
 
   const command = [
     "npm run native:init -- \\",
-    `  --server ${resolveServerAddress(serverUrl, brand.websiteUrl)} \\`,
+    `  --server ${shellQuote(resolveServerAddress(serverUrl, brand.websiteUrl))} \\`,
     `  --bundle-id com.example.${bundleIdSuffix(brand.appName)}`,
   ].join("\n");
 

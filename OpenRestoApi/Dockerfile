@@ -40,8 +40,8 @@ RUN chmod +x /entrypoint.sh
 # Pre-create volume mount points with correct ownership so fresh volumes
 # inherit the right permissions on first initialisation.
 RUN mkdir -p /data /app/wwwroot/media && \
-    chown -R app:app /app /data && \
-    chmod -R 775 /app /data
+    chown -R app:app /data /app/wwwroot/media && \
+    chmod -R 775 /data /app/wwwroot/media
 
 # ASP.NET defaults
 ENV ASPNETCORE_URLS=http://+:8080

@@ -47,9 +47,8 @@ public class TestDbFactoryTests
         Assert.Single(db.Sections);
         Table table = Assert.Single(db.Tables);
         Assert.Equal(4, table.Seats);
-        // BasicRestaurant doesn't override opening hours — the Restaurant entity's
-        // own defaults ("09:00"/"22:00") apply, distinguishing it from RestaurantWithHours.
-        Assert.Equal("09:00", db.Restaurants.First().OpenTime);
+        Assert.Equal("00:00", db.Restaurants.First().OpenTime);
+        Assert.Equal("00:00", db.Restaurants.First().CloseTime);
     }
 
     [Fact]

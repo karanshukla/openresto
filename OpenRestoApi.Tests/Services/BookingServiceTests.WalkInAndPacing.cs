@@ -73,7 +73,7 @@ public partial class BookingServiceTests
     {
         db.Restaurants.Add(new Restaurant
         {
-            Id = 1, Name = "Paced", OpenTime = "00:00", CloseTime = "23:59", Timezone = "UTC",
+            Id = 1, Name = "Paced", OpenTime = "00:00", CloseTime = "00:00", Timezone = "UTC",
             BookingSlotIntervalMinutes = 30, MaxCoversPerSlot = 6,
         });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });

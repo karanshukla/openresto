@@ -80,18 +80,23 @@ export function useEmailSettings() {
     setSaveMsg(null);
     const result = await saveEmailSettings(buildPayload());
     setSaving(false);
-    if (result) {
-      setSaveMsg({ text: result.message, ok: true });
+    if (result?.ok) {
+      setSaveMsg({ text: result.data.message, ok: true });
       setIsConfigured(true);
     } else {
-      setSaveMsg({ text: "Failed to save.", ok: false });
+      setSaveMsg({ text: result?.message ?? "Failed to save.", ok: false });
     }
   };
 
   const handleTest = async () => {
     setTestState("testing");
     setTestMsg("");
-    await saveEmailSettings(buildPayload());
+    const saved = await saveEmailSettings(buildPayload());
+    if (saved && !saved.ok) {
+      setTestState("fail");
+      setTestMsg(saved.message);
+      return;
+    }
     setIsConfigured(true);
     const result = await testEmailConnection();
     setTestState(result.ok ? "ok" : "fail");

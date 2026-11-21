@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Services;
+using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
 using OpenRestoApi.Infrastructure.Persistence;
 using OpenRestoApi.Infrastructure.Persistence.Repositories;
@@ -92,16 +94,49 @@ public class EmailSettingsServiceTests
     public async Task SaveAsync_SkipsEncryption_WhenPasswordIsMask()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_SkipsEncryption_WhenPasswordIsMask));
-        db.Set<EmailSettings>().Add(new EmailSettings { Host = "smtp", Port = 587, EncryptedPassword = "existing-encrypted" });
+        db.Set<EmailSettings>().Add(new EmailSettings { Host = "smtp", Port = 587, Username = "user", EncryptedPassword = "existing-encrypted" });
         await db.SaveChangesAsync();
 
         var protectorMock = new Mock<ICredentialProtector>();
         var svc = CreateService(db, protectorMock);
-        await svc.SaveAsync("smtp", 587, "user", "••••••••", true, null, null);
+        await svc.SaveAsync("smtp", 587, "user", "••••••••", true, "Updated Sender", null);
 
         protectorMock.Verify(p => p.Encrypt(It.IsAny<string>()), Times.Never);
         EmailSettings? result = await db.Set<EmailSettings>().FirstOrDefaultAsync();
         Assert.Equal("existing-encrypted", result!.EncryptedPassword);
+    }
+
+    [Fact]
+    public async Task SaveAsync_RefusesANewHost_WithoutThePasswordTypedAgain()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_RefusesANewHost_WithoutThePasswordTypedAgain));
+        db.Set<EmailSettings>().Add(new EmailSettings { Host = "smtp", Port = 587, Username = "user", EnableSsl = true, EncryptedPassword = "existing-encrypted" });
+        await db.SaveChangesAsync();
+        var svc = CreateService(db);
+
+        ValidationException ex = await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync("relay.example.net", 587, "user", "••••••••", true, null, null));
+        Assert.Equal(ErrorCodes.EmailPasswordRequired, ex.Code);
+
+        await Assert.ThrowsAsync<ValidationException>(
+            () => svc.SaveAsync("smtp", 587, "user", null, false, null, null));
+    }
+
+    [Fact]
+    public async Task SaveAsync_AcceptsANewHost_WithThePasswordTypedAgain()
+    {
+        using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_AcceptsANewHost_WithThePasswordTypedAgain));
+        db.Set<EmailSettings>().Add(new EmailSettings { Host = "smtp", Port = 587, Username = "user", EnableSsl = true, EncryptedPassword = "existing-encrypted" });
+        await db.SaveChangesAsync();
+        var protectorMock = new Mock<ICredentialProtector>();
+        protectorMock.Setup(p => p.Encrypt("new-secret")).Returns("new-encrypted");
+        var svc = CreateService(db, protectorMock);
+
+        await svc.SaveAsync("relay.example.net", 587, "user", "new-secret", true, null, null);
+
+        EmailSettings? result = await db.Set<EmailSettings>().FirstOrDefaultAsync();
+        Assert.Equal("relay.example.net", result!.Host);
+        Assert.Equal("new-encrypted", result.EncryptedPassword);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 /**
  * @jest-environment ./jest-mocks/jsdomEnvironment.js
  */
+import { execFileSync } from "node:child_process";
 import React from "react";
 import { Linking, Platform } from "react-native";
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react-native";
@@ -8,6 +9,7 @@ import {
   NativeAppSetupCard,
   bundleIdSuffix,
   resolveServerAddress,
+  shellQuote,
 } from "@/components/admin/settings/NativeAppSetupCard";
 import type { Brand } from "@/types";
 
@@ -48,7 +50,7 @@ describe("NativeAppSetupCard", () => {
   it("fills the command in with the address the checks ran against", () => {
     render(<NativeAppSetupCard {...baseProps} serverUrl="https://bookings.example.com" />);
     expect(command()).toContain("npm run native:init --");
-    expect(command()).toContain("--server https://bookings.example.com");
+    expect(command()).toContain("--server 'https://bookings.example.com'");
   });
 
   // The bundle id is the app's identity on both stores, and an application id segment takes
@@ -66,7 +68,7 @@ describe("NativeAppSetupCard", () => {
 
   it("falls back to this page's origin when the server checked none", () => {
     render(<NativeAppSetupCard {...baseProps} serverUrl={null} />);
-    expect(command()).toContain(`--server ${window.location.origin}`);
+    expect(command()).toContain(`--server '${window.location.origin}'`);
   });
 
   it("falls back to the brand's website URL off web, then to an example", () => {
@@ -78,6 +80,12 @@ describe("NativeAppSetupCard", () => {
     expect(resolveServerAddress("https://checked.example.com", "https://brand.example.com")).toBe(
       "https://checked.example.com"
     );
+  });
+
+  it("quotes the server address so shell syntax in it stays one inert argument", () => {
+    const hostile = "https://x.example.com/$(touch pwned);echo 'hi' `id`";
+    const echoed = execFileSync("sh", ["-c", `printf %s ${shellQuote(hostile)}`]).toString();
+    expect(echoed).toBe(hostile);
   });
 
   it("copies the command and confirms only once the write landed", async () => {

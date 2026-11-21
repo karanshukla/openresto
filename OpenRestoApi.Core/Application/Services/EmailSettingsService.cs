@@ -1,3 +1,4 @@
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
@@ -33,6 +34,21 @@ public class EmailSettingsService(
         return await _settingsRepository.GetAsync();
     }
 
+    /// <summary>
+    /// The stored password is sent to whatever server the record names, so pointing the record at
+    /// a new server, or dropping SSL, while keeping it would hand the password to a relay of the
+    /// editor's choosing. Changing any of those takes the password typed again.
+    /// </summary>
+    /// <seealso>EmailSettingsServiceTests.SaveAsync_RefusesANewHost_WithoutThePasswordTypedAgain</seealso>
+    /// <seealso>EmailSettingsServiceTests.SaveAsync_AcceptsANewHost_WithThePasswordTypedAgain</seealso>
+    /// <seealso>EmailSettingsServiceTests.SaveAsync_SkipsEncryption_WhenPasswordIsMask</seealso>
+    private static bool WouldSendStoredPasswordElsewhere(EmailSettings stored, string host, int port, string username, bool enableSsl)
+        => !string.IsNullOrEmpty(stored.EncryptedPassword)
+            && (!string.Equals(stored.Host, host, StringComparison.OrdinalIgnoreCase)
+                || stored.Port != port
+                || !string.Equals(stored.Username, username, StringComparison.Ordinal)
+                || (stored.EnableSsl && !enableSsl));
+
     public virtual async Task SaveAsync(
         string host, int port, string username, string? password,
         bool enableSsl, string? fromName, string? fromEmail,
@@ -45,6 +61,13 @@ public class EmailSettingsService(
         {
             settings = new EmailSettings();
             isNew = true;
+        }
+
+        bool hasNewPassword = !string.IsNullOrEmpty(password) && password != "••••••••";
+        if (!hasNewPassword && WouldSendStoredPasswordElsewhere(settings, host, port, username, enableSsl))
+        {
+            throw new ValidationException("Re-enter the SMTP password to change the host, port or username, or to turn off SSL.")
+            { Code = ErrorCodes.EmailPasswordRequired };
         }
 
         // Named one by one rather than serialized from the request: the request also carries the
@@ -67,10 +90,10 @@ public class EmailSettingsService(
         settings.SendBookingConfirmations = sendBookingConfirmations;
         settings.SendRestaurantBookingAlerts = sendRestaurantBookingAlerts;
 
-        if (!string.IsNullOrEmpty(password) && password != "••••••••")
+        if (hasNewPassword)
         {
             string? previous = settings.EncryptedPassword;
-            settings.EncryptedPassword = _protector.Encrypt(password);
+            settings.EncryptedPassword = _protector.Encrypt(password!);
             // Both sides mask to the redaction marker, so the entry carries the fact of the
             // change and nothing more.
             _audit.RecordChange("password", previous, settings.EncryptedPassword);

@@ -72,7 +72,7 @@ public class EmailStatusController(
             Id = f.Id,
             BookingRef = f.BookingRef,
             RecipientEmail = redact ? null : f.RecipientEmail,
-            ErrorMessage = f.ErrorMessage,
+            ErrorMessage = redact ? "Delivery failed." : f.ErrorMessage,
             AttemptedAt = f.AttemptedAt,
         });
         return Ok(response);

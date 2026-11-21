@@ -421,7 +421,8 @@
     },
     "email": {
       "connection_failed": "Connection failed: {{detail}}",
-      "not_configured": "Email is not configured."
+      "not_configured": "Email is not configured.",
+      "password_required": "Re-enter the SMTP password to change the host, port or username, or to turn off SSL."
     },
     "generic": "Something went wrong",
     "genericMessage": "An unexpected error occurred. Try again.",

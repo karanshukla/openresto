@@ -421,7 +421,8 @@
     },
     "email": {
       "connection_failed": "Échec de la connexion : {{detail}}",
-      "not_configured": "L'e-mail n'est pas configuré."
+      "not_configured": "L'e-mail n'est pas configuré.",
+      "password_required": "Saisissez à nouveau le mot de passe SMTP pour modifier l'hôte, le port ou le nom d'utilisateur, ou pour désactiver SSL."
     },
     "generic": "Une erreur s'est produite",
     "genericMessage": "Une erreur inattendue s'est produite. Réessayez.",

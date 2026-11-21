@@ -103,7 +103,9 @@ export async function getBookingByRef(
   bookingRef: string,
   email: string
 ): Promise<BookingDto | null> {
-  const res = await get(`/bookings/ref/${bookingRef}?email=${encodeURIComponent(email)}`);
+  const res = await get(
+    `/bookings/ref/${encodeURIComponent(bookingRef)}?email=${encodeURIComponent(email)}`
+  );
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("Failed to fetch booking");
   return normalizeBooking(await res.json());
@@ -133,7 +135,7 @@ export async function deleteBooking(id: number): Promise<boolean> {
 
 export async function cancelBookingByRef(bookingRef: string, email: string): Promise<true> {
   try {
-    const res = await post(`/bookings/ref/${bookingRef}/cancel`, { email });
+    const res = await post(`/bookings/ref/${encodeURIComponent(bookingRef)}/cancel`, { email });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(apiErrorMessage(body, "Failed to cancel booking."));
