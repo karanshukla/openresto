@@ -21,20 +21,7 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){
-  try {
-    var s = localStorage.getItem('openresto-theme');
-    var d = (s === 'light' || s === 'dark')
-      ? s
-      : (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
-    document.documentElement.classList.add(d);
-    document.documentElement.style.backgroundColor = d === 'dark' ? '#111214' : '#f2f3f5';
-  } catch(e) {}
-})();`,
-          }}
-        />
+        <script src="/theme-init.js" />
         <ScrollViewStyleReset />
         {headNodes}
         {/* ScrollViewStyleReset sizes #root from body's height (`html,body,#root{height:100%}`),
