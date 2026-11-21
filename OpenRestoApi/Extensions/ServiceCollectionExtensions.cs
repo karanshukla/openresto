@@ -425,7 +425,7 @@ public static class ServiceCollectionExtensions
                 client.Timeout = WellKnownProbeTimeout;
                 client.MaxResponseContentBufferSize = OpenRestoApi.Infrastructure.NativeClients.WellKnownProbe.MaxBodyBytes;
             })
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+            .ConfigurePrimaryHttpMessageHandler(() => new OpenRestoApi.Infrastructure.Notifications.PublicOnlyConnector().CreateHandler());
         services.AddScoped<IWellKnownProbe, OpenRestoApi.Infrastructure.NativeClients.WellKnownProbe>();
 
         services.AddSingleton<OpenRestoApi.Core.Application.Mappings.BookingMapper>();

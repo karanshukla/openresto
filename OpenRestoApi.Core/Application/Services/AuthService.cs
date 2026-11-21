@@ -27,6 +27,11 @@ public class AuthService(
     private readonly ICurrentUserService _currentUser = currentUser;
     private readonly IAuditScope _audit = audit ?? NullAuditScope.Instance;
 
+    // Pre-sized dummy Base64 hash (32 bytes) and salt (16 bytes) so unknown/deactivated email
+    // attempts run the same 100k-iteration PBKDF2 work as a real credential check.
+    private const string DummyPasswordHash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    private const string DummyPasswordSalt = "AAAAAAAAAAAAAAAAAAAAAA==";
+
     public virtual async Task<string?> LoginAsync(string email, string password)
     {
         string attempted = email ?? string.Empty;
@@ -34,7 +39,10 @@ public class AuthService(
         // Unknown email, deactivated account, and wrong password are deliberately
         // indistinguishable to the caller — the controller turns all three into the same 401.
         if (cred == null || !cred.IsActive)
+        {
+            _passwordService.Verify(password ?? string.Empty, DummyPasswordHash, DummyPasswordSalt);
             return RecordFailedLogin(attempted);
+        }
         if (!CredentialHelper.VerifyPassword(cred, password, _passwordService))
             return RecordFailedLogin(attempted);
 
@@ -105,8 +113,10 @@ public class AuthService(
     public virtual async Task<bool> ResetPasswordAsync(string resetToken, string newPassword)
     {
         UserFields.ValidatePassword(newPassword);
+        if (string.IsNullOrWhiteSpace(resetToken))
+            return false;
         AdminCredential? cred = await _credentialRepository.GetByResetTokenAsync(resetToken);
-        if (cred == null || cred.ResetTokenExpiry < DateTime.UtcNow)
+        if (cred == null || !cred.IsActive || cred.ResetTokenExpiry == null || cred.ResetTokenExpiry < DateTime.UtcNow)
             return false;
         string previousHash = cred.PasswordHash;
         (cred.PasswordHash, cred.PasswordSalt) = _passwordService.Hash(newPassword);

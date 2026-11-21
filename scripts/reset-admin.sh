@@ -78,9 +78,9 @@ if ! docker exec "$CONTAINER" sh -c 'command -v sqlite3 >/dev/null 2>&1'; then
 fi
 
 # PBKDF2-SHA256, 100k iterations, 16-byte salt, 32-byte key — matches AuthService.HashPassword
-read -r NEW_HASH NEW_SALT < <(python3 - "$NEW_PASSWORD" <<'PYEOF'
-import sys, os, hashlib, base64
-password = sys.argv[1].encode()
+read -r NEW_HASH NEW_SALT < <(NEW_PASSWORD="$NEW_PASSWORD" python3 - <<'PYEOF'
+import os, hashlib, base64
+password = os.environ["NEW_PASSWORD"].encode()
 salt = os.urandom(16)
 key = hashlib.pbkdf2_hmac('sha256', password, salt, 100_000, dklen=32)
 print(base64.b64encode(key).decode(), base64.b64encode(salt).decode())
@@ -106,7 +106,7 @@ fi
 # was deactivated or demoted is exactly the situation this script exists to undo.
 log "Resetting admin credentials for $NEW_EMAIL (account #$TARGET_ID)..."
 docker exec "$CONTAINER" sqlite3 "$DB" \
-  "UPDATE AdminCredentials SET Email='$ESCAPED_EMAIL', PasswordHash='$NEW_HASH', PasswordSalt='$NEW_SALT', Role='Owner', IsActive=1, PvqQuestion=NULL, PvqAnswerHash=NULL, PvqAnswerSalt=NULL, ResetToken=NULL, ResetTokenExpiry=NULL WHERE Id=$TARGET_ID;"
+  "UPDATE AdminCredentials SET Email='$ESCAPED_EMAIL', PasswordHash='$NEW_HASH', PasswordSalt='$NEW_SALT', Role='Owner', IsActive=1, SessionVersion = SessionVersion + 1, PvqQuestion=NULL, PvqAnswerHash=NULL, PvqAnswerSalt=NULL, ResetToken=NULL, ResetTokenExpiry=NULL WHERE Id=$TARGET_ID;"
 
 ACTUAL_EMAIL="$(docker exec "$CONTAINER" sqlite3 "$DB" "SELECT Email FROM AdminCredentials WHERE Id=$TARGET_ID;")"
 if [[ "$ACTUAL_EMAIL" != "$NEW_EMAIL" ]]; then

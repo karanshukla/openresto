@@ -7,7 +7,7 @@ server {
     server_name ${DOMAIN_NAME};
     server_tokens off;
 
-    return 301 https://$host$request_uri;
+    return 301 https://${DOMAIN_NAME}$request_uri;
 }
 
 server {
@@ -124,6 +124,8 @@ server {
         expires 30d;
         add_header Cache-Control "public, no-transform" always;
         add_header X-Content-Type-Options "nosniff" always;
+        add_header Content-Security-Policy "default-src 'none'; sandbox" always;
+        add_header X-Frame-Options "DENY" always;
     }
 
     location /health {

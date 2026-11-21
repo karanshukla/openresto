@@ -100,11 +100,10 @@ public partial class AdminServiceTests
     }
 
     [Fact]
-    public async Task GetBookingsAsync_EmailSearch_StillFiltersCorrectly_ButRedactsTheMatchedRow()
+    public async Task GetBookingsAsync_EmailSearch_IgnoresEmailFilter_ForAnApiKeyWithoutGuestsRead()
     {
-        // A search by an email the caller already supplied still has to find the right booking —
-        // redaction only hides the *display* fields on the result, it must never make the filter
-        // itself silently wrong (see the task's "sane, not silently wrong" requirement).
+        // Without guests:read, filtering by email or guest name in query would be a substring
+        // oracle that lets a key reconstruct redacted guest identities character by character.
         SeedBase();
         SeedOneBooking(1, "Alice Smith", "alice@example.com");
         SeedOneBooking(2, "Bob Jones", "bob@example.com");
@@ -112,10 +111,15 @@ public partial class AdminServiceTests
 
         List<BookingDetailDto> results = await svc.GetBookingsAsync(1, null, "all", email: "alice");
 
-        BookingDetailDto match = Assert.Single(results);
-        Assert.Equal(1, match.Id);
-        Assert.Null(match.CustomerName);
-        Assert.Null(match.CustomerEmail);
+        Assert.Equal(2, results.Count);
+        Assert.All(results, r => Assert.Null(r.CustomerName));
+        Assert.All(results, r => Assert.Null(r.CustomerEmail));
+
+        List<BookingDetailDto> byRefQuery = await svc.GetBookingsAsync(1, null, "all", query: "REF1");
+        Assert.Equal(1, Assert.Single(byRefQuery).Id);
+
+        List<BookingDetailDto> byNameQuery = await svc.GetBookingsAsync(1, null, "all", query: "Alice");
+        Assert.Empty(byNameQuery);
     }
 
     [Fact]

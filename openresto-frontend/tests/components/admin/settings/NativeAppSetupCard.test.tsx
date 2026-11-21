@@ -78,6 +78,9 @@ describe("NativeAppSetupCard", () => {
     expect(resolveServerAddress("https://checked.example.com", "https://brand.example.com")).toBe(
       "https://checked.example.com"
     );
+    expect(resolveServerAddress("https://evil.example.com; rm -rf /", undefined)).toBe(
+      "https://bookings.example.com"
+    );
   });
 
   it("copies the command and confirms only once the write landed", async () => {

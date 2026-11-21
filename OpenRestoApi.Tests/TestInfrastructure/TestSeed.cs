@@ -10,11 +10,19 @@ namespace OpenRestoApi.Tests.TestInfrastructure;
 internal static class TestSeed
 {
     /// <summary>
-    /// Single 4-seat table (BookingService shape). Restaurant has no opening hours set.
+    /// Single 4-seat table (BookingService shape). Open all day in UTC so relative
+    /// <c>DateTime.UtcNow.AddDays(...)</c> sittings are always within opening hours.
     /// </summary>
     public static void BasicRestaurant(AppDbContext db)
     {
-        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant" });
+        db.Restaurants.Add(new Restaurant
+        {
+            Id = 1,
+            Name = "Test Restaurant",
+            OpenTime = "00:00",
+            CloseTime = "23:59",
+            Timezone = "UTC",
+        });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
         db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
         db.SaveChanges();

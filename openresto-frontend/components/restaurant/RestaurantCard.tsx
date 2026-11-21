@@ -249,7 +249,7 @@ export default function RestaurantCard({
                 style={[styles.iconBtn, { backgroundColor: surface2, borderColor }]}
                 onPress={(e) => {
                   e.stopPropagation?.();
-                  window.open(`/(user)/locations/${restaurant.id}`, "_blank");
+                  window.open(`/(user)/locations/${restaurant.id}`, "_blank", "noopener,noreferrer");
                 }}
                 accessibilityRole="link"
                 accessibilityLabel={t("restaurant.card.openBookingPageNewTab")}

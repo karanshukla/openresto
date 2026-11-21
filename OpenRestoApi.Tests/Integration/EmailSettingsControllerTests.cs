@@ -104,17 +104,18 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
             .FirstAsync();
         string encryptedBefore = settingsBefore.EncryptedPassword;
 
-        // Now save again with the masked password (simulating the UI sending back "••••••••")
-        await client.PatchAsJsonAsync("/api/admin/email-settings", new
+        // Now save again with the masked password (simulating the UI sending back "••••••••" while updating non-credential fields)
+        HttpResponseMessage secondSave = await client.PatchAsJsonAsync("/api/admin/email-settings", new
         {
-            host = "smtp.updated.com",
+            host = "smtp.preserve.com",
             port = 587,
             username = "preserve@example.com",
             password = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
             enableSsl = true,
-            fromName = "Preserve Test",
+            fromName = "Preserve Test Updated",
             fromEmail = "preserve@example.com"
         });
+        Assert.Equal(HttpStatusCode.OK, secondSave.StatusCode);
 
         // The encrypted password should be unchanged
         using IServiceScope scope2 = _factory.Services.CreateScope();
@@ -123,8 +124,8 @@ public class EmailSettingsControllerTests(TestWebAppFactory factory) : IClassFix
             .FirstAsync();
 
         Assert.Equal(encryptedBefore, settingsAfter.EncryptedPassword);
-        // But the host should have been updated
-        Assert.Equal("smtp.updated.com", settingsAfter.Host);
+        // And the sender name should have been updated
+        Assert.Equal("Preserve Test Updated", settingsAfter.FromName);
     }
 
     [Fact]

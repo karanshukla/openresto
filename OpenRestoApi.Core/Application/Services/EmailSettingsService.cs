@@ -1,3 +1,4 @@
+using OpenRestoApi.Core.Application.Exceptions;
 using OpenRestoApi.Core.Application.Interfaces;
 using OpenRestoApi.Core.Application.Utilities;
 using OpenRestoApi.Core.Domain;
@@ -47,6 +48,19 @@ public class EmailSettingsService(
             isNew = true;
         }
 
+        bool hasNewPassword = !string.IsNullOrEmpty(password) && password != "••••••••";
+        if (!isNew && !string.IsNullOrEmpty(settings.EncryptedPassword))
+        {
+            bool targetChanged = !string.Equals(settings.Host, host, StringComparison.OrdinalIgnoreCase)
+                || settings.Port != port
+                || !string.Equals(settings.Username, username, StringComparison.Ordinal)
+                || (settings.EnableSsl && !enableSsl);
+            if (targetChanged && !hasNewPassword)
+            {
+                throw new ValidationException("Re-enter the SMTP password when changing host, port, username, or disabling SSL.");
+            }
+        }
+
         // Named one by one rather than serialized from the request: the request also carries the
         // SMTP password, and an audit entry may never hold a credential.
         _audit.RecordChange("host", settings.Host, host);
@@ -67,10 +81,10 @@ public class EmailSettingsService(
         settings.SendBookingConfirmations = sendBookingConfirmations;
         settings.SendRestaurantBookingAlerts = sendRestaurantBookingAlerts;
 
-        if (!string.IsNullOrEmpty(password) && password != "••••••••")
+        if (hasNewPassword)
         {
             string? previous = settings.EncryptedPassword;
-            settings.EncryptedPassword = _protector.Encrypt(password);
+            settings.EncryptedPassword = _protector.Encrypt(password!);
             // Both sides mask to the redaction marker, so the entry carries the fact of the
             // change and nothing more.
             _audit.RecordChange("password", previous, settings.EncryptedPassword);

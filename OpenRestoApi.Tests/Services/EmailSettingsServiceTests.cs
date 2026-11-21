@@ -92,12 +92,12 @@ public class EmailSettingsServiceTests
     public async Task SaveAsync_SkipsEncryption_WhenPasswordIsMask()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(SaveAsync_SkipsEncryption_WhenPasswordIsMask));
-        db.Set<EmailSettings>().Add(new EmailSettings { Host = "smtp", Port = 587, EncryptedPassword = "existing-encrypted" });
+        db.Set<EmailSettings>().Add(new EmailSettings { Host = "smtp", Port = 587, Username = "user", EncryptedPassword = "existing-encrypted" });
         await db.SaveChangesAsync();
 
         var protectorMock = new Mock<ICredentialProtector>();
         var svc = CreateService(db, protectorMock);
-        await svc.SaveAsync("smtp", 587, "user", "••••••••", true, null, null);
+        await svc.SaveAsync("smtp", 587, "user", "••••••••", true, "Updated Sender", null);
 
         protectorMock.Verify(p => p.Encrypt(It.IsAny<string>()), Times.Never);
         EmailSettings? result = await db.Set<EmailSettings>().FirstOrDefaultAsync();

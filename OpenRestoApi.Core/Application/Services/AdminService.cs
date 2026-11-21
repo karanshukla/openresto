@@ -205,6 +205,7 @@ public class AdminService(
             Email = email,
             BookingRef = bookingRef,
             Query = query,
+            AllowGuestSearch = !BookingGuestVisibility.IsRedactedFor(_currentUser),
         });
 
         return await WithNoShowHistoryAsync(bookings);

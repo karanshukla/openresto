@@ -32,12 +32,33 @@ export function bundleIdSuffix(appName: string): string {
   return /^[a-z]/.test(suffix) ? suffix : `app${suffix}`;
 }
 
+/**
+ * Normalizes a candidate server URL to a safe `http(s)://host[:port]` origin (or clean URL
+ * without shell metacharacters/whitespace), falling back to null when invalid.
+ */
+function sanitizeServerUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed || /[\s"'`$\\;|&<>(){}[\]*?!#~]/.test(trimmed)) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    if (parsed.username || parsed.password) return null;
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
 /** The address the generator should be pointed at: what the server checked, else this page. */
 export function resolveServerAddress(serverUrl: string | null, websiteUrl?: string): string {
-  if (serverUrl) return serverUrl;
+  const checked = sanitizeServerUrl(serverUrl);
+  if (checked) return checked;
   const origin =
-    Platform.OS === "web" && typeof window !== "undefined" ? window.location?.origin : undefined;
-  return origin || websiteUrl || EXAMPLE_SERVER;
+    Platform.OS === "web" && typeof window !== "undefined"
+      ? sanitizeServerUrl(window.location?.origin)
+      : null;
+  return origin || sanitizeServerUrl(websiteUrl) || EXAMPLE_SERVER;
 }
 
 /**

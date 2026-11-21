@@ -137,7 +137,9 @@ public class EmailStatusControllerTests
 
         List<EmailFailureResponse> failures = FailuresOf(await ControllerFor(key).GetFailures());
 
-        Assert.Null(Assert.Single(failures).RecipientEmail);
+        EmailFailureResponse only = Assert.Single(failures);
+        Assert.Null(only.RecipientEmail);
+        Assert.Equal("Delivery failed.", only.ErrorMessage);
     }
 
     [Fact]
@@ -150,7 +152,9 @@ public class EmailStatusControllerTests
 
         List<EmailFailureResponse> failures = FailuresOf(await ControllerFor(key).GetFailures());
 
-        Assert.Equal("guest@test.com", Assert.Single(failures).RecipientEmail);
+        EmailFailureResponse only = Assert.Single(failures);
+        Assert.Equal("guest@test.com", only.RecipientEmail);
+        Assert.Equal("err", only.ErrorMessage);
     }
 
     /// <summary>

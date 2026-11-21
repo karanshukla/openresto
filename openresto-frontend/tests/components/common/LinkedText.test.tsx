@@ -24,10 +24,16 @@ describe("parseLinkedText", () => {
   });
 
   it("parses multiple inline links", () => {
-    expect(parseLinkedText("[x](u1) and [y](u2)")).toEqual([
-      { text: "x", url: "u1" },
+    expect(parseLinkedText("[x](https://u1.com) and [y](https://u2.com)")).toEqual([
+      { text: "x", url: "https://u1.com" },
       { text: " and " },
-      { text: "y", url: "u2" },
+      { text: "y", url: "https://u2.com" },
+    ]);
+  });
+
+  it("emits disallowed schemes (e.g. javascript:) as plain text", () => {
+    expect(parseLinkedText("click [here](javascript:alert(1)) now")).toEqual([
+      { text: "click [here](javascript:alert(1)) now" },
     ]);
   });
 
@@ -42,8 +48,8 @@ describe("parseLinkedText", () => {
 
   it("does not carry lastIndex state across calls (fresh regex per call)", () => {
     // Calling twice must produce identical results — a stateful g-flag regex would drift.
-    expect(parseLinkedText("[a](b)")).toEqual([{ text: "a", url: "b" }]);
-    expect(parseLinkedText("[a](b)")).toEqual([{ text: "a", url: "b" }]);
+    expect(parseLinkedText("[a](https://b.com)")).toEqual([{ text: "a", url: "https://b.com" }]);
+    expect(parseLinkedText("[a](https://b.com)")).toEqual([{ text: "a", url: "https://b.com" }]);
   });
 
   it("preserves paragraph breaks (\\n\\n) within a single plain-text segment", () => {

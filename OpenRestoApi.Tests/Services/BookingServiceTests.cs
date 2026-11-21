@@ -348,7 +348,7 @@ public partial class BookingServiceTests
     public async Task CreateBookingAsync_EndTime_UsesRestaurantConfiguredDuration(int durationMinutes)
     {
         using AppDbContext db = TestDbFactory.Create($"{nameof(CreateBookingAsync_EndTime_UsesRestaurantConfiguredDuration)}_{durationMinutes}");
-        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = durationMinutes });
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", OpenTime = "00:00", CloseTime = "23:59", DefaultBookingDurationMinutes = durationMinutes });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
         db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
         db.SaveChanges();
@@ -376,7 +376,7 @@ public partial class BookingServiceTests
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_EndTime_UsesThePartysTurnTime));
         db.Restaurants.Add(new Restaurant
         {
-            Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 60,
+            Id = 1, Name = "Test Restaurant", OpenTime = "00:00", CloseTime = "23:59", DefaultBookingDurationMinutes = 60,
             TurnTimesJson = """[{"minSeats":1,"minutes":60},{"minSeats":5,"minutes":120}]""",
         });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
@@ -421,7 +421,7 @@ public partial class BookingServiceTests
     public async Task CreateBookingAsync_Throws_WhenNewBookingDurationOverlapsLaterBooking()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_Throws_WhenNewBookingDurationOverlapsLaterBooking));
-        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 120 });
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", OpenTime = "00:00", CloseTime = "23:59", DefaultBookingDurationMinutes = 120 });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
         db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
         DateTime firstStart = DateTime.UtcNow.AddDays(7);
@@ -460,7 +460,7 @@ public partial class BookingServiceTests
     public async Task CreateBookingAsync_Throws_WhenOverlapsLegacyBookingWithoutEndTime_UsingConfiguredDuration()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(CreateBookingAsync_Throws_WhenOverlapsLegacyBookingWithoutEndTime_UsingConfiguredDuration));
-        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 90 });
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", OpenTime = "00:00", CloseTime = "23:59", DefaultBookingDurationMinutes = 90 });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
         db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
         DateTime legacyStart = DateTime.UtcNow.AddDays(7);
@@ -637,7 +637,7 @@ public partial class BookingServiceTests
         using AppDbContext db = TestDbFactory.Create(nameof(GetBookingsByRestaurantAsync_ReturnsOnlyMatchingRestaurant));
         TestSeed.BasicRestaurant(db);
         // Second restaurant + table
-        db.Restaurants.Add(new Restaurant { Id = 2, Name = "Other Place" });
+        db.Restaurants.Add(new Restaurant { Id = 2, Name = "Other Place", OpenTime = "00:00", CloseTime = "23:59" });
         db.Sections.Add(new Section { Id = 2, Name = "Main", RestaurantId = 2 });
         db.Tables.Add(new Table { Id = 2, Name = "T2", Seats = 4, SectionId = 2 });
         db.SaveChanges();
@@ -1444,6 +1444,8 @@ public partial class BookingServiceTests
         {
             Id = 1,
             Name = "Paused Bistro",
+            OpenTime = "00:00",
+            CloseTime = "23:59",
             Timezone = "UTC",
             BookingsPausedUntil = DateTime.UtcNow.AddHours(4)
         });
@@ -1472,6 +1474,8 @@ public partial class BookingServiceTests
         {
             Id = 1,
             Name = "Paused Bistro",
+            OpenTime = "00:00",
+            CloseTime = "23:59",
             Timezone = "UTC",
             BookingsPausedUntil = DateTime.UtcNow.AddHours(4)
         });

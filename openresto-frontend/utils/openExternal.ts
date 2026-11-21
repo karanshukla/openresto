@@ -13,7 +13,7 @@ import { Linking, Platform } from "react-native";
  */
 export function openExternal(url: string): void {
   if (Platform.OS === "web") {
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
     return;
   }
   void Linking.openURL(url);

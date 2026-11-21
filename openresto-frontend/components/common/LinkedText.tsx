@@ -1,6 +1,7 @@
 import { Linking, Text, type TextStyle } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { isValidUrl, WEB_AND_CONTACT_SCHEMES } from "@/utils/validation";
 
 /**
  * A single parsed segment: either a run of plain text or a matched inline link
@@ -22,7 +23,7 @@ const LINK_PATTERN = /\[([^\]]+)\]\(([^)\s]+)\)/g;
  *   "hello"                          → [{ text: "hello" }]
  *   "see [menu](https://e.com)"      → [{ text: "see " }, { text: "menu", url: "https://e.com" }]
  *   "a [broken]( link"               → [{ text: "a [broken]( link" }]  (unmatched → plain)
- *   "[x](u1) and [y](u2)"            → [{ text: "x", url: "u1" }, { text: " and " }, { text: "y", url: "u2" }]
+ *   "[x](https://u1.com) and [y](https://u2.com)" → [{ text: "x", url: "https://u1.com" }, { text: " and " }, { text: "y", url: "https://u2.com" }]
  */
 export function parseLinkedText(input: string): TextSegment[] {
   const segments: TextSegment[] = [];
@@ -34,6 +35,9 @@ export function parseLinkedText(input: string): TextSegment[] {
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(input)) !== null) {
+    if (!isValidUrl(match[2], WEB_AND_CONTACT_SCHEMES)) {
+      continue;
+    }
     if (match.index > lastIndex) {
       segments.push({ text: input.slice(lastIndex, match.index) });
     }
