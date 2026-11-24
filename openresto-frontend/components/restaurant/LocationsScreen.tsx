@@ -36,6 +36,7 @@ import ScreenHeading from "@/components/layout/ScreenHeading";
 import LocationListItem from "@/components/restaurant/LocationListItem";
 import LocationsFilterBar, { type MealWindow } from "@/components/restaurant/LocationsFilterBar";
 import BookingDrawer from "@/components/booking/BookingDrawer";
+import { suggestNextBooking } from "@/components/booking/bookingSuggestions";
 import Button from "@/components/common/Button";
 import { hexToRgb } from "@/utils/colors";
 import { theme } from "@/theme/theme";
@@ -200,7 +201,13 @@ export default function LocationsScreen({
   // Every location under one brand shares a clock for the purposes of this page;
   // the first location's timezone is what "today" means in the filter bar.
   const today = useMemo(() => getRestaurantDate(restaurants[0]?.timezone ?? "UTC"), [restaurants]);
-  const date = dateOverride ?? today;
+  // A single restaurant defaults to its next schedulable booking date, while
+  // multiple restaurants retain the shared today filter. Respect guest changes.
+  const nextSingleDate =
+    restaurants.length === 1
+      ? suggestNextBooking(restaurants[0], restaurants[0].timezone || "UTC")?.date
+      : undefined;
+  const date = dateOverride ?? nextSingleDate ?? today;
 
   const registerRef = useCallback((id: number, ref: ViewInstance | null) => {
     itemRefs.current[id] = ref;

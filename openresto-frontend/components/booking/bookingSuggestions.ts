@@ -1,5 +1,11 @@
 import { getNowInTimezone } from "@/utils/date";
-import { getHoursForDate, getLastBookingForDate, HoursSource } from "@/utils/openingHours";
+import {
+  getHoursForDate,
+  getLastBookingForDate,
+  isOpenOnDate,
+  HoursSource,
+} from "@/utils/openingHours";
+import { isWalkInOnlyOnDate, type WalkInSource } from "@/utils/walkIn";
 
 /* istanbul ignore next */
 function addDays(dateStr: string, n: number): string {
@@ -26,37 +32,58 @@ export function latestStartMinutes(restaurant: HoursSource, dateStr: string): nu
 }
 
 /**
- * The date the booking form opens on: today while there is still time to start a sitting
- * (see {@link latestStartMinutes}), tomorrow once that has passed.
+ * Pick the earliest scheduled start at or after the current moment in the restaurant timezone.
+ * Respect weekly closures, exceptions, walk-in-only dates, the last-booking cutoff, booking
+ * interval and minimum notice. Actual remaining table availability is resolved by the API.
+ * A null result means that the configured book-ahead horizon has no schedulable slot.
  */
-export function suggestDate(restaurant: HoursSource, timezone: string): string {
-  const { dateStr, hours, minutes } = getNowInTimezone(timezone);
-  if (hours * 60 + minutes < latestStartMinutes(restaurant, dateStr)) {
-    return dateStr;
+export function suggestNextBooking(
+  restaurant: HoursSource &
+    WalkInSource & {
+      bookingSlotIntervalMinutes?: number | null;
+      minBookingNoticeMinutes?: number | null;
+      maxBookingDaysAhead?: number | null;
+    },
+  timezone: string
+): { date: string; time: string } | null {
+  if (restaurant.walkInOnly) return null;
+
+  const now = getNowInTimezone(timezone);
+  const startMinute = now.hours * 60 + now.minutes;
+  const interval = [15, 30, 60].includes(restaurant.bookingSlotIntervalMinutes ?? 15)
+    ? (restaurant.bookingSlotIntervalMinutes ?? 15)
+    : 15;
+  const notice = Math.max(0, restaurant.minBookingNoticeMinutes ?? 0);
+  const ahead = Math.min(366, Math.max(0, restaurant.maxBookingDaysAhead ?? 366));
+
+  for (let day = 0; day <= ahead; day++) {
+    const date = addDays(now.dateStr, day);
+    if (!isOpenOnDate(restaurant, date) || isWalkInOnlyOnDate(restaurant, date)) continue;
+    const { open } = getHoursForDate(restaurant, date);
+    const [openHour, openMinute] = open.split(":").map(Number);
+    const opening = openHour * 60 + openMinute;
+    const earliest = Math.max(opening, startMinute + notice + 1 - day * 1440);
+    const index = Math.max(0, Math.ceil((earliest - opening) / interval));
+    const slot = opening + index * interval;
+    if (slot <= latestStartMinutes(restaurant, date) && slot < 1440) {
+      return {
+        date,
+        time: `${String(Math.floor(slot / 60)).padStart(2, "0")}:${String(slot % 60).padStart(2, "0")}`,
+      };
+    }
   }
-  /* istanbul ignore next */
-  return addDays(dateStr, 1);
+  return null;
 }
 
-/**
- * The time the form opens on: the next quarter-hour in the restaurant's own timezone,
- * falling back to an hour after opening when that lands outside the day's hours.
- */
+/** Suggested date of the next scheduled slot, or today if none exists in the book-ahead window. */
+export function suggestDate(restaurant: HoursSource, timezone: string): string {
+  return suggestNextBooking(restaurant, timezone)?.date ?? getNowInTimezone(timezone).dateStr;
+}
+
+/** Suggested start time, aligned with the suggested date rather than today's service hours. */
 export function suggestTime(restaurant: HoursSource, timezone: string): string {
-  const { dateStr, hours, minutes } = getNowInTimezone(timezone);
-  const { open: openTime, close: closeTime } = getHoursForDate(restaurant, dateStr);
-  let h = hours;
-  const m = minutes < 15 ? 15 : minutes < 30 ? 30 : minutes < 45 ? 45 : 0;
-  if (m === 0) h += 1;
-
-  const [openH] = openTime.split(":").map(Number);
-  const [closeH, closeM] = closeTime.split(":").map(Number);
-  const closeTotal = closeH * 60 + closeM;
-  const currentTotal = h * 60 + m;
-
-  /* istanbul ignore next */
-  if (currentTotal < openH * 60 || currentTotal > closeTotal) {
-    return `${(openH + 1).toString().padStart(2, "0")}:00`;
-  }
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  return (
+    suggestNextBooking(restaurant, timezone)?.time ??
+    getHoursForDate(restaurant, suggestDate(restaurant, timezone)).open
+  );
 }

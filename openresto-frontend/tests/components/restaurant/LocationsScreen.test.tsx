@@ -10,6 +10,7 @@ import LocationsScreen, {
 } from "@/components/restaurant/LocationsScreen";
 import { isMobileWidth } from "@/constants/breakpoints";
 import { fetchRestaurants } from "@/api/restaurants";
+import { suggestNextBooking } from "@/components/booking/bookingSuggestions";
 import { scrollIntoView } from "@/utils/scrollIntoView";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 
@@ -264,6 +265,28 @@ describe("LocationsScreen", () => {
     await waitFor(() => expect(screen.getByText("Downtown Bistro")).toBeTruthy());
     expect(screen.getByText("Uptown Grill")).toBeTruthy();
     expect(screen.getByTestId("locations-filter-bar")).toBeTruthy();
+  });
+
+  it("defaults a single-location filter to the next opening after the last booking slot", async () => {
+    const nextDate = "2026-11-27";
+    const clock = jest.spyOn(require("@/utils/date"), "getNowInTimezone").mockReturnValue({
+      dateStr: "2026-11-22",
+      hours: 20,
+      minutes: 0,
+    });
+    try {
+      const one = { ...mockRestaurants[0], openDays: "5,6,7", lastBookingTime: "19:30" };
+      expect(suggestNextBooking(one, "UTC")?.date).toBe(nextDate);
+      (fetchRestaurants as jest.Mock).mockResolvedValue([one]);
+      renderWithProviders(<LocationsScreen />);
+      await waitFor(() => expect(screen.getByTestId("date-1").props.children).toBe(nextDate));
+      fireEvent.press(screen.getByTestId("book-1"));
+      expect(screen.getByTestId("drawer-date").props.children).toBe(nextDate);
+      fireEvent.press(screen.getByTestId("drawer-date-change"));
+      expect(screen.getByTestId("date-1").props.children).toBe("2026-09-09");
+    } finally {
+      clock.mockRestore();
+    }
   });
 
   it("leaves the resting filter bar part of the list rather than a toolbar", async () => {
