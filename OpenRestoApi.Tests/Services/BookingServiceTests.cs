@@ -1009,7 +1009,7 @@ public partial class BookingServiceTests
     public async Task UpdateBookingAsync_SetsDefaultEndTime_UsingRestaurantConfiguredDuration_WhenMissing()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateBookingAsync_SetsDefaultEndTime_UsingRestaurantConfiguredDuration_WhenMissing));
-        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 90 });
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 90, OpenTime = "00:00", CloseTime = "00:00", Timezone = "UTC" });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
         db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
         db.SaveChanges();
@@ -1029,7 +1029,7 @@ public partial class BookingServiceTests
     public async Task UpdateBookingAsync_FixesInvalidEndTime_UsingRestaurantConfiguredDuration()
     {
         using AppDbContext db = TestDbFactory.Create(nameof(UpdateBookingAsync_FixesInvalidEndTime_UsingRestaurantConfiguredDuration));
-        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 90 });
+        db.Restaurants.Add(new Restaurant { Id = 1, Name = "Test Restaurant", DefaultBookingDurationMinutes = 90, OpenTime = "00:00", CloseTime = "00:00", Timezone = "UTC" });
         db.Sections.Add(new Section { Id = 1, Name = "Main", RestaurantId = 1 });
         db.Tables.Add(new Table { Id = 1, Name = "T1", Seats = 4, SectionId = 1 });
         db.SaveChanges();
