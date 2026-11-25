@@ -35,6 +35,7 @@ public sealed class EmailPreviewService(
 
         BrandSettings brand = await _brandService.GetAsync();
         string websiteUrl = _brandService.GetWebsiteUrl(brand);
+        string locale = _brandService.GetDefaultLocale(brand);
 
         Booking booking = EmailPreviewSample.BookingFor(restaurant, _clock.UtcNow);
 
@@ -43,8 +44,8 @@ public sealed class EmailPreviewService(
             RestaurantId = restaurant.Id == 0 ? null : restaurant.Id,
             RestaurantName = restaurant.Name,
             RecipientEmail = EmailPreviewSample.CustomerEmail,
-            Subject = _templateService.BuildConfirmationSubject(restaurant),
-            Html = _templateService.BuildConfirmationEmail(booking, restaurant, brand, websiteUrl),
+            Subject = _templateService.BuildConfirmationSubject(restaurant, locale),
+            Html = _templateService.BuildConfirmationEmail(booking, restaurant, brand, websiteUrl, locale),
         };
     }
 }

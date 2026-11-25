@@ -11,7 +11,7 @@ public static class SupportedLocales
     public const string Default = "en";
 
     public static readonly IReadOnlySet<string> All =
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "en", "fr", "es", "de" };
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "en", "fr", "es", "de", "nl" };
 
     public static bool IsSupported(string? locale) =>
         !string.IsNullOrWhiteSpace(locale) && All.Contains(locale.Trim());

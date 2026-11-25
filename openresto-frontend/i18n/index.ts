@@ -5,10 +5,11 @@ import en from "@/locales/en.json";
 import fr from "@/locales/fr.json";
 import es from "@/locales/es.json";
 import de from "@/locales/de.json";
+import nl from "@/locales/nl.json";
 
 /**
- * All four locale JSONs are imported statically and bundled inline — no `i18next-http-backend`.
- * At four locales and a few hundred keys that is a smaller payload than one extra network
+ * Locale JSONs are imported statically and bundled inline — no `i18next-http-backend`.
+ * At a small number of locales that is a smaller payload than one extra network
  * round trip, and it keeps the runtime language switch instant (no fetch to wait on). Revisit
  * past ~8 languages.
  */
@@ -18,6 +19,7 @@ i18n.use(initReactI18next).init({
     fr: { translation: fr },
     es: { translation: es },
     de: { translation: de },
+    nl: { translation: nl },
   },
   lng: DEFAULT_LOCALE,
   fallbackLng: DEFAULT_LOCALE,

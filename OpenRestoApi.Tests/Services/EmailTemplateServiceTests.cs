@@ -399,4 +399,56 @@ public class EmailTemplateServiceTests
 
         Assert.Equal(expected, _svc.BuildRestaurantAlertSubject(booking, MakeRestaurant(), kind));
     }
+
+    // ── Optional Dutch localisation ──────────────────────────────────────────
+
+    [Fact]
+    public void BuildConfirmationEmail_DutchLocale_UsesDutchCopyAnd24HourTime()
+    {
+        string html = _svc.BuildConfirmationEmail(
+            MakeBooking(customerName: "Anneke", specialRequests: "Glutenvrij"),
+            MakeRestaurant(address: "Kolhorn"),
+            _defaultBrand, DefaultWebsiteUrl, "nl");
+
+        Assert.Contains("Gezellig dat je komt, Anneke!", html);
+        Assert.Contains("Reservering bevestigd", html);
+        Assert.Contains("zaterdag, 1 augustus 2026", html);
+        Assert.Contains("19:00 – 21:00", html);
+        Assert.Contains(">Bijzonderheden<", html);
+        Assert.Contains("Glutenvrij", html);
+        Assert.Contains(">Bekijk je reservering</a>", html);
+        Assert.DoesNotContain("Manage your booking", html);
+    }
+
+    [Fact]
+    public void BuildConfirmationSubject_DutchLocale_UsesDutchSubject()
+    {
+        Assert.Equal("Reservering bevestigd – Testaurant",
+            _svc.BuildConfirmationSubject(MakeRestaurant(), "nl"));
+        Assert.Equal("Booking confirmed – Testaurant",
+            _svc.BuildConfirmationSubject(MakeRestaurant()));
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertEmail_DutchLocale_RendersDutchLabels()
+    {
+        string html = _svc.BuildRestaurantAlertEmail(
+            MakeBooking(customerName: "Anneke"), MakeRestaurant(), _defaultBrand,
+            DefaultWebsiteUrl, RestaurantAlertKind.Created, "nl");
+
+        Assert.Contains("Nieuwe reservering", html);
+        Assert.Contains("19:00 – 21:00", html);
+        Assert.Contains(">Aantal gasten</td>", html);
+        Assert.Contains(">Open in beheer</a>", html);
+    }
+
+    [Fact]
+    public void BuildRestaurantAlertSubject_DutchLocale_UsesDutchTimeAndText()
+    {
+        string subject = _svc.BuildRestaurantAlertSubject(
+            MakeBooking(), MakeRestaurant(), RestaurantAlertKind.Cancelled, "nl");
+        Assert.Contains("Reservering geannuleerd", subject);
+        Assert.Contains("2 gasten om 19:00", subject);
+    }
+
 }

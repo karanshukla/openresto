@@ -56,8 +56,9 @@ public sealed class RestaurantBookingAlertService(
             }
 
             string websiteUrl = brandService.GetWebsiteUrl(brand);
-            string subject = templateService.BuildRestaurantAlertSubject(booking, restaurant, kind);
-            string body = templateService.BuildRestaurantAlertEmail(booking, restaurant, brand, websiteUrl, kind);
+            string locale = brandService.GetDefaultLocale(brand);
+            string subject = templateService.BuildRestaurantAlertSubject(booking, restaurant, kind, locale);
+            string body = templateService.BuildRestaurantAlertEmail(booking, restaurant, brand, websiteUrl, kind, locale);
             await emailService.SendEmailAsync(recipient, subject, body);
         }
         catch (Exception ex)

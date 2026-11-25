@@ -36,8 +36,9 @@ public sealed class BookingConfirmationService(
 
             var brand = await _brandService.GetAsync();
             string websiteUrl = _brandService.GetWebsiteUrl(brand);
-            string subject = _templateService.BuildConfirmationSubject(restaurant);
-            string body = _templateService.BuildConfirmationEmail(booking, restaurant, brand, websiteUrl);
+            string locale = _brandService.GetDefaultLocale(brand);
+            string subject = _templateService.BuildConfirmationSubject(restaurant, locale);
+            string body = _templateService.BuildConfirmationEmail(booking, restaurant, brand, websiteUrl, locale);
             await _emailService.SendEmailAsync(booking.CustomerEmail, subject, body);
         }
         catch (Exception ex)

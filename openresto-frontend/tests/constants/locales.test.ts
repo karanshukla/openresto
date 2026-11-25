@@ -6,8 +6,8 @@ import {
 } from "@/constants/locales";
 
 describe("constants/locales", () => {
-  it("lists the four launch locales", () => {
-    expect(SUPPORTED_LOCALES).toEqual(["en", "fr", "es", "de"]);
+  it("lists all supported locales", () => {
+    expect(SUPPORTED_LOCALES).toEqual(["en", "fr", "es", "de", "nl"]);
   });
 
   it("defaults to en", () => {
@@ -22,6 +22,7 @@ describe("constants/locales", () => {
     expect(LOCALE_LABELS.fr).toBe("Français");
     expect(LOCALE_LABELS.es).toBe("Español");
     expect(LOCALE_LABELS.de).toBe("Deutsch");
+    expect(LOCALE_LABELS.nl).toBe("Nederlands");
   });
 
   describe("isSupportedLocale", () => {

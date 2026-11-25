@@ -33,4 +33,15 @@ public class DateFormatterTests
 
         Assert.Equal("3:45 PM – 5:45 PM", DateFormatter.FormatTimeRange(start, end));
     }
+    [Fact]
+    public void DutchLocale_UsesDutchDateAnd24HourClock()
+    {
+        DateTime start = new DateTime(2026, 4, 18, 15, 45, 0, DateTimeKind.Unspecified);
+        DateTime end = new DateTime(2026, 4, 18, 17, 45, 0, DateTimeKind.Unspecified);
+
+        Assert.Equal("zaterdag, 18 april 2026", DateFormatter.FormatLongDate(start, "nl"));
+        Assert.Equal("15:45", DateFormatter.FormatTime(start, "nl"));
+        Assert.Equal("15:45 – 17:45", DateFormatter.FormatTimeRange(start, end, "nl"));
+    }
+
 }
