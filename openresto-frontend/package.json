@@ -67,7 +67,7 @@
   "devDependencies": {
     "@playwright/test": "^1.65.0",
     "@react-native/jest-preset": "^0.88.1",
-    "@testing-library/react-native": "^13.3.3",
+    "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.3.0",
     "eslint-plugin-expo": "^1.1.0",
