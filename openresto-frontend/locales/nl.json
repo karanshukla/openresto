@@ -422,7 +422,7 @@
     "email": {
       "connection_failed": "Connection failed: {{detail}}",
       "not_configured": "Email is not configured.",
-      "password_required": "Wachtwoord is verplicht."
+      "password_required": "Voer het SMTP-wachtwoord opnieuw in om de host, poort of gebruikersnaam te wijzigen, of SSL uit te schakelen."
     },
     "generic": "Something went wrong",
     "genericMessage": "An unexpected error occurred. Try again.",
