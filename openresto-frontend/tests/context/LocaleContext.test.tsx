@@ -77,6 +77,21 @@ describe("LocaleContext", () => {
     expect(setActiveLocale).toHaveBeenCalledWith("es");
   });
 
+  it("uses Dutch when configured as the restaurant's default", async () => {
+    mockBrand = { defaultLocale: "nl" };
+
+    render(
+      <LocaleProvider>
+        <TestConsumer />
+      </LocaleProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId("locale").props.children).toBe("nl"));
+    expect(i18n.changeLanguage).toHaveBeenCalledWith("nl");
+    expect(setActiveLocale).toHaveBeenCalledWith("nl");
+    expect(document.documentElement.lang).toBe("nl");
+  });
+
   it("prefers a supported localStorage pick over brand.defaultLocale", async () => {
     localStorage.setItem("openresto.locale", "fr");
     mockBrand = { defaultLocale: "es" };

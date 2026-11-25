@@ -30,6 +30,13 @@ describe("LocaleRadioList", () => {
     expect(screen.getByText("Français")).toBeTruthy();
     expect(screen.getByText("Español")).toBeTruthy();
     expect(screen.getByText("Deutsch")).toBeTruthy();
+    expect(screen.getByText("Nederlands")).toBeTruthy();
+  });
+
+  it("allows choosing Dutch", () => {
+    render(<LocaleRadioList />);
+    fireEvent.press(screen.getByLabelText("Nederlands"));
+    expect(mockSetLocale).toHaveBeenCalledWith("nl");
   });
 
   it("marks the active locale checked via radio semantics", () => {

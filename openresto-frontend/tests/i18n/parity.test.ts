@@ -2,6 +2,7 @@ import en from "@/locales/en.json";
 import fr from "@/locales/fr.json";
 import es from "@/locales/es.json";
 import de from "@/locales/de.json";
+import nl from "@/locales/nl.json";
 import { SUPPORTED_LOCALES } from "@/constants/locales";
 
 type Json = { [key: string]: Json | string };
@@ -39,7 +40,7 @@ function leafEntries(node: Json, prefix = ""): [string, string][] {
   });
 }
 
-const LOCALE_FILES: Record<string, Json> = { en, fr, es, de };
+const LOCALE_FILES: Record<string, Json> = { en, fr, es, de, nl };
 
 describe("i18n locale key parity", () => {
   it("ships a locale file for every entry in SUPPORTED_LOCALES", () => {
