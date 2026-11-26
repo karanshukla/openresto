@@ -77,7 +77,8 @@ describe("roles", () => {
       expect(roleDisplayLabel("Host", t)).toBe("Host");
     });
 
-    it("translates independently of the raw identifier roleLabel resolves", () => {
+    it("translates independently of the raw identifier roleLabel resolves", async () => {
+      await i18n.loadLanguages("fr");
       const fr = i18n.getFixedT("fr");
       expect(roleDisplayLabel(ROLES.owner, fr)).toBe("Propriétaire");
       expect(roleLabel(ROLES.owner)).toBe("Owner");

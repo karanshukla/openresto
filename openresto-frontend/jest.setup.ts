@@ -29,6 +29,16 @@ jest.mock("@expo/vector-icons", () => ({
 // map. Forward it to the barrel so the barrel mocks above and in individual test files still apply.
 jest.mock("@expo/vector-icons/Ionicons", () => jest.requireMock("@expo/vector-icons").Ionicons);
 
+// Jest's VM has no ESM loader, so the locale chunks' dynamic `import()` would throw here.
+jest.mock("@/i18n/loaders", () => ({
+  localeLoaders: {
+    fr: async () => ({ default: jest.requireActual("@/locales/fr.json") }),
+    es: async () => ({ default: jest.requireActual("@/locales/es.json") }),
+    de: async () => ({ default: jest.requireActual("@/locales/de.json") }),
+    nl: async () => ({ default: jest.requireActual("@/locales/nl.json") }),
+  },
+}));
+
 // expo-localization's real implementation resolves to a native-module build under Jest's
 // default "ios" haste platform (`requireNativeModule`, which throws with no native host), so
 // every test that transitively imports LocaleContext needs this stubbed. Fixed "ltr" matches
