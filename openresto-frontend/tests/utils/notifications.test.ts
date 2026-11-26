@@ -86,7 +86,8 @@ describe("constants", () => {
     );
   });
 
-  it("getTypeLabels translates independently of the locale getTypeFilters resolves", () => {
+  it("getTypeLabels translates independently of the locale getTypeFilters resolves", async () => {
+    await i18n.loadLanguages("fr");
     const fr = i18n.getFixedT("fr");
     expect(getTypeLabels(fr).BookingCreated).toBe("Nouvelle réservation");
     expect(getTypeLabels(t).BookingCreated).toBe("New Booking");

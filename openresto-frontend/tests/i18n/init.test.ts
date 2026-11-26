@@ -6,10 +6,27 @@ describe("i18n/index", () => {
     await i18n.changeLanguage(DEFAULT_LOCALE);
   });
 
-  it("initializes with every supported locale bundled as a resource", () => {
+  it("bundles only DEFAULT_LOCALE up front", () => {
     for (const locale of SUPPORTED_LOCALES) {
-      expect(i18n.hasResourceBundle(locale, "translation")).toBe(true);
+      expect(i18n.hasResourceBundle(locale, "translation")).toBe(locale === DEFAULT_LOCALE);
     }
+  });
+
+  it("loads another locale's translations when it is first asked for", async () => {
+    await i18n.loadLanguages("de");
+    expect(i18n.hasResourceBundle("de", "translation")).toBe(true);
+  });
+
+  it("keeps a locale unloaded when its chunk fails to load", async () => {
+    const { localeLoaders } = jest.requireMock("@/i18n/loaders");
+    jest.spyOn(localeLoaders, "es").mockRejectedValueOnce(new Error("offline"));
+    await i18n.loadLanguages("es");
+    expect(i18n.hasResourceBundle("es", "translation")).toBe(false);
+  });
+
+  it("has no translations to load for a language this app does not ship", async () => {
+    await i18n.loadLanguages("xx");
+    expect(i18n.hasResourceBundle("xx", "translation")).toBe(false);
   });
 
   it("falls back to DEFAULT_LOCALE", () => {

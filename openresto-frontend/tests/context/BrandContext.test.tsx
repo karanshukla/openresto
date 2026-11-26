@@ -6,6 +6,7 @@ import { render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 import { BrandProvider, useBrand } from "@/context/BrandContext";
 import type { Brand } from "@/types";
+import i18n from "@/i18n";
 
 jest.mock("@/utils/injectBrandFavicon", () => ({
   injectBrandFavicon: jest.fn(),
@@ -293,5 +294,30 @@ describe("BrandContext", () => {
     await waitFor(() => expect(brand?.appName).toBe("Test"));
     expect(brand?.wallet).toBeUndefined();
     expect(brand?.webPushPublicKey).toBeUndefined();
+  });
+
+  describe("preloading the locale behind the loading screen", () => {
+    beforeEach(() => {
+      jest.spyOn(i18n, "loadLanguages").mockResolvedValue(undefined);
+    });
+
+    function renderWithBrand(response: Promise<unknown>) {
+      mockFetch.mockReturnValueOnce(response);
+      render(
+        <BrandProvider>
+          <TestConsumer />
+        </BrandProvider>
+      );
+    }
+
+    it("loads the restaurant's default locale", async () => {
+      renderWithBrand(Promise.resolve({ ok: true, json: async () => ({ defaultLocale: "de" }) }));
+      await waitFor(() => expect(i18n.loadLanguages).toHaveBeenCalledWith("de"));
+    });
+
+    it("still resolves a locale when the brand fetch fails", async () => {
+      renderWithBrand(Promise.reject(new Error("offline")));
+      await waitFor(() => expect(i18n.loadLanguages).toHaveBeenCalledWith("en"));
+    });
   });
 });

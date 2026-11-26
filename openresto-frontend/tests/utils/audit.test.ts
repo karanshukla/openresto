@@ -188,7 +188,8 @@ describe("getActionGroups", () => {
     ]);
   });
 
-  it("translates the label while the value stays the machine prefix the API matches on", () => {
+  it("translates the label while the value stays the machine prefix the API matches on", async () => {
+    await i18n.loadLanguages("fr");
     const groups = getActionGroups(i18n.getFixedT("fr"));
     expect(groups.find((g) => g.value === "booking")?.label).toBe("Réservations");
     expect(groups.find((g) => g.value === "booking")?.value).toBe("booking");

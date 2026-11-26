@@ -80,7 +80,8 @@ describe("recorded status", () => {
 });
 
 describe("label/value split — variant stays untranslated so rank/style lookups don't break", () => {
-  it("resolves a localized label while the variant stays the same", () => {
+  it("resolves a localized label while the variant stays the same", async () => {
+    await i18n.loadLanguages("fr");
     const frT = i18n.getFixedT("fr");
     expect(getStatus(booked(-121), frT).variant).toBe("unmarked");
     expect(getStatus(booked(-121), frT).label).not.toBe(getStatus(booked(-121), t).label);

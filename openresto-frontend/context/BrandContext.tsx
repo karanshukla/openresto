@@ -4,6 +4,8 @@ import { Brand } from "@/types";
 import { buildUrl } from "@/api/client";
 import { DEFAULT_BRAND } from "@/context/brandDefaults";
 import { useBrandDocumentEffect } from "@/hooks/useBrandDocumentEffect";
+import i18n from "@/i18n";
+import { resolveLocale } from "@/utils/resolveLocale";
 
 const BrandContext = createContext<Brand>(DEFAULT_BRAND);
 
@@ -46,8 +48,12 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
             webPushPublicKey: data.webPushPublicKey || undefined,
           });
         }
+        return data?.defaultLocale;
       })
-      .catch(() => {})
+      .catch(() => undefined)
+      // Fetch the locale LocaleProvider is about to apply while the loading screen is still up, so
+      // a non-English visitor never sees the page in English first.
+      .then((defaultLocale) => i18n.loadLanguages(resolveLocale(defaultLocale)))
       .finally(() => {
         setLoading(false);
       });
