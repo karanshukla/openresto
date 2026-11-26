@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react-native";
 import LoadingScreen from "@/components/common/LoadingScreen";
 
 jest.mock("@expo/vector-icons", () => ({
-  MaterialCommunityIcons: () => null,
+  Ionicons: () => null,
 }));
 
 jest.mock("@/hooks/use-color-scheme", () => ({
