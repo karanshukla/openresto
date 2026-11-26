@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { fetchRestaurants, fetchHighlights, RestaurantDto, HighlightDto } from "@/api/restaurants";
+import { fetchRestaurants, RestaurantDto } from "@/api/restaurants";
 import { useEffect, useState, useRef, useCallback, type ReactNode } from "react";
 import {
   AccessibilityInfo,
@@ -25,6 +25,7 @@ import { Stack, useFocusEffect } from "expo-router";
 import RestaurantCard from "@/components/restaurant/RestaurantCard";
 import RestaurantCardSkeleton from "@/components/restaurant/RestaurantCardSkeleton";
 import HorizontalScroller from "@/components/common/HorizontalScroller";
+import { useHighlights } from "@/context/BrandContext";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import ScrollToTopFab from "@/components/common/ScrollToTopFab";
 import Footer from "@/components/layout/Footer";
@@ -51,7 +52,6 @@ const CARD_REVEAL = { dataSet: { cardReveal: "card" } };
 
 // Module-level cache so data survives route changes — prevents hero layout shift on back-navigation.
 let _cachedRestaurants: RestaurantDto[] | null = null;
-let _cachedHighlights: HighlightDto[] | null = null;
 
 const DEFAULT_PARTY_SIZE = 2;
 
@@ -286,12 +286,11 @@ export function gridColumns(viewport: number, insetH: number, gap: number, max: 
 
 export function resetHomeCache() {
   _cachedRestaurants = null;
-  _cachedHighlights = null;
 }
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState<RestaurantDto[]>(_cachedRestaurants ?? []);
-  const [highlights, setHighlights] = useState<HighlightDto[]>(_cachedHighlights ?? []);
+  const highlights = useHighlights();
   const [loading, setLoading] = useState(_cachedRestaurants === null);
   const [refreshing, setRefreshing] = useState(false);
   /**
@@ -321,15 +320,11 @@ export default function HomeScreen() {
 
   const load = useCallback(
     () =>
-      Promise.all([fetchRestaurants(), fetchHighlights()]).then(
-        ([restaurantData, highlightData]) => {
-          _cachedRestaurants = restaurantData;
-          _cachedHighlights = highlightData;
-          setRestaurants(restaurantData);
-          setHighlights(highlightData);
-          setLoading(false);
-        }
-      ),
+      fetchRestaurants().then((restaurantData) => {
+        _cachedRestaurants = restaurantData;
+        setRestaurants(restaurantData);
+        setLoading(false);
+      }),
     []
   );
 

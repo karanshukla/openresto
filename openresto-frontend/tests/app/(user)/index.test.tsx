@@ -14,7 +14,8 @@ import HomeScreen, {
   heroBlooms,
   resetHomeCache,
 } from "@/app/(user)/(home)/index";
-import { fetchRestaurants, fetchHighlights } from "@/api/restaurants";
+import { fetchRestaurants } from "@/api/restaurants";
+import { fetchHighlights } from "@/api/highlights";
 import { renderWithProviders } from "@/tests/helpers/renderWithProviders";
 import { renderWithInsets } from "@/tests/helpers/renderWithInsets";
 
@@ -25,7 +26,6 @@ jest.mock("@/components/layout/Footer", () => {
 
 jest.mock("@/api/restaurants", () => ({
   fetchRestaurants: jest.fn(),
-  fetchHighlights: jest.fn(),
   fetchSocialLinks: jest.fn().mockResolvedValue([]),
 }));
 
@@ -688,7 +688,7 @@ describe("HomeScreen", () => {
       });
     });
 
-    it("reloads the list and the highlights, and asks each card for its times again", async () => {
+    it("reloads the list and asks each card for its times again", async () => {
       await onPlatform("ios", async () => {
         const { fetchAvailability } = require("@/api/availability");
         renderWithProviders(<HomeScreen />);
@@ -703,7 +703,6 @@ describe("HomeScreen", () => {
         });
         await waitFor(() => expect(screen.getByText("Renamed Bistro")).toBeTruthy());
         await waitFor(() => expect(refreshControlOf()?.props.refreshing).toBe(false));
-        expect(fetchHighlights).toHaveBeenCalledTimes(2);
         // A remounted card fetches afresh; a card merely re-rendered would not.
         expect((fetchAvailability as jest.Mock).mock.calls.length).toBeGreaterThan(callsBefore);
       });

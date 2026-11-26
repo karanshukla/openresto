@@ -4,7 +4,8 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
-import { BrandProvider, useBrand } from "@/context/BrandContext";
+import { BrandProvider, useBrand, useHighlights } from "@/context/BrandContext";
+import { fetchHighlights } from "@/api/highlights";
 import type { Brand } from "@/types";
 import i18n from "@/i18n";
 
@@ -319,5 +320,24 @@ describe("BrandContext", () => {
       renderWithBrand(Promise.reject(new Error("offline")));
       await waitFor(() => expect(i18n.loadLanguages).toHaveBeenCalledWith("en"));
     });
+  });
+
+  it("loads the home page's highlights alongside the brand", async () => {
+    const highlights = [
+      { id: 1, title: "Rum ham", body: "Famous.", iconKey: "star", sortOrder: 0 },
+    ];
+    (fetchHighlights as jest.Mock).mockResolvedValueOnce(highlights);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ appName: "Paddy's" }) });
+    let seen: unknown;
+    function Probe() {
+      seen = useHighlights();
+      return null;
+    }
+    render(
+      <BrandProvider>
+        <Probe />
+      </BrandProvider>
+    );
+    await waitFor(() => expect(seen).toEqual(highlights));
   });
 });

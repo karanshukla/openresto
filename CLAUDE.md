@@ -263,7 +263,7 @@ openresto-frontend/
 │   ├── restaurant/       # RestaurantCard (home page tiles)
 │   └── admin/            # Dashboard, tables, settings components
 ├── context/
-│   ├── BrandContext      # Fetches /api/brand on mount; provides appName + primaryColor globally
+│   ├── BrandContext      # Fetches /api/brand and /api/highlights behind the loading screen; useBrand/useHighlights
 │   └── ThemeContext
 └── hooks/                # useColorScheme, etc.
 ```

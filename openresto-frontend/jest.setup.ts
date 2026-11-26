@@ -29,6 +29,10 @@ jest.mock("@expo/vector-icons", () => ({
 // map. Forward it to the barrel so the barrel mocks above and in individual test files still apply.
 jest.mock("@expo/vector-icons/Ionicons", () => jest.requireMock("@expo/vector-icons").Ionicons);
 
+// BrandProvider fetches the home page's highlights on every render tree, so a real call would take
+// a response that a suite queued on `fetch` for its own request. Suites about highlights override it.
+jest.mock("@/api/highlights", () => ({ fetchHighlights: jest.fn().mockResolvedValue([]) }));
+
 // Jest's VM has no ESM loader, so the locale chunks' dynamic `import()` would throw here.
 jest.mock("@/i18n/loaders", () => ({
   localeLoaders: {
