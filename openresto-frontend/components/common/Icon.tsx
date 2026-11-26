@@ -1,5 +1,5 @@
 import { type ComponentProps } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { theme } from "@/theme/theme";
 
 export type IconName = ComponentProps<typeof Ionicons>["name"];

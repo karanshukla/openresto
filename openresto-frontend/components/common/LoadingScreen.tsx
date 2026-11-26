@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, ActivityIndicator, Animated, Easing, Text } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Icon } from "@/components/common/Icon";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { getThemeColors } from "@/theme/theme";
 import { DEFAULT_COPY } from "@/constants/defaultCopy";
@@ -88,11 +88,7 @@ export default function LoadingScreen({
         ]}
       >
         <Animated.View style={{ transform: [{ rotate: spin }] }}>
-          <MaterialCommunityIcons
-            name="silverware-fork-knife"
-            size={80}
-            color={brand.primaryColor}
-          />
+          <Icon name="restaurant" size={80} color={brand.primaryColor} />
         </Animated.View>
         <ActivityIndicator size="large" color={brand.primaryColor} style={styles.spinner} />
         <Text style={[styles.text, { color: colors.text }]}>{message}</Text>

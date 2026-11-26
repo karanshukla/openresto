@@ -22,11 +22,12 @@ jest.mock("@/hooks/use-color-scheme", () => ({
 }));
 
 // Vector icons render as null in tests (no font loading, no SVG machinery).
-// Covers both icon families actually imported by app code.
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
-  MaterialCommunityIcons: () => null,
 }));
+// App code imports the family by its own path so the web bundle skips every other family's glyph
+// map. Forward it to the barrel so the barrel mocks above and in individual test files still apply.
+jest.mock("@expo/vector-icons/Ionicons", () => jest.requireMock("@expo/vector-icons").Ionicons);
 
 // expo-localization's real implementation resolves to a native-module build under Jest's
 // default "ios" haste platform (`requireNativeModule`, which throws with no native host), so
